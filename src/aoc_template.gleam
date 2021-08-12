@@ -93,17 +93,14 @@ fn init_new_day(day: String) -> Result(Int) {
       "failed to create input file: ",
       input_path,
     )))
-
   try iodevice =
     erl.open_file(gleam_src_path, mode)
     |> result.replace_error(snag.new(string.append(
       "failed to create gleam file: ",
       gleam_src_path,
     )))
-
   assert erl.Ok =
     erl.write_file(iodevice, erl.charlist_from_string(gleam_starter))
-
   Ok(day_num)
 }
 
@@ -144,7 +141,6 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
       "failed to read file ",
       input_path,
     )))
-
   case day_num {
     // 1 -> day_1.run(input)
     // 2 -> day_2.run(input)
