@@ -1,0 +1,17 @@
+{application, aoc_template,
+ [{description, "A Gleam project"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib,
+    gleam_stdlib,
+    gleam_otp,
+    snag
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {include_files, ["gleam.toml", "gen"]},
+  {links, []}
+]}.
