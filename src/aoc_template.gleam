@@ -5,6 +5,7 @@ import gleam/int
 import gleam/iterator.{Iterator}
 import gleam/result
 import gleam/string
+import gleam/function
 import gleam/atom
 import gleam/otp/task.{Task}
 import snag.{Result}
@@ -34,11 +35,11 @@ pub fn main(args: List(erl.Charlist)) {
 fn parse_day_as_int(day: String) -> Result(Int) {
   day
   |> int.parse()
-  |> result.replace_error(snag.new(string.concat([
-    "failed to parse \"",
-    day,
-    "\" as int",
-  ])))
+  |> result.replace_error(
+    ["failed to parse \"", day, "\" as int"]
+    |> string.concat()
+    |> snag.new(),
+  )
 }
 
 const gleam_starter = "import gleam/result
@@ -87,19 +88,16 @@ fn init_new_day(day: String) -> Result(Int) {
   let input_path = string.concat(["input/day_", day, ".txt"])
   let gleam_src_path = string.concat(["src/day_", day, ".gleam"])
 
+  let failed_to_create_file =
+    function.compose(string.append("failed to create file: ", _), snag.new)
+
   try _ =
     erl.open_file(input_path, erl.Write)
-    |> result.replace_error(snag.new(string.append(
-      "failed to create input file: ",
-      input_path,
-    )))
+    |> result.replace_error(failed_to_create_file(input_path))
 
   try iodevice =
     erl.open_file(gleam_src_path, erl.Write)
-    |> result.replace_error(snag.new(string.append(
-      "failed to create gleam file: ",
-      gleam_src_path,
-    )))
+    |> result.replace_error(failed_to_create_file(gleam_src_path))
 
   assert erl.Ok =
     erl.write_file(iodevice, erl.charlist_from_string(gleam_starter))
@@ -142,10 +140,11 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
   try input =
     input_path
     |> erl.read_file()
-    |> result.replace_error(snag.new(string.append(
-      "failed to read file ",
-      input_path,
-    )))
+    |> result.replace_error(
+      "failed to read input file: "
+      |> string.append(input_path)
+      |> snag.new(),
+    )
   case day_num {
     // 1 -> day_1.run(input)
     // 2 -> day_2.run(input)
@@ -166,8 +165,8 @@ pub fn try_await_many(
   tasks
   |> iterator.map(delayed_try_await)
   |> iterator.map(result.map_error(
-    _,
-    fn(res) {
+    over: _,
+    with: fn(res) {
       case res {
         task.Timeout -> "task timed out"
         task.Exit(_) -> "task exited for some reason"
