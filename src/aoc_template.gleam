@@ -105,7 +105,7 @@ fn init_new_day(day: String) -> Result(Int) {
   Ok(day_num)
 }
 
-fn map_run_result_to_string(res: #(Result(#(Int, Int)), String)) {
+fn run_result_to_string(res: #(Result(#(Int, Int)), String)) {
   case res.0
   |> snag.context(string.append("failed to run day ", res.1))
   |> result.map_error(snag.pretty_print) {
@@ -130,7 +130,7 @@ fn run_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
   |> iterator.zip(days)
-  |> iterator.map(map_run_result_to_string)
+  |> iterator.map(run_result_to_string)
 }
 
 fn run_day(day: String) -> Result(#(Int, Int)) {
