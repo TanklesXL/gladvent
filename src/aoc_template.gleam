@@ -6,7 +6,7 @@ import gleam/iterator.{Iterator}
 import gleam/result
 import gleam/string
 import gleam/atom
-import gleam/otp/task
+import gleam/otp/task.{Task}
 import snag.{Result}
 
 pub fn main(args: List(erl.Charlist)) {
@@ -15,13 +15,13 @@ pub fn main(args: List(erl.Charlist)) {
     ["new", ..days] ->
       days
       |> iterator.from_list()
-      |> init_days(1000)
+      |> init_days(timeout)
       |> iterator.to_list()
 
     ["run", ..days] ->
       days
       |> iterator.from_list()
-      |> run_days(1000)
+      |> run_days(timeout)
       |> iterator.to_list()
 
     args -> [string.concat(["unrecognized command ", ..args])]
@@ -67,7 +67,8 @@ fn pt_2(input: String) -> Result(Int, String) {
 fn init_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   days
   |> iterator.map(fn(day) { task.async(fn() { init_new_day(day) }) })
-  |> iterator.map(task.await(_, timeout))
+  |> try_await_many(timeout)
+  |> iterator.map(result.flatten)
   |> iterator.zip(days)
   |> iterator.map(fn(res: #(Result(Int), String)) {
     case res.0
@@ -104,10 +105,14 @@ fn init_new_day(day: String) -> Result(Int) {
   Ok(day_num)
 }
 
+external fn sleep(Int) -> Nil =
+  "timer" "sleep"
+
 fn run_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   days
   |> iterator.map(fn(day) { task.async(fn() { run_day(day) }) })
-  |> iterator.map(task.await(_, timeout))
+  |> try_await_many(timeout)
+  |> iterator.map(result.flatten)
   |> iterator.zip(days)
   |> iterator.map(fn(res: #(Result(#(Int, Int)), String)) {
     case res.0
@@ -147,4 +152,37 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
     // 3 -> day_3.run(input)
     _ -> Error(snag.new(string.append("unrecognized day: ", day)))
   }
+}
+
+pub type TimeUnit {
+  Second
+  Millisecond
+  Microsecond
+  Nanosecond
+}
+
+pub external fn system_time(TimeUnit) -> Int =
+  "erlang" "system_time"
+
+pub fn try_await_many(
+  tasks: Iterator(Task(a)),
+  timeout: Int,
+) -> Iterator(Result(a)) {
+  let end = system_time(Millisecond) + timeout
+  let delayed_try_await = fn(t) {
+    task.try_await(t, int.clamp(end - system_time(Millisecond), 0, timeout))
+  }
+
+  tasks
+  |> iterator.map(delayed_try_await)
+  |> iterator.map(result.map_error(
+    _,
+    fn(res) {
+      case res {
+        task.Timeout -> "task timed out"
+        task.Exit(_) -> "task exited for some reason"
+      }
+      |> snag.new()
+    },
+  ))
 }
