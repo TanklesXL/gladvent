@@ -8,6 +8,7 @@ import gleam/string
 import gleam/atom
 import gleam/otp/task.{Task}
 import snag.{Result}
+import time
 
 pub fn main(args: List(erl.Charlist)) {
   let timeout = 1000
@@ -153,23 +154,13 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
   }
 }
 
-pub type TimeUnit {
-  Second
-  Millisecond
-  Microsecond
-  Nanosecond
-}
-
-pub external fn system_time(TimeUnit) -> Int =
-  "erlang" "system_time"
-
 pub fn try_await_many(
   tasks: Iterator(Task(a)),
   timeout: Int,
 ) -> Iterator(Result(a)) {
-  let end = system_time(Millisecond) + timeout
+  let end = time.now_ms() + timeout
   let delayed_try_await = fn(t) {
-    task.try_await(t, int.clamp(end - system_time(Millisecond), 0, timeout))
+    task.try_await(t, int.clamp(end - time.now_ms(), 0, timeout))
   }
 
   tasks
