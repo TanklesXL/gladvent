@@ -86,20 +86,20 @@ fn init_new_day(day: String) -> Result(Int) {
   let input_path = string.concat(["input/day_", day, ".txt"])
   let gleam_src_path = string.concat(["src/day_", day, ".gleam"])
 
-  assert Ok(mode) = atom.from_string("write")
-
   try _ =
-    erl.open_file(input_path, mode)
+    erl.open_file(input_path, erl.Write)
     |> result.replace_error(snag.new(string.append(
       "failed to create input file: ",
       input_path,
     )))
+
   try iodevice =
-    erl.open_file(gleam_src_path, mode)
+    erl.open_file(gleam_src_path, erl.Write)
     |> result.replace_error(snag.new(string.append(
       "failed to create gleam file: ",
       gleam_src_path,
     )))
+
   assert erl.Ok =
     erl.write_file(iodevice, erl.charlist_from_string(gleam_starter))
   Ok(day_num)

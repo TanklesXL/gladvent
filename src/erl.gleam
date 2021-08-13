@@ -15,7 +15,11 @@ pub external type IODevice
 pub external fn read_file(String) -> Result(String, Reason) =
   "file" "read_file"
 
-pub external fn open_file(String, Atom) -> Result(IODevice, Reason) =
+pub type FileMode {
+  Write
+}
+
+pub external fn open_file(String, FileMode) -> Result(IODevice, Reason) =
   "file" "open"
 
 pub type WriteResult {
