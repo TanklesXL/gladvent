@@ -105,9 +105,6 @@ fn init_new_day(day: String) -> Result(Int) {
   Ok(day_num)
 }
 
-external fn sleep(Int) -> Nil =
-  "timer" "sleep"
-
 fn map_run_result_to_string(res: #(Result(#(Int, Int)), String)) {
   case res.0
   |> snag.context(string.append("failed to run day ", res.1))
