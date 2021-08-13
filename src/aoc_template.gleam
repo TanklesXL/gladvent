@@ -108,30 +108,32 @@ fn init_new_day(day: String) -> Result(Int) {
 external fn sleep(Int) -> Nil =
   "timer" "sleep"
 
+fn map_run_result_to_string(res: #(Result(#(Int, Int)), String)) {
+  case res.0
+  |> snag.context(string.append("failed to run day ", res.1))
+  |> result.map_error(snag.pretty_print) {
+    Ok(solution) ->
+      [
+        "solved day ",
+        res.1,
+        "\n\t-> ",
+        "part 1: ",
+        int.to_string(solution.0),
+        "\n\t-> part 2: ",
+        int.to_string(solution.1),
+      ]
+      |> string.concat()
+    Error(reason) -> reason
+  }
+}
+
 fn run_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   days
   |> iterator.map(fn(day) { task.async(fn() { run_day(day) }) })
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
   |> iterator.zip(days)
-  |> iterator.map(fn(res: #(Result(#(Int, Int)), String)) {
-    case res.0
-    |> snag.context(string.append("failed to run day ", res.1))
-    |> result.map_error(snag.pretty_print) {
-      Ok(solution) ->
-        [
-          "solved day ",
-          res.1,
-          "\n\t-> ",
-          "part 1: ",
-          int.to_string(solution.0),
-          "\n\t-> part 2: ",
-          int.to_string(solution.1),
-        ]
-        |> string.concat()
-      Error(reason) -> reason
-    }
-  })
+  |> iterator.map(map_run_result_to_string)
 }
 
 fn run_day(day: String) -> Result(#(Int, Int)) {
