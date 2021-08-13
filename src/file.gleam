@@ -1,12 +1,5 @@
 import gleam/atom.{Atom}
-
-pub external type Charlist
-
-pub external fn charlist_to_string(Charlist) -> String =
-  "erlang" "list_to_binary"
-
-pub external fn charlist_from_string(String) -> Charlist =
-  "erlang" "binary_to_list"
+import charlist.{Charlist}
 
 pub external type Reason
 

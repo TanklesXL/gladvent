@@ -1,4 +1,3 @@
-import erl
 import gleam/list
 import gleam/io
 import gleam/int
@@ -9,11 +8,13 @@ import gleam/function
 import gleam/atom
 import gleam/otp/task.{Task}
 import snag.{Result}
+import file
 import time
+import charlist.{Charlist}
 
-pub fn main(args: List(erl.Charlist)) {
+pub fn main(args: List(Charlist)) {
   let timeout = 1000
-  case list.map(args, erl.charlist_to_string) {
+  case list.map(args, charlist.to_string) {
     ["new", ..days] ->
       days
       |> iterator.from_list()
@@ -92,15 +93,15 @@ fn init_new_day(day: String) -> Result(Int) {
     function.compose(string.append("failed to create file: ", _), snag.new)
 
   try _ =
-    erl.open_file(input_path, erl.Write)
+    file.open_file(input_path, file.Write)
     |> result.replace_error(failed_to_create_file(input_path))
 
   try iodevice =
-    erl.open_file(gleam_src_path, erl.Write)
+    file.open_file(gleam_src_path, file.Write)
     |> result.replace_error(failed_to_create_file(gleam_src_path))
 
-  assert erl.Ok =
-    erl.write_file(iodevice, erl.charlist_from_string(gleam_starter))
+  assert file.Ok =
+    file.write_file(iodevice, charlist.from_string(gleam_starter))
   Ok(day_num)
 }
 
@@ -139,7 +140,7 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
 
   try input =
     input_path
-    |> erl.read_file()
+    |> file.read_file()
     |> result.replace_error(
       "failed to read input file: "
       |> string.append(input_path)
