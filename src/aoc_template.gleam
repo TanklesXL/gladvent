@@ -69,7 +69,8 @@ fn pt_2(input: String) -> Result(Int, String) {
 
 fn init_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   days
-  |> iterator.map(fn(day) { task.async(fn() { init_new_day(day) }) })
+  |> iterator.map(fn(x) { fn() { init_new_day(x) } })
+  |> iterator.map(task.async)
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
   |> iterator.zip(days)
@@ -126,7 +127,8 @@ fn run_result_to_string(res: #(Result(#(Int, Int)), String)) {
 
 fn run_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   days
-  |> iterator.map(fn(day) { task.async(fn() { run_day(day) }) })
+  |> iterator.map(fn(x) { fn() { run_day(x) } })
+  |> iterator.map(task.async)
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
   |> iterator.zip(days)
