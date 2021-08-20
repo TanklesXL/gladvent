@@ -5,12 +5,11 @@ import gleam/iterator.{Iterator}
 import gleam/result
 import gleam/string
 import gleam/function
-import gleam/atom
 import gleam/otp/task.{Task}
 import snag.{Result}
 import file
 import time
-import charlist.{Charlist}
+import gleam/erlang/charlist.{Charlist}
 
 pub fn main(args: List(Charlist)) {
   let timeout = 1000
@@ -96,11 +95,9 @@ fn init_new_day(day: String) -> Result(Int) {
   try _ =
     file.open_file(input_path, file.Write)
     |> result.replace_error(failed_to_create_file(input_path))
-
   try iodevice =
     file.open_file(gleam_src_path, file.Write)
     |> result.replace_error(failed_to_create_file(gleam_src_path))
-
   assert file.Ok =
     file.write_file(iodevice, charlist.from_string(gleam_starter))
   Ok(day_num)

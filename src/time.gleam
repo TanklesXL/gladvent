@@ -1,8 +1,8 @@
 type TimeUnit {
-  Second
+  // Second
+  // Microsecond
+  // Nanosecond
   Millisecond
-  Microsecond
-  Nanosecond
 }
 
 external fn system_time(TimeUnit) -> Int =

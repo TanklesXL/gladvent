@@ -1,5 +1,4 @@
-import gleam/atom.{Atom}
-import charlist.{Charlist}
+import gleam/erlang/charlist.{Charlist}
 
 pub external type Reason
 

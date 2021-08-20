@@ -1,5 +1,9 @@
 {"1.2.0",
-[{<<"gleam_otp">>,{pkg,<<"gleam_otp">>,<<"0.1.6">>},0},
+[{<<"gleam_erlang">>,
+  {git,"https://github.com/gleam-lang/erlang",
+       {ref,"564129da1e448bb4aa272adf4e9016419979ed3b"}},
+  0},
+ {<<"gleam_otp">>,{pkg,<<"gleam_otp">>,<<"0.1.6">>},0},
  {<<"gleam_stdlib">>,{pkg,<<"gleam_stdlib">>,<<"0.16.0">>},0},
  {<<"snag">>,{pkg,<<"snag">>,<<"0.1.0">>},0}]}.
 [

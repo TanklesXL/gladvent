@@ -7,7 +7,8 @@
     stdlib,
     gleam_stdlib,
     gleam_otp,
-    snag
+    snag,
+    gleam_erlang
    ]},
   {env,[]},
   {modules, []},
