@@ -12,18 +12,19 @@ import time
 import gleam/erlang/charlist.{Charlist}
 
 pub fn main(args: List(Charlist)) {
-  let timeout = 1000
+  let run_timeout = 1000
+  let new_timeout = 1000
   case list.map(args, charlist.to_string) {
     ["new", ..days] ->
       days
       |> iterator.from_list()
-      |> init_days(timeout)
+      |> init_days(new_timeout)
       |> iterator.to_list()
 
     ["run", ..days] ->
       days
       |> iterator.from_list()
-      |> run_days(timeout)
+      |> run_days(run_timeout)
       |> iterator.to_list()
 
     args -> [string.concat(["unrecognized command ", ..args])]
