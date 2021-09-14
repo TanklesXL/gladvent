@@ -11,6 +11,19 @@ import files
 import time
 import gleam/erlang/charlist.{Charlist}
 
+type DayRunner =
+  fn(String) -> Result(#(Int, Int))
+
+fn select_day_runner(day: Int) -> Result(DayRunner) {
+  case day {
+    // 1 -> day_1.run(input)
+    // 2 -> day_2.run(input)
+    // 3 -> day_3.run(input)
+    _ ->
+      Error(snag.new(string.append("unrecognized day: ", int.to_string(day))))
+  }
+}
+
 pub fn main(args: List(Charlist)) {
   let run_timeout = 1000
   let new_timeout = 1000
@@ -137,24 +150,21 @@ fn run_days(days: List(String), timeout: Int) -> Iterator(String) {
 }
 
 fn run_day(day: String) -> Result(#(Int, Int)) {
-  try day_num = parse_day_as_int(day)
+  try day_runner =
+    day
+    |> parse_day_as_int()
+    |> result.then(select_day_runner)
 
   let input_path = string.join(["input/day_", day, ".txt"], "")
 
-  try input =
-    input_path
-    |> files.read_file()
-    |> result.replace_error(
-      "failed to read input file: "
-      |> string.append(input_path)
-      |> snag.new(),
-    )
-  case day_num {
-    // 1 -> day_1.run(input)
-    // 2 -> day_2.run(input)
-    // 3 -> day_3.run(input)
-    _ -> Error(snag.new(string.append("unrecognized day: ", day)))
-  }
+  input_path
+  |> files.read_file()
+  |> result.replace_error(
+    "failed to read input file: "
+    |> string.append(input_path)
+    |> snag.new(),
+  )
+  |> result.then(day_runner)
 }
 
 fn async_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
