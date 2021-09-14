@@ -17,15 +17,13 @@ pub fn main(args: List(Charlist)) {
   case list.map(args, charlist.to_string) {
     ["new", ..days] ->
       days
-      |> iterator.from_list()
       |> init_days(new_timeout)
-      |> iterator.to_list()
+      |> iterator.to_list
 
     ["run", ..days] ->
       days
-      |> iterator.from_list()
       |> run_days(run_timeout)
-      |> iterator.to_list()
+      |> iterator.to_list
 
     args -> [string.concat(["unrecognized command: ", ..args])]
   }
@@ -68,13 +66,13 @@ fn pt_2(input: String) -> Result(Int) {
 }
 "
 
-fn init_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
+fn init_days(days: List(String), timeout: Int) -> Iterator(String) {
   days
-  |> iterator.map(fn(x) { fn() { init_new_day(x) } })
-  |> iterator.map(task.async)
+  |> async_map(init_new_day)
+  |> iterator.from_list()
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
-  |> iterator.zip(days)
+  |> iterator.zip(iterator.from_list(days))
   |> iterator.map(fn(res: #(Result(Int), String)) {
     case res.0
     |> snag.context(string.append("failed to initialize day ", res.1))
@@ -128,13 +126,13 @@ fn run_result_to_string(day_res: #(String, Result(#(Int, Int)))) {
   }
 }
 
-fn run_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
+fn run_days(days: List(String), timeout: Int) -> Iterator(String) {
   days
-  |> iterator.map(fn(x) { fn() { run_day(x) } })
-  |> iterator.map(task.async)
+  |> async_map(run_day)
+  |> iterator.from_list()
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
-  |> iterator.zip(days, _)
+  |> iterator.zip(iterator.from_list(days), _)
   |> iterator.map(run_result_to_string)
 }
 
@@ -159,10 +157,11 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
   }
 }
 
-pub fn try_await_many(
-  tasks: Iterator(Task(a)),
-  timeout: Int,
-) -> Iterator(Result(a)) {
+fn async_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
+  list.map(l, fn(x) { task.async(fn() { f(x) }) })
+}
+
+fn try_await_many(tasks: Iterator(Task(a)), timeout: Int) -> Iterator(Result(a)) {
   let end = time.now_ms() + timeout
   let delayed_try_await = fn(t) {
     task.try_await(t, int.clamp(end - time.now_ms(), 0, timeout))
