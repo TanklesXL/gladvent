@@ -7,7 +7,7 @@ import gleam/string
 import gleam/function
 import gleam/otp/task.{Task}
 import snag.{Result}
-import file
+import files
 import time
 import gleam/erlang/charlist.{Charlist}
 
@@ -27,7 +27,7 @@ pub fn main(args: List(Charlist)) {
       |> run_days(run_timeout)
       |> iterator.to_list()
 
-    args -> [string.concat(["unrecognized command ", ..args])]
+    args -> [string.concat(["unrecognized command: ", ..args])]
   }
   |> string.join(with: "\n\n")
   |> io.println()
@@ -43,26 +43,27 @@ fn parse_day_as_int(day: String) -> Result(Int) {
   )
 }
 
-const gleam_starter = "import gleam/result
-import gleam/string
+const gleam_starter = "import snag.{Result}
 
-pub fn run(input: String) -> Result(#(Int, Int), String) {
+pub fn run(input: String) -> Result(#(Int, Int)) {
   try pt_1 =
-    pt_1(input)
-    |> result.map_error(string.append(\"failed part 1: \", _))
+    input
+    |> pt_1()
+    |> snag.context(\"failed part 1\")
 
   try pt_2 =
-    pt_2(input)
-    |> result.map_error(string.append(\"failed part 2: \", _))
+    input
+    |> pt_2()
+    |> snag.context(\"failed part 2\")
 
   Ok(#(pt_1, pt_2))
 }
 
-fn pt_1(input: String) -> Result(Int, String) {
+fn pt_1(input: String) -> Result(Int) {
   todo
 }
 
-fn pt_2(input: String) -> Result(Int, String) {
+fn pt_2(input: String) -> Result(Int) {
   todo
 }
 "
@@ -94,32 +95,36 @@ fn init_new_day(day: String) -> Result(Int) {
     function.compose(string.append("failed to create file: ", _), snag.new)
 
   try _ =
-    file.open_file(input_path, file.Write)
+    files.open_file(input_path, files.Write)
     |> result.replace_error(failed_to_create_file(input_path))
+
   try iodevice =
-    file.open_file(gleam_src_path, file.Write)
+    files.open_file(gleam_src_path, files.Write)
     |> result.replace_error(failed_to_create_file(gleam_src_path))
-  assert file.Ok =
-    file.write_file(iodevice, charlist.from_string(gleam_starter))
+
+  assert files.Ok =
+    files.write_file(iodevice, charlist.from_string(gleam_starter))
   Ok(day_num)
 }
 
-fn run_result_to_string(res: #(Result(#(Int, Int)), String)) {
-  case res.0
-  |> snag.context(string.append("failed to run day ", res.1))
-  |> result.map_error(snag.pretty_print) {
-    Ok(solution) ->
+fn run_result_to_string(day_res: #(String, Result(#(Int, Int)))) {
+  let #(day, res) = day_res
+  case res {
+    Ok(#(pt_1, pt_2)) ->
       [
         "solved day ",
-        res.1,
+        day,
         "\n\t-> ",
         "part 1: ",
-        int.to_string(solution.0),
+        int.to_string(pt_1),
         "\n\t-> part 2: ",
-        int.to_string(solution.1),
+        int.to_string(pt_2),
       ]
       |> string.concat()
-    Error(reason) -> reason
+    Error(reason) ->
+      reason
+      |> snag.layer(string.append("failed to run day ", day))
+      |> snag.pretty_print()
   }
 }
 
@@ -129,7 +134,7 @@ fn run_days(days: Iterator(String), timeout: Int) -> Iterator(String) {
   |> iterator.map(task.async)
   |> try_await_many(timeout)
   |> iterator.map(result.flatten)
-  |> iterator.zip(days)
+  |> iterator.zip(days, _)
   |> iterator.map(run_result_to_string)
 }
 
@@ -140,7 +145,7 @@ fn run_day(day: String) -> Result(#(Int, Int)) {
 
   try input =
     input_path
-    |> file.read_file()
+    |> files.read_file()
     |> result.replace_error(
       "failed to read input file: "
       |> string.append(input_path)
