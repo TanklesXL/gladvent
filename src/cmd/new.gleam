@@ -4,8 +4,7 @@ import gleam/int
 import gleam/iterator
 import gleam/result
 import gleam/string
-import gleam/function
-import snag.{Result}
+import snag.{Result, Snag}
 import files
 import time
 import async
@@ -55,22 +54,25 @@ pub fn exec(days: List(String), timeout: Int) -> List(String) {
   |> iterator.to_list()
 }
 
+fn failed_to_create_file_err(s: String) -> Snag {
+  s
+  |> string.append("failed to create file: ", _)
+  |> snag.new()
+}
+
 fn init_new_day(day: String) -> Result(Int) {
   try day_num = parse.int(day)
 
   let input_path = string.concat(["input/day_", day, ".txt"])
-  let gleam_src_path = string.concat(["src/day_", day, ".gleam"])
-
-  let failed_to_create_file =
-    function.compose(string.append("failed to create file: ", _), snag.new)
+  let gleam_src_path = string.concat(["src/days/day_", day, ".gleam"])
 
   try _ =
     files.open_file(input_path, files.Write)
-    |> result.replace_error(failed_to_create_file(input_path))
+    |> result.replace_error(failed_to_create_file_err(input_path))
 
   try iodevice =
     files.open_file(gleam_src_path, files.Write)
-    |> result.replace_error(failed_to_create_file(gleam_src_path))
+    |> result.replace_error(failed_to_create_file_err(gleam_src_path))
 
   assert files.Ok =
     files.write_file(iodevice, charlist.from_string(gleam_starter))
