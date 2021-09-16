@@ -9,8 +9,8 @@ import gleam/result
 import gleam/string
 import gleam/function
 import snag.{Result}
-import files
-import time
+import ffi/files
+import ffi/time
 import async
 import parse
 

@@ -2,7 +2,7 @@ import gleam/list
 import gleam/result
 import gleam/otp/task.{Task}
 import snag.{Result}
-import time
+import ffi/time
 import gleam/int
 
 pub fn list_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {

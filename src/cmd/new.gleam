@@ -5,8 +5,8 @@ import gleam/iterator
 import gleam/result
 import gleam/string
 import snag.{Result, Snag}
-import files
-import time
+import ffi/files
+import ffi/time
 import async
 import parse
 import gleam/erlang/charlist

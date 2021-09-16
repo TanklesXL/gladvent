@@ -5,8 +5,6 @@ import gleam/iterator
 import gleam/result
 import gleam/string
 import gleam/function
-import files
-import time
 import gleam/erlang/charlist.{Charlist}
 import cmd/run
 import cmd/new
@@ -36,7 +34,7 @@ pub fn main(args: List(Charlist)) {
   |> io.println()
 }
 
-type Exec {
+type Timing {
   Sync
   Async(Int)
 }
@@ -45,9 +43,9 @@ fn exec(
   days: List(String),
   do: fn(String) -> Result(a),
   collect: fn(#(Result(a), String)) -> String,
-  e: Exec,
+  t: Timing,
 ) -> List(String) {
-  case e {
+  case t {
     Sync ->
       days
       |> iterator.from_list()
