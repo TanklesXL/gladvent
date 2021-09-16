@@ -1,4 +1,5 @@
 import gleam/erlang/charlist.{Charlist}
+import gleam
 
 pub external type Reason
 
@@ -19,5 +20,12 @@ pub type WriteResult {
   Error(Reason)
 }
 
-pub external fn write_file(IODevice, Charlist) -> WriteResult =
+external fn write(IODevice, Charlist) -> WriteResult =
   "file" "write"
+
+pub fn write_file(iod: IODevice, s: String) -> Result(Nil, Reason) {
+  case write(iod, charlist.from_string(s)) {
+    Ok -> gleam.Ok(Nil)
+    Error(reason) -> gleam.Error(reason)
+  }
+}

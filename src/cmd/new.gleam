@@ -25,8 +25,10 @@ pub fn do(day: String) -> Result(Int) {
     files.open_file(gleam_src_path, files.Write)
     |> result.replace_error(failed_to_create_file_err(gleam_src_path))
 
-  assert files.Ok =
-    files.write_file(iodevice, charlist.from_string(gleam_starter))
+  try _ =
+    files.write_file(iodevice, gleam_starter)
+    |> result.replace_error(failed_to_write_file_err(gleam_src_path))
+
   Ok(day_num)
 }
 
@@ -58,6 +60,12 @@ fn pt_2(input: String) -> Result(Int) {
 fn failed_to_create_file_err(s: String) -> Snag {
   s
   |> string.append("failed to create file: ", _)
+  |> snag.new()
+}
+
+fn failed_to_write_file_err(s: String) -> Snag {
+  s
+  |> string.append("failed to write file: ", _)
   |> snag.new()
 }
 
