@@ -46,7 +46,7 @@ fn exec(
   do: fn(String) -> Result(a),
   collect: fn(#(Result(a), String)) -> String,
   e: Exec,
-) {
+) -> List(String) {
   case e {
     Sync ->
       days
