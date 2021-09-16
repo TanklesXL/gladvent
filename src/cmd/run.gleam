@@ -9,7 +9,7 @@ import gleam/result
 import gleam/string
 import gleam/function
 import snag.{Result}
-import ffi/files
+import ffi/file
 import ffi/time
 import async
 import parse
@@ -36,7 +36,7 @@ pub fn do(day: String) -> Result(#(Int, Int)) {
   let input_path = string.join(["input/day_", day, ".txt"], "")
 
   input_path
-  |> files.read_file()
+  |> file.read_file()
   |> result.replace_error(
     "failed to read input file: "
     |> string.append(input_path)

@@ -5,7 +5,7 @@ import gleam/iterator
 import gleam/result
 import gleam/string
 import snag.{Result, Snag}
-import ffi/files
+import ffi/file
 import ffi/time
 import async
 import parse
@@ -18,15 +18,11 @@ pub fn do(day: String) -> Result(Int) {
   let gleam_src_path = string.concat(["src/days/day_", day, ".gleam"])
 
   try _ =
-    files.open_file(input_path, files.Write)
+    file.open_file(input_path)
     |> result.replace_error(failed_to_create_file_err(input_path))
 
-  try iodevice =
-    files.open_file(gleam_src_path, files.Write)
-    |> result.replace_error(failed_to_create_file_err(gleam_src_path))
-
   try _ =
-    files.write_file(iodevice, gleam_starter)
+    file.open_and_write(gleam_src_path, gleam_starter)
     |> result.replace_error(failed_to_write_file_err(gleam_src_path))
 
   Ok(day_num)
