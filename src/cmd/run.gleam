@@ -24,19 +24,26 @@ fn select_day_runner(day: Int) -> Result(DayRunner) {
   }
 }
 
-pub fn exec(days: List(String), timeout: Int) -> List(String) {
-  days
-  |> async.list_map(run_day)
-  |> iterator.from_list()
-  |> async.iterator_try_await_many(timeout)
-  |> iterator.map(result.flatten)
-  |> iterator.zip(iterator.from_list(days), _)
-  |> iterator.map(run_result_to_string)
-  |> iterator.to_list()
+pub fn do(day: String) -> Result(#(Int, Int)) {
+  try day_runner =
+    day
+    |> parse.int()
+    |> result.then(select_day_runner)
+
+  let input_path = string.join(["input/day_", day, ".txt"], "")
+
+  input_path
+  |> files.read_file()
+  |> result.replace_error(
+    "failed to read input file: "
+    |> string.append(input_path)
+    |> snag.new(),
+  )
+  |> result.then(day_runner)
 }
 
-fn run_result_to_string(day_res: #(String, Result(#(Int, Int)))) {
-  let #(day, res) = day_res
+pub fn collect(day_res: #(Result(#(Int, Int)), String)) -> String {
+  let #(res, day) = day_res
   case res {
     Ok(#(pt_1, pt_2)) ->
       [
@@ -54,22 +61,4 @@ fn run_result_to_string(day_res: #(String, Result(#(Int, Int)))) {
       |> snag.layer(string.append("failed to run day ", day))
       |> snag.pretty_print()
   }
-}
-
-fn run_day(day: String) -> Result(#(Int, Int)) {
-  try day_runner =
-    day
-    |> parse.int()
-    |> result.then(select_day_runner)
-
-  let input_path = string.join(["input/day_", day, ".txt"], "")
-
-  input_path
-  |> files.read_file()
-  |> result.replace_error(
-    "failed to read input file: "
-    |> string.append(input_path)
-    |> snag.new(),
-  )
-  |> result.then(day_runner)
 }

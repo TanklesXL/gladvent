@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/result
-import gleam/iterator.{Iterator}
 import gleam/otp/task.{Task}
 import snag.{Result}
 import time
@@ -10,10 +9,7 @@ pub fn list_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
   list.map(l, fn(x) { task.async(fn() { f(x) }) })
 }
 
-pub fn iterator_try_await_many(
-  tasks: Iterator(Task(a)),
-  timeout: Int,
-) -> Iterator(Result(a)) {
+pub fn try_await_many(tasks: List(Task(a)), timeout: Int) -> List(Result(a)) {
   let end = time.now_ms() + timeout
   let delayed_try_await = fn(t) {
     end - time.now_ms()
@@ -22,8 +18,8 @@ pub fn iterator_try_await_many(
   }
 
   tasks
-  |> iterator.map(delayed_try_await)
-  |> iterator.map(result.map_error(
+  |> list.map(delayed_try_await)
+  |> list.map(result.map_error(
     over: _,
     with: fn(res) {
       case res {
