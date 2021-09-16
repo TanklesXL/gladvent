@@ -5,8 +5,12 @@ A template for getting started with advent of code in gleam
 This project is intended to be forked, modified and run as an `escript`
 It has 2 commands: `new` and `run`.
 
-- `new`: used like `_build/default/bin/aoc_template new 1 2` with day \* 1 2 ... creates `input/day_*.txt` and `src/days/day_*.gleam`
-- `run`: used like `_build/default/bin/aoc_template run 1000 1 2` with timeout 1000 milliseconds and day \* 1 2 ... runs and prints the output of running `day_*.gleam`
+- `new`:
+  - format: `_build/default/bin/aoc_template new a b c ...`
+  - used like `_build/default/bin/aoc_template new 1 2` with days 1 and 2 creates `input/day_*.txt` and `src/days/day_*.gleam`
+- `run`:
+  - format: `_build/default/bin/aoc_template run {timeout in ms} a b c ...`
+  - used like `_build/default/bin/aoc_template run 1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running `day_*.gleam`
 
 *note:* the first argument of each command is the total run time allowed for the entirety of the command execution, in milliseconds.
 
