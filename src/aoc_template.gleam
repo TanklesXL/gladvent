@@ -28,6 +28,7 @@ pub fn main(args: List(Charlist)) {
         Error(err) -> [err]
       }
     }
+    [] -> ["no command provided, allowed options are \"run\" and \"new\""]
     _ -> [string.concat(["unrecognized command: ", ..args])]
   }
   |> string.join(with: "\n\n")
