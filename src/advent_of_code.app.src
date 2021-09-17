@@ -6,9 +6,9 @@
    [kernel,
     stdlib,
     gleam_stdlib,
+    gleam_erlang,
     gleam_otp,
-    snag,
-    gleam_erlang
+    snag
    ]},
   {env,[]},
   {modules, []},

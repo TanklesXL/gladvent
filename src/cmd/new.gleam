@@ -12,7 +12,9 @@ import parse
 import gleam/erlang/charlist
 
 pub fn do(day: String) -> Result(Int) {
-  try day_num = parse.int(day)
+  try day_num =
+    parse.int(day)
+    |> snag.context("failed to parse day")
 
   let input_path = string.concat(["input/day_", day, ".txt"])
   let gleam_src_path = string.concat(["src/days/day_", day, ".gleam"])
