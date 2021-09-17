@@ -12,7 +12,6 @@ import parse
 import snag.{Result}
 import async
 
-// import snag.{Result}
 pub fn main(args: List(Charlist)) {
   let args = list.map(args, charlist.to_string)
   case args {

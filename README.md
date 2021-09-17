@@ -1,6 +1,6 @@
-# aoc_template
+# Advent Of Code Gleam Template
 
-A template for getting started with advent of code in gleam
+A repository template for getting started with advent of code in gleam
 
 This project is intended to be forked, modified and run as an `escript`
 It has 2 commands: `new` and `run`.

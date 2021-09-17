@@ -1,5 +1,5 @@
-{application, aoc_template,
- [{description, "A Gleam project"},
+{application, advent_of_code,
+ [{description, "An advent of code runner in Gleam"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
