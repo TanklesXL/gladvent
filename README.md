@@ -3,7 +3,8 @@
 A repository template for getting started with advent of code in gleam
 
 This project is intended to be forked, modified and run as an `escript`
-It has 2 commands: `new` and `run`.
+
+It has 2 commands, `new` and `run`:
 
 - `new`:
   - format: `_build/default/bin/advent_of_code new a b c ...`
