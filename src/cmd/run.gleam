@@ -39,9 +39,9 @@ pub fn do(day: String) -> Result(#(Int, Int)) {
   input_path
   |> file.read_file()
   |> result.replace_error(
-    "failed to read input file: "
-    |> string.append(input_path)
-    |> snag.new(),
+    input_path
+    |> snag.new()
+    |> snag.layer("failed to read input file"),
   )
   |> result.then(day_runner)
 }

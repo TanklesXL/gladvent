@@ -1,10 +1,9 @@
 import snag.{Result}
 
-pub fn exec(
-  input: String,
-  pt_1: fn(String) -> Result(Int),
-  pt_2: fn(String) -> Result(Int),
-) -> Result(#(Int, Int)) {
+type Solver =
+  fn(String) -> Result(Int)
+
+pub fn exec(input: String, pt_1: Solver, pt_2: Solver) -> Result(#(Int, Int)) {
   try pt_1 =
     input
     |> pt_1()
