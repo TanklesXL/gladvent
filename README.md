@@ -10,8 +10,10 @@ It has 2 commands, `new` and `run`:
   - format: `_build/default/bin/advent_of_code new a b c ...`
   - used like `_build/default/bin/advent_of_code new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
 - `run`:
-  - format: `_build/default/bin/advent_of_code run {timeout in ms} a b c ...`
-  - used like `_build/default/bin/advent_of_code run 1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+  - format:
+    - sync: `_build/default/bin/advent_of_code run a b c ...`
+    - async: `_build/default/bin/advent_of_code run async {timeout in ms} a b c ...`
+  - used like `_build/default/bin/advent_of_code run async 1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
 
 ## Quick start
 
@@ -36,7 +38,7 @@ Where `X` is the day number to create:
 2. add your input and solution to the created files
 3. uncomment `import days/day_X` in `cmd/run.gleam`
 4. uncomment  `// X -> day_X.run(input)` in `select_day_runner`
-5. to run day_x, allowing a max 1 second time run time, run `_build/default/bin/advent_of_code run 1000 X`
+5. to run day_x, run `_build/default/bin/advent_of_code run X`
 
 ### Adding subsequent solutions
 

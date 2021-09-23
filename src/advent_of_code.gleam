@@ -16,7 +16,7 @@ pub fn main(args: List(Charlist)) {
   let args = list.map(args, charlist.to_string)
   case args {
     ["new", ..days] -> exec(days, new.do, new.collect, Sync)
-    ["run", timeout, ..days] -> {
+    ["run", "async", timeout, ..days] -> {
       let timeout =
         timeout
         |> parse.int()
@@ -27,6 +27,7 @@ pub fn main(args: List(Charlist)) {
         Error(err) -> [err]
       }
     }
+    ["run", ..days] -> exec(days, run.do, run.collect, Sync)
     [] -> ["no command provided, allowed options are \"run\" and \"new\""]
     _ -> [string.concat(["unrecognized command: ", ..args])]
   }
