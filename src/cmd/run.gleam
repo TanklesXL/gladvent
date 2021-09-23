@@ -1,6 +1,6 @@
 //import days/day_1
 //import days/day_2
-//import days/day_3
+// import days/day_3
 import gleam/list
 import gleam/io
 import gleam/int
@@ -19,9 +19,9 @@ type DayRunner =
 
 fn select_day_runner(day: Int) -> Result(DayRunner) {
   case day {
-    // 1 -> day_1.run(input)
-    // 2 -> day_2.run(input)
-    // 3 -> day_3.run(input)
+    // 1 -> Ok(day_1.run)
+    // 2 -> Ok(day_2.run)
+    // 3 -> Ok(day_3.run)
     _ ->
       Error(snag.new(string.append("unrecognized day: ", int.to_string(day))))
   }
