@@ -1,26 +1,36 @@
 import gleam/erlang/charlist.{Charlist}
 import gleam
 
-pub external type Reason
+pub type Reason {
+  Enoent
+  Eaccess
+  Eisdir
+  Enotdir
+  Enospc
+  Eexist
+}
 
 pub external type IODevice
+
+pub type FileMode {
+  Read
+  Write
+  Append
+  Exclusive
+}
 
 pub external fn read_file(String) -> Result(String, Reason) =
   "file" "read_file"
 
-external fn open(String, FileMode) -> Result(IODevice, Reason) =
+pub external fn open_file(String, List(FileMode)) -> Result(IODevice, Reason) =
   "file" "open"
+
+pub fn open_file_exclusive(s: String) -> Result(IODevice, Reason) {
+  open_file(s, [Exclusive])
+}
 
 external fn write(IODevice, Charlist) -> WriteResult =
   "file" "write"
-
-type FileMode {
-  Write
-}
-
-pub fn open_file(path: String) -> Result(IODevice, Reason) {
-  open(path, Write)
-}
 
 type WriteResult {
   Ok
@@ -34,7 +44,10 @@ pub fn write_file(iod: IODevice, s: String) -> Result(Nil, Reason) {
   }
 }
 
-pub fn open_and_write(path: String, contents: String) -> Result(Nil, Reason) {
-  try iod = open_file(path)
+pub fn open_and_write_exclusive(
+  path: String,
+  contents: String,
+) -> Result(Nil, Reason) {
+  try iod = open_file_exclusive(path)
   write_file(iod, contents)
 }

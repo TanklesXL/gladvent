@@ -13,19 +13,20 @@ import gleam/erlang/charlist
 
 pub fn do(day: String) -> Result(Int) {
   try day_num =
-    parse.int(day)
+    day
+    |> parse.int()
     |> snag.context("failed to parse day")
 
   let input_path = string.concat(["input/day_", day, ".txt"])
   let gleam_src_path = string.concat(["src/days/day_", day, ".gleam"])
 
   try _ =
-    file.open_file(input_path)
-    |> result.replace_error(failed_to_create_file_err(input_path))
+    file.open_file_exclusive(input_path)
+    |> result.map_error(handle_file_open_failure(_, input_path))
 
   try _ =
-    file.open_and_write(gleam_src_path, gleam_starter)
-    |> result.replace_error(failed_to_write_file_err(gleam_src_path))
+    file.open_and_write_exclusive(gleam_src_path, gleam_starter)
+    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 
   Ok(day_num)
 }
@@ -55,16 +56,23 @@ fn pt_2(input: String) -> Result(Int) {
 }
 "
 
-fn failed_to_create_file_err(s: String) -> Snag {
-  s
-  |> string.append("failed to create file: ", _)
-  |> snag.new()
+fn handle_file_open_failure(reason: file.Reason, filename: String) -> Snag {
+  case reason {
+    file.Eexist -> file_already_exists_err(filename)
+    _ -> failed_to_create_file_err(filename)
+  }
 }
 
-fn failed_to_write_file_err(s: String) -> Snag {
+fn file_already_exists_err(s: String) -> Snag {
   s
-  |> string.append("failed to write file: ", _)
   |> snag.new()
+  |> snag.layer("file already exists")
+}
+
+fn failed_to_create_file_err(s: String) -> Snag {
+  s
+  |> snag.new()
+  |> snag.layer("failed to create file")
 }
 
 pub fn collect(x: #(Result(Int), String)) -> String {
