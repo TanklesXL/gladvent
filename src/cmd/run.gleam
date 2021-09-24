@@ -1,5 +1,5 @@
-//import days/day_1
-//import days/day_2
+// import days/day_1
+// import days/day_2
 // import days/day_3
 import gleam/list
 import gleam/io
