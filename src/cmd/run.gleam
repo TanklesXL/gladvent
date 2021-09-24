@@ -30,8 +30,7 @@ fn select_day_runner(day: Int) -> Result(DayRunner) {
 pub fn do(day: String) -> Result(#(Int, Int)) {
   try day_runner =
     day
-    |> parse.int()
-    |> snag.context("failed to parse day")
+    |> parse.day()
     |> result.then(select_day_runner)
 
   let input_path = string.join(["input/day_", day, ".txt"], "")
