@@ -17,14 +17,10 @@ pub fn main(args: List(Charlist)) {
   case args {
     ["new", ..days] -> exec(days, new.do, new.collect, Sync)
     ["run", "async", timeout, ..days] -> {
-      let timeout =
-        timeout
-        |> parse.int()
-        |> snag.context("failed to parse timeout")
-        |> result.map_error(snag.pretty_print)
+      let timeout = parse.timeout(timeout)
       case timeout {
         Ok(timeout) -> exec(days, run.do, run.collect, Async(timeout))
-        Error(err) -> [err]
+        Error(err) -> [snag.pretty_print(err)]
       }
     }
     ["run", ..days] -> exec(days, run.do, run.collect, Sync)

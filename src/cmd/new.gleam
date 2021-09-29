@@ -51,14 +51,14 @@ fn handle_file_open_failure(reason: file.Reason, filename: String) -> Snag {
   }
 }
 
-fn file_already_exists_err(s: String) -> Snag {
-  s
+fn file_already_exists_err(filename: String) -> Snag {
+  filename
   |> snag.new()
   |> snag.layer("file already exists")
 }
 
-fn failed_to_create_file_err(s: String) -> Snag {
-  s
+fn failed_to_create_file_err(filename: String) -> Snag {
+  filename
   |> snag.new()
   |> snag.layer("failed to create file")
 }

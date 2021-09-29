@@ -3,7 +3,7 @@ import gleam/int
 import gleam/string
 import gleam/result
 
-pub fn int(s: String) -> Result(Int) {
+fn int(s: String) -> Result(Int) {
   s
   |> int.parse()
   |> result.replace_error(
@@ -13,15 +13,28 @@ pub fn int(s: String) -> Result(Int) {
   )
 }
 
-pub fn day(s: String) -> Result(Int) {
-  try day = int(s)
-  case day {
-    _ if day < 1 || day > 25 ->
-      Error(
-        "day must be between 1 and 25"
-        |> snag.new()
-        |> snag.layer("failed to parse day"),
-      )
-    _ -> Ok(day)
+fn valid_int(
+  s: String,
+  is_valid: fn(Int) -> Bool,
+  invalid_msg: String,
+) -> Result(Int) {
+  try i = int(s)
+  case is_valid(i) {
+    False -> Error(snag.new(invalid_msg))
+    True -> Ok(i)
   }
+}
+
+pub fn day(s: String) -> Result(Int) {
+  let is_valid = fn(i) { i >= 1 && i <= 25 }
+  s
+  |> valid_int(is_valid, "day must be an integer from 1 to 25")
+  |> snag.context("invalid value for day")
+}
+
+pub fn timeout(s: String) -> Result(Int) {
+  let is_valid = fn(i) { i >= 1 }
+  s
+  |> valid_int(is_valid, "timeout must be greater than or equal to 1 ms")
+  |> snag.context("invalid value for timeout")
 }
