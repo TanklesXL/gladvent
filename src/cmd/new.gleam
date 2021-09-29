@@ -29,18 +29,13 @@ pub fn do(day: String) -> Result(Nil) {
 }
 
 const gleam_starter = "import snag.{Result}
-import days/exec.{exec}
 
-pub fn run(input: String) {
-  exec(input, pt_1, pt_2)
+pub fn pt_1(input: String) -> Result(Int) {
+  Error(snag.new(\"unimplemented\"))
 }
 
-fn pt_1(input: String) -> Result(Int) {
-  todo
-}
-
-fn pt_2(input: String) -> Result(Int) {
-  todo
+pub fn pt_2(input: String) -> Result(Int) {
+  Error(snag.new(\"unimplemented\"))
 }
 "
 
