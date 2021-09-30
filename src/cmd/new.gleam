@@ -30,11 +30,15 @@ pub fn do(day: String) -> Result(Nil) {
 
 const gleam_starter = "import snag.{Result}
 
-pub fn pt_1(input: String) -> Result(Int) {
+pub fn runners() {
+  #(pt_1, pt_2)
+}
+
+fn pt_1(input: String) -> Result(Int) {
   Error(snag.new(\"unimplemented\"))
 }
 
-pub fn pt_2(input: String) -> Result(Int) {
+fn pt_2(input: String) -> Result(Int) {
   Error(snag.new(\"unimplemented\"))
 }
 "

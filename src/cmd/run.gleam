@@ -23,9 +23,9 @@ type DayRunner =
 
 fn select_day_runner(day: Int) -> Result(DayRunner) {
   try #(pt_1, pt_2) = case day {
-    // 1 -> Ok(#(day_1.pt_1, day_1.pt_2))
-    // 2 -> Ok(#(day_2.pt_1, day_2.pt_2))
-    // 3 -> Ok(#(day_3.pt_1, day_3.pt_2))
+    // 1 -> Ok(day_1.runners())
+    // 2 -> Ok(day_2.runners())
+    // 3 -> Ok(day_3.runners())
     _ ->
       Error(snag.new(string.append("unrecognized day: ", int.to_string(day))))
   }
