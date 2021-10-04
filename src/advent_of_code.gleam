@@ -12,20 +12,39 @@ import parse
 import snag.{Result}
 import async
 
+type Command {
+  New(List(String))
+  Run(Timing, List(String))
+}
+
+fn parse_command(l: List(String)) -> Result(Command) {
+  case l {
+    [] ->
+      Error(snag.new(
+        "no command provided, allowed options are \"run\" and \"new\"",
+      ))
+    ["new", ..days] -> Ok(New(days))
+    ["run", "async", timeout, ..days] -> {
+      try timeout = parse.timeout(timeout)
+      Ok(Run(Async(timeout), days))
+    }
+    ["run", ..days] -> Ok(Run(Sync, days))
+    _ ->
+      Error(
+        l
+        |> string.join(" ")
+        |> snag.new()
+        |> snag.layer("unrecognized command"),
+      )
+  }
+}
+
 pub fn main(args: List(Charlist)) {
   let args = list.map(args, charlist.to_string)
-  case args {
-    ["new", ..days] -> exec(days, new.do, new.collect, Sync)
-    ["run", "async", timeout, ..days] -> {
-      let timeout = parse.timeout(timeout)
-      case timeout {
-        Ok(timeout) -> exec(days, run.do, run.collect, Async(timeout))
-        Error(err) -> [snag.pretty_print(err)]
-      }
-    }
-    ["run", ..days] -> exec(days, run.do, run.collect, Sync)
-    [] -> ["no command provided, allowed options are \"run\" and \"new\""]
-    _ -> [string.concat(["unrecognized command: ", ..args])]
+  case parse_command(args) {
+    Ok(New(days)) -> exec(days, new.do, new.collect, Sync)
+    Ok(Run(timing, days)) -> exec(days, run.do, run.collect, timing)
+    Error(err) -> [snag.pretty_print(err)]
   }
   |> string.join(with: "\n\n")
   |> io.println()
