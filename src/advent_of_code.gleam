@@ -6,6 +6,7 @@ import gleam/result
 import gleam/string
 import gleam/function
 import gleam/erlang/charlist.{Charlist}
+import cmd/base.{Exec}
 import cmd/run
 import cmd/new
 import parse
@@ -17,13 +18,16 @@ type Command {
   Run(Timing, List(Int))
 }
 
+const available_commands_msg = "the available commands are 'run', 'run async' and 'new'"
+
 fn parse_command(l: List(String)) -> Result(Command) {
   case l {
     [] ->
-      Error(
-        "no command provided, allowed options are \"run\", \"run async\" and \"new\""
-        |> snag.new(),
-      )
+      Error(snag.new(string.append(
+        "no command provided, ",
+        available_commands_msg,
+      )))
+
     ["run", "async", timeout, ..days] -> {
       try timeout =
         parse.timeout(timeout)
@@ -43,21 +47,21 @@ fn parse_command(l: List(String)) -> Result(Command) {
     }
 
     _ ->
-      ["unrecognized command:", ..l]
-      |> string.join(" ")
-      |> snag.new()
-      |> Error
+      Error(snag.new(string.append(
+        "unrecognized command, ",
+        available_commands_msg,
+      )))
   }
 }
 
 pub fn main(args: List(Charlist)) {
   let args = list.map(args, charlist.to_string)
   case parse_command(args) {
-    Ok(New(days)) -> exec(days, new.do, new.collect, Sync)
-    Ok(Run(timing, days)) -> exec(days, run.do, run.collect, timing)
+    Ok(New(days)) -> exec(days, new.exec(), Sync)
+    Ok(Run(timing, days)) -> exec(days, run.exec(), timing)
     Error(err) -> [
       err
-      |> snag.layer("failed to parse command")
+      |> snag.layer(string.join(["failed to parse command:", ..args], " "))
       |> snag.pretty_print(),
     ]
   }
@@ -70,25 +74,20 @@ type Timing {
   Async(Int)
 }
 
-fn exec(
-  days: List(Int),
-  do: fn(Int) -> Result(a),
-  collect: fn(#(Result(a), Int)) -> String,
-  t: Timing,
-) -> List(String) {
+fn exec(days: List(Int), cmd: Exec(a), t: Timing) -> List(String) {
   case t {
     Sync ->
       days
       |> iterator.from_list()
-      |> iterator.map(do)
+      |> iterator.map(cmd.do)
     Async(timeout) ->
       days
-      |> async.list_map(do)
+      |> async.list_map(cmd.do)
       |> async.try_await_many(timeout)
       |> iterator.from_list()
       |> iterator.map(result.flatten)
   }
   |> iterator.zip(iterator.from_list(days))
-  |> iterator.map(collect)
+  |> iterator.map(cmd.collect)
   |> iterator.to_list()
 }

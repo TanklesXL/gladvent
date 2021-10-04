@@ -14,9 +14,29 @@ import ffi/time
 import async
 import parse
 import gleam
+import cmd/base.{Exec}
 
 type Solution =
   #(Result(Int), Result(Int))
+
+pub fn exec() -> Exec(Solution) {
+  Exec(do: do, collect: collect)
+}
+
+fn do(day: Int) -> Result(Solution) {
+  try day_runner = select_day_runner(day)
+  let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
+
+  try input =
+    input_path
+    |> file.read_file()
+    |> result.replace_error(
+      snag.new(input_path)
+      |> snag.layer("failed to read input file"),
+    )
+
+  Ok(day_runner(input))
+}
 
 type DayRunner =
   fn(String) -> Solution
@@ -33,23 +53,7 @@ fn select_day_runner(day: Int) -> Result(DayRunner) {
   Ok(fn(input) { #(pt_1(input), pt_2(input)) })
 }
 
-pub fn do(day: Int) -> Result(Solution) {
-  try day_runner = select_day_runner(day)
-  let day = int.to_string(day)
-  let input_path = string.join(["input/day_", day, ".txt"], "")
-
-  try input =
-    input_path
-    |> file.read_file()
-    |> result.replace_error(
-      snag.new(input_path)
-      |> snag.layer("failed to read input file"),
-    )
-
-  Ok(day_runner(input))
-}
-
-pub fn collect(x: #(Result(Solution), Int)) -> String {
+fn collect(x: #(Result(Solution), Int)) -> String {
   let day = int.to_string(x.1)
   case x.0 {
     Ok(#(res_1, res_2)) ->
