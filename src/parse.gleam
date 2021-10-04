@@ -1,5 +1,6 @@
 import snag.{Result}
 import gleam/int
+import gleam/list
 import gleam/string
 import gleam/result
 
@@ -30,6 +31,12 @@ pub fn day(s: String) -> Result(Int) {
   s
   |> valid_int(is_valid, "day must be an integer from 1 to 25")
   |> snag.context("invalid value for day")
+}
+
+pub fn days(l: List(String)) -> Result(List(Int)) {
+  l
+  |> list.try_map(day)
+  |> snag.context("could not map day values to integers")
 }
 
 pub fn timeout(s: String) -> Result(Int) {

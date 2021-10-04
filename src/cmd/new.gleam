@@ -11,8 +11,8 @@ import async
 import parse
 import gleam/erlang/charlist
 
-pub fn do(day: String) -> Result(Nil) {
-  try _ = parse.day(day)
+pub fn do(day: Int) -> Result(Nil) {
+  let day = int.to_string(day)
 
   let input_path = string.concat(["input/day_", day, ".txt"])
   let gleam_src_path = string.concat(["src/days/day_", day, ".gleam"])
@@ -62,9 +62,9 @@ fn failed_to_create_file_err(filename: String) -> Snag {
   |> snag.layer("failed to create file")
 }
 
-pub fn collect(x: #(Result(Nil), String)) -> String {
-  let #(res, day) = x
-  case res
+pub fn collect(x: #(Result(Nil), Int)) -> String {
+  let day = int.to_string(x.1)
+  case x.0
   |> snag.context(string.append("failed to initialize day ", day))
   |> result.map_error(snag.pretty_print) {
     Ok(_) -> string.append("initialized day: ", day)

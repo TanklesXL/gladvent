@@ -33,12 +33,9 @@ fn select_day_runner(day: Int) -> Result(DayRunner) {
   Ok(fn(input) { #(pt_1(input), pt_2(input)) })
 }
 
-pub fn do(day: String) -> Result(Solution) {
-  try day_runner =
-    day
-    |> parse.day()
-    |> result.then(select_day_runner)
-
+pub fn do(day: Int) -> Result(Solution) {
+  try day_runner = select_day_runner(day)
+  let day = int.to_string(day)
   let input_path = string.join(["input/day_", day, ".txt"], "")
 
   try input =
@@ -52,9 +49,9 @@ pub fn do(day: String) -> Result(Solution) {
   Ok(day_runner(input))
 }
 
-pub fn collect(day_res: #(Result(Solution), String)) -> String {
-  let #(res, day) = day_res
-  case res {
+pub fn collect(x: #(Result(Solution), Int)) -> String {
+  let day = int.to_string(x.1)
+  case x.0 {
     Ok(#(res_1, res_2)) ->
       [
         "Ran day ",
