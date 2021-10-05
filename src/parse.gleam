@@ -4,7 +4,7 @@ import gleam/list
 import gleam/string
 import gleam/result
 
-fn int(s: String) -> Result(Int) {
+pub fn int(s: String) -> Result(Int) {
   s
   |> int.parse()
   |> result.replace_error(
@@ -14,7 +14,7 @@ fn int(s: String) -> Result(Int) {
   )
 }
 
-fn valid_int(
+pub fn valid_int(
   s: String,
   is_valid: fn(Int) -> Bool,
   invalid_msg: String,
@@ -26,13 +26,21 @@ fn valid_int(
   }
 }
 
+fn greater_than_0(i: Int) -> Bool {
+  i > 0
+}
+
+fn less_than_26(i: Int) -> Bool {
+  i < 26
+}
+
 pub type Day =
   Int
 
 pub fn day(s: String) -> Result(Day) {
-  let is_valid = fn(i) { i >= 1 && i <= 25 }
-  s
-  |> valid_int(is_valid, "day must be an integer from 1 to 25")
+  let is_valid = fn(i) { greater_than_0(i) && less_than_26(i) }
+
+  valid_int(s, is_valid, "day must be an integer from 1 to 25")
   |> snag.context(string.concat(["invalid day value", " '", s, "' "]))
 }
 
@@ -46,8 +54,6 @@ pub type Timeout =
   Int
 
 pub fn timeout(s: String) -> Result(Timeout) {
-  let is_valid = fn(i) { i >= 1 }
-  s
-  |> valid_int(is_valid, "timeout must be greater than or equal to 1 ms")
+  valid_int(s, greater_than_0, "timeout must be greater than or equal to 1 ms")
   |> snag.context(string.concat(["invalid timeout value", " '", s, "' "]))
 }
