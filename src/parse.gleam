@@ -26,20 +26,26 @@ fn valid_int(
   }
 }
 
-pub fn day(s: String) -> Result(Int) {
+pub type Day =
+  Int
+
+pub fn day(s: String) -> Result(Day) {
   let is_valid = fn(i) { i >= 1 && i <= 25 }
   s
   |> valid_int(is_valid, "day must be an integer from 1 to 25")
   |> snag.context(string.concat(["invalid day value", " '", s, "' "]))
 }
 
-pub fn days(l: List(String)) -> Result(List(Int)) {
+pub fn days(l: List(String)) -> Result(List(Day)) {
   l
   |> list.try_map(day)
   |> snag.context("could not map day values to integers")
 }
 
-pub fn timeout(s: String) -> Result(Int) {
+pub type Timeout =
+  Int
+
+pub fn timeout(s: String) -> Result(Timeout) {
   let is_valid = fn(i) { i >= 1 }
   s
   |> valid_int(is_valid, "timeout must be greater than or equal to 1 ms")

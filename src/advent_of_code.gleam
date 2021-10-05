@@ -9,13 +9,18 @@ import gleam/erlang/charlist.{Charlist}
 import cmd/base.{Exec}
 import cmd/run
 import cmd/new
-import parse
+import parse.{Day, Timeout}
 import snag.{Result}
 import async
 
 type Command {
-  New(List(Int))
-  Run(Timing, List(Int))
+  New(List(Day))
+  Run(Timing, List(Day))
+}
+
+type Timing {
+  Sync
+  Async(Timeout)
 }
 
 const available_commands_msg = "the available commands are 'run', 'run async' and 'new'"
@@ -67,11 +72,6 @@ pub fn main(args: List(Charlist)) {
   }
   |> string.join(with: "\n\n")
   |> io.println()
-}
-
-type Timing {
-  Sync
-  Async(Int)
 }
 
 fn exec(days: List(Int), cmd: Exec(a), t: Timing) -> List(String) {

@@ -12,7 +12,7 @@ import snag.{Result}
 import ffi/file
 import ffi/time
 import async
-import parse
+import parse.{Day}
 import gleam
 import cmd/base.{Exec}
 
@@ -23,7 +23,7 @@ pub fn exec() -> Exec(Solution) {
   Exec(do: do, collect: collect)
 }
 
-fn do(day: Int) -> Result(Solution) {
+fn do(day: Day) -> Result(Solution) {
   try day_runner = select_day_runner(day)
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
@@ -53,7 +53,7 @@ fn select_day_runner(day: Int) -> Result(DayRunner) {
   Ok(fn(input) { #(pt_1(input), pt_2(input)) })
 }
 
-fn collect(x: #(Result(Solution), Int)) -> String {
+fn collect(x: #(Result(Solution), Day)) -> String {
   let day = int.to_string(x.1)
   case x.0 {
     Ok(#(res_1, res_2)) ->

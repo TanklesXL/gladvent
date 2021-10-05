@@ -8,7 +8,7 @@ import snag.{Result, Snag}
 import ffi/file
 import ffi/time
 import async
-import parse
+import parse.{Day}
 import gleam/erlang/charlist
 import cmd/base.{Exec}
 
@@ -16,7 +16,7 @@ pub fn exec() -> Exec(Nil) {
   Exec(do: do, collect: collect)
 }
 
-fn do(day: Int) -> Result(Nil) {
+fn do(day: Day) -> Result(Nil) {
   let day = int.to_string(day)
 
   let input_path = string.concat(["input/day_", day, ".txt"])
@@ -67,7 +67,7 @@ fn failed_to_create_file_err(filename: String) -> Snag {
   |> snag.layer("failed to create file")
 }
 
-fn collect(x: #(Result(Nil), Int)) -> String {
+fn collect(x: #(Result(Nil), Day)) -> String {
   let day = int.to_string(x.1)
   case x.0
   |> snag.context(string.append("failed to initialize day ", day))
