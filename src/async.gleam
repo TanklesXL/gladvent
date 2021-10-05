@@ -1,3 +1,4 @@
+import gleam/function
 import gleam/list
 import gleam/result
 import gleam/otp/task.{Task}
@@ -19,15 +20,17 @@ pub fn try_await_many(tasks: List(Task(a)), timeout: Timeout) -> List(Result(a))
   }
 
   tasks
-  |> list.map(delayed_try_await)
-  |> list.map(result.map_error(
-    over: _,
-    with: fn(res) {
-      case res {
-        task.Timeout -> "task timed out"
-        task.Exit(_) -> "task exited for some reason"
-      }
-      |> snag.new()
-    },
+  |> list.map(function.compose(
+    delayed_try_await,
+    result.map_error(
+      over: _,
+      with: fn(res) {
+        case res {
+          task.Timeout -> "task timed out"
+          task.Exit(_) -> "task exited for some reason"
+        }
+        |> snag.new()
+      },
+    ),
   ))
 }
