@@ -10,10 +10,10 @@ import ffi/time
 import async
 import parse.{Day}
 import gleam/erlang/charlist
-import cmd/base.{Exec}
+import cmd/base.{Exec, Timing}
 
-pub fn exec() -> Exec(Nil) {
-  Exec(do: do, collect: collect)
+pub fn exec(timing: Timing) -> Exec(Nil) {
+  Exec(do: do, collect: collect, timing: timing)
 }
 
 fn do(day: Day) -> Result(Nil) {

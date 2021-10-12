@@ -14,37 +14,49 @@ import snag.{Result}
 import async
 
 type Command {
-  New(List(Day))
+  New(Timing, List(Day))
   Run(Timing, List(Day))
 }
 
-const available_commands_msg = "the available commands are 'run', 'run async' and 'new'"
+const available_commands_msg = "the available commands are 'run', 'run async', 'new' and 'new async'"
 
 fn parse_command(l: List(String)) -> Result(Command) {
   case l {
+    ["run", ..rest] ->
+      case rest {
+        ["async", timeout, ..days] -> {
+          try timeout =
+            parse.timeout(timeout)
+            |> snag.context("bad timeout for run command")
+          try days = parse.days(days)
+          Ok(Run(Async(timeout), days))
+        }
+        days -> {
+          try days = parse.days(days)
+          Ok(Run(Sync, days))
+        }
+      }
+
+    ["new", ..rest] ->
+      case rest {
+        ["async", timeout, ..days] -> {
+          try timeout =
+            parse.timeout(timeout)
+            |> snag.context("bad timeout for new command")
+          try days = parse.days(days)
+          Ok(New(Async(timeout), days))
+        }
+        days -> {
+          try days = parse.days(days)
+          Ok(New(Sync, days))
+        }
+      }
+
     [] ->
       Error(snag.new(string.append(
         "no command provided, ",
         available_commands_msg,
       )))
-
-    ["run", "async", timeout, ..days] -> {
-      try timeout =
-        parse.timeout(timeout)
-        |> snag.context("bad timeout for run command")
-      try days = parse.days(days)
-      Ok(Run(Async(timeout), days))
-    }
-
-    ["run", ..days] -> {
-      try days = parse.days(days)
-      Ok(Run(Sync, days))
-    }
-
-    ["new", ..days] -> {
-      try days = parse.days(days)
-      Ok(New(days))
-    }
 
     _ ->
       Error(snag.new(string.append(
@@ -59,8 +71,8 @@ pub fn main(args: List(Charlist)) {
   case parse_command(args) {
     Ok(cmd) ->
       case cmd {
-        New(days) -> exec(days, new.exec(), Sync)
-        Run(timing, days) -> exec(days, run.exec(), timing)
+        New(timing, days) -> exec(days, new.exec(timing))
+        Run(timing, days) -> exec(days, run.exec(timing))
       }
     Error(err) -> [
       err

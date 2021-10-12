@@ -5,7 +5,11 @@ import parse.{Day, Timeout}
 import snag.{Result}
 
 pub type Exec(a) {
-  Exec(do: fn(Day) -> Result(a), collect: fn(#(Result(a), Day)) -> String)
+  Exec(
+    do: fn(Day) -> Result(a),
+    collect: fn(#(Result(a), Day)) -> String,
+    timing: Timing,
+  )
 }
 
 pub type Timing {
@@ -13,8 +17,8 @@ pub type Timing {
   Async(Timeout)
 }
 
-pub fn exec(days: List(Day), cmd: Exec(a), t: Timing) -> List(String) {
-  case t {
+pub fn exec(days: List(Day), cmd: Exec(a)) -> List(String) {
+  case cmd.timing {
     Sync ->
       days
       |> iterator.from_list()

@@ -14,13 +14,13 @@ import ffi/time
 import async
 import parse.{Day}
 import gleam
-import cmd/base.{Exec}
+import cmd/base.{Exec, Timing}
 
 type Solution =
   #(Result(Int), Result(Int))
 
-pub fn exec() -> Exec(Solution) {
-  Exec(do: do, collect: collect)
+pub fn exec(timing: Timing) -> Exec(Solution) {
+  Exec(do: do, collect: collect, timing: timing)
 }
 
 fn do(day: Day) -> Result(Solution) {
