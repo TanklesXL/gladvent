@@ -57,8 +57,11 @@ fn parse_command(l: List(String)) -> Result(Command) {
 pub fn main(args: List(Charlist)) {
   let args = list.map(args, charlist.to_string)
   case parse_command(args) {
-    Ok(New(days)) -> exec(days, new.exec(), Sync)
-    Ok(Run(timing, days)) -> exec(days, run.exec(), timing)
+    Ok(cmd) ->
+      case cmd {
+        New(days) -> exec(days, new.exec(), Sync)
+        Run(timing, days) -> exec(days, run.exec(), timing)
+      }
     Error(err) -> [
       err
       |> snag.layer(string.join(["failed to parse command:", ..args], " "))
