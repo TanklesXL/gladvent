@@ -77,10 +77,10 @@ fn parse_command(l: List(String)) -> Result(Do) {
 pub fn main(args: List(Charlist)) {
   let args = list.map(args, charlist.to_string)
   case parse_command(args) {
-    Ok(cmd) ->
+    Ok(Do(cmd, timing, days)) ->
       case cmd {
-        Do(New, timing, days) -> exec(days, new.exec(timing))
-        Do(Run, timing, days) -> exec(days, run.exec(timing))
+        New -> exec(days, new.exec(timing))
+        Run -> exec(days, run.exec(timing))
       }
     Error(err) -> [
       err
