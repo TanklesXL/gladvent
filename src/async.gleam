@@ -2,10 +2,11 @@ import gleam/function
 import gleam/list
 import gleam/result
 import gleam/otp/task.{Task}
-import snag.{Result}
+import snag.{Result, Snag}
 import ffi/time
 import gleam/int
 import parse.{Timeout}
+import gleam
 
 pub fn list_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
   list.map(l, fn(x) { task.async(fn() { f(x) }) })
@@ -20,17 +21,17 @@ pub fn try_await_many(tasks: List(Task(a)), timeout: Timeout) -> List(Result(a))
   }
 
   tasks
-  |> list.map(function.compose(
-    delayed_try_await,
-    result.map_error(
-      over: _,
-      with: fn(res) {
-        case res {
-          task.Timeout -> "task timed out"
-          task.Exit(_) -> "task exited for some reason"
-        }
-        |> snag.new()
-      },
-    ),
-  ))
+  |> list.map(fn(t) {
+    t
+    |> delayed_try_await()
+    |> result.map_error(snag_task_error)
+  })
+}
+
+fn snag_task_error(err: task.AwaitError) -> Snag {
+  case err {
+    task.Timeout -> "task timed out"
+    task.Exit(_) -> "task exited for some reason"
+  }
+  |> snag.new()
 }

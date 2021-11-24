@@ -1,2 +1,2 @@
-gleam 0.17.0
-erlang 24.1.2
+gleam ref:main
+erlang 24.1.6

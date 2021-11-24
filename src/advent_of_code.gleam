@@ -11,7 +11,26 @@ import cmd/run
 import cmd/new
 import parse.{Day}
 import snag.{Result}
-import async
+
+const args: List(String) = ["run", "async", "1", "1"]
+
+pub fn main() {
+  // let args = list.map(args, charlist.to_string)
+  case parse_command(args) {
+    Ok(Do(cmd, timing, days)) ->
+      case cmd {
+        New -> exec(days, new.exec(timing))
+        Run -> exec(days, run.exec(timing))
+      }
+    Error(err) -> [
+      err
+      |> snag.layer(string.join(["failed to parse command:", ..args], " "))
+      |> snag.pretty_print(),
+    ]
+  }
+  |> string.join(with: "\n\n")
+  |> io.println()
+}
 
 type Days =
   List(Day)
@@ -72,22 +91,4 @@ fn parse_command(l: List(String)) -> Result(Do) {
   try #(timing, days) = parse_command_args(args)
 
   Ok(Do(cmd, timing, days))
-}
-
-pub fn main(args: List(Charlist)) {
-  let args = list.map(args, charlist.to_string)
-  case parse_command(args) {
-    Ok(Do(cmd, timing, days)) ->
-      case cmd {
-        New -> exec(days, new.exec(timing))
-        Run -> exec(days, run.exec(timing))
-      }
-    Error(err) -> [
-      err
-      |> snag.layer(string.join(["failed to parse command:", ..args], " "))
-      |> snag.pretty_print(),
-    ]
-  }
-  |> string.join(with: "\n\n")
-  |> io.println()
 }

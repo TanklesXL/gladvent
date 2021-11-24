@@ -1,1 +1,5 @@
-import advent_of_code
+import gleeunit
+
+pub fn main() {
+  gleeunit.main()
+}
