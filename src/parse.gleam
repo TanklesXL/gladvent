@@ -37,11 +37,13 @@ fn less_than_26(i: Int) -> Bool {
 pub type Day =
   Int
 
-pub fn day(s: String) -> Result(Day) {
-  let is_valid = fn(i) { greater_than_0(i) && less_than_26(i) }
+fn valid_day(i: Int) -> Bool {
+  greater_than_0(i) && less_than_26(i)
+}
 
-  valid_int(s, is_valid, "day must be an integer from 1 to 25")
-  |> snag.context(string.concat(["invalid day value", " '", s, "' "]))
+pub fn day(s: String) -> Result(Day) {
+  valid_int(s, valid_day, "day must be an integer from 1 to 25")
+  |> snag.context(string.concat(["invalid day value ", "'", s, "'"]))
 }
 
 pub fn days(l: List(String)) -> Result(List(Day)) {
@@ -55,5 +57,5 @@ pub type Timeout =
 
 pub fn timeout(s: String) -> Result(Timeout) {
   valid_int(s, greater_than_0, "timeout must be greater than or equal to 1 ms")
-  |> snag.context(string.concat(["invalid timeout value", " '", s, "' "]))
+  |> snag.context(string.concat(["invalid timeout value ", "'", s, "'"]))
 }

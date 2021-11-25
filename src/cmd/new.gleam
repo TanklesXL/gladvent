@@ -26,11 +26,8 @@ fn do(day: Day) -> Result(Nil) {
     file.open_file_exclusive(input_path)
     |> result.map_error(handle_file_open_failure(_, input_path))
 
-  try _ =
-    file.open_and_write_exclusive(gleam_src_path, gleam_starter)
-    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
-
-  Ok(Nil)
+  file.open_and_write_exclusive(gleam_src_path, gleam_starter)
+  |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 }
 
 const gleam_starter = "
