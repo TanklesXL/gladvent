@@ -12,10 +12,11 @@ import cmd/new
 import parse.{Day}
 import snag.{Result}
 
-const args: List(String) = ["run", "async", "1", "1"]
+external fn args() -> List(Charlist) =
+  "init" "get_plain_arguments"
 
 pub fn main() {
-  // let args = list.map(args, charlist.to_string)
+  let args = list.map(args(), charlist.to_string)
   case parse_command(args) {
     Ok(Do(cmd, timing, days)) ->
       case cmd {
@@ -58,7 +59,7 @@ fn parse_command_name(cmd: String) -> Result(Command) {
   }
 }
 
-fn parse_command_args(args) -> Result(#(Timing, Days)) {
+fn parse_command_args(args: List(String)) -> Result(#(Timing, Days)) {
   case args {
     [] -> Error(snag.new("missing command arguments"))
     ["async"] -> Error(snag.new("async called with no arguments"))
