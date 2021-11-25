@@ -17,7 +17,7 @@ import gleam
 import cmd/base.{Exec, Timing}
 
 type Solution =
-  #(Result(Int), Result(Int))
+  #(Int, Int)
 
 pub fn exec(timing: Timing) -> Exec(Solution) {
   Exec(do: do, collect: collect, timing: timing)
@@ -62,21 +62,14 @@ fn collect(x: #(Result(Solution), Day)) -> String {
         day,
         ":",
         "\n  Part 1: ",
-        unpack_result(res_1),
+        int.to_string(res_1),
         "\n  Part 2: ",
-        unpack_result(res_2),
+        int.to_string(res_2),
       ]
       |> string.concat()
-    Error(err) -> snag.pretty_print(err)
-  }
-}
-
-fn unpack_result(res: Result(Int)) -> String {
-  case res {
-    Ok(out) -> string.append("success, result: ", int.to_string(out))
     Error(err) ->
-      err
-      |> snag.layer("failure")
-      |> snag.line_print()
+      string.append("Error on day ", day)
+      |> snag.layer(err, _)
+      |> snag.pretty_print()
   }
 }

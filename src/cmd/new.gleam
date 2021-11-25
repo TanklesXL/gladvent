@@ -33,18 +33,17 @@ fn do(day: Day) -> Result(Nil) {
   Ok(Nil)
 }
 
-const gleam_starter = "import snag.{Result}
-
+const gleam_starter = "
 pub fn runners() {
   #(pt_1, pt_2)
 }
 
-fn pt_1(input: String) -> Result(Int) {
-  Error(snag.new(\"unimplemented\"))
+fn pt_1(input: String) -> Int {
+  todo
 }
 
-fn pt_2(input: String) -> Result(Int) {
-  Error(snag.new(\"unimplemented\"))
+fn pt_2(input: String) -> Int {
+  todo
 }
 "
 
