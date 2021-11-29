@@ -10,7 +10,7 @@ import ffi/time
 import async
 import parse.{Day}
 import gleam/erlang/charlist
-import cmd/base.{Exec, Timing}
+import cmd.{Exec, Timing}
 
 pub fn exec(timing: Timing) -> Exec(Nil) {
   Exec(do: do, collect: collect, timing: timing)
@@ -30,9 +30,8 @@ fn do(day: Day) -> Result(Nil) {
   |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 }
 
-const gleam_starter = "
-pub fn runners() {
-  #(pt_1, pt_2)
+const gleam_starter = "pub fn run(input) {
+  #(pt_1(input), pt_2(input))
 }
 
 fn pt_1(input: String) -> Int {

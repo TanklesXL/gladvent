@@ -35,7 +35,7 @@ Where `X` is the day number to create:
 1. to create input/day_1.txt and src/days/day_1.gleam, run `gleam run new X`
 2. add your input and solution to the created files
 3. uncomment `import days/day_X` in `cmd/run.gleam`
-4. uncomment  `// X -> Ok(day_X.runners())` in `select_day_runner`
+4. uncomment  `// X -> Ok(day_X.run)` in `select_day_runner`
 5. to run day_x, run `gleam run run X`
 
 ### Adding subsequent solutions
@@ -46,8 +46,8 @@ It should be fairly obvious here,
 
 1. follow steps 1-2 above
 1. add `import days/day_X` to `cmd/run.gleam`
-1. add  `X -> Ok(day_X.runners())` in `select_day_runner`
-1. follow step 5 above
+2. add  `X -> Ok(day_X.run)` in `select_day_runner`
+3. follow step 5 above
 
 ## FAQ
 

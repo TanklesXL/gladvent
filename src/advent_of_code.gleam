@@ -4,17 +4,14 @@ import gleam/int
 import gleam/iterator
 import gleam/result
 import gleam/string
-import gleam/function
 import gleam/erlang/charlist.{Charlist}
 import gleam/erlang.{start_arguments}
-import cmd/base.{Async, Sync, Timing, exec}
+import cmd.{Async, Sync, Timing, exec}
 import cmd/run
 import cmd/new
 import parse.{Day}
 import snag.{Result}
 
-// external fn args() -> List(Charlist) =
-//   "init" "get_plain_arguments"
 pub fn main() {
   let args = start_arguments()
   case parse_command(args) {
@@ -59,7 +56,7 @@ fn parse_command_name(cmd: String) -> Result(Command) {
   }
 }
 
-fn parse_command_args(args: List(String)) -> Result(#(Timing, Days)) {
+fn parse_command_args(args: List(String)) -> Result(fn(Command) -> Do) {
   case args {
     [] -> Error(snag.new("missing command arguments"))
     ["async"] -> Error(snag.new("async called with no arguments"))
@@ -69,12 +66,11 @@ fn parse_command_args(args: List(String)) -> Result(#(Timing, Days)) {
         parse.timeout(timeout)
         |> snag.context("bad timeout for run command")
       try days = parse.days(days)
-      Ok(#(Async(timeout), days))
+      Ok(Do(_, Async(timeout), days))
     }
-
     days -> {
       try days = parse.days(days)
-      Ok(#(Sync, days))
+      Ok(Do(_, Sync, days))
     }
   }
 }
@@ -88,8 +84,8 @@ fn parse_command(l: List(String)) -> Result(Do) {
       )))
     [cmd, ..args] -> Ok(#(cmd, args))
   }
+  try build_do = parse_command_args(args)
   try cmd = parse_command_name(cmd)
-  try #(timing, days) = parse_command_args(args)
 
-  Ok(Do(cmd, timing, days))
+  Ok(build_do(cmd))
 }
