@@ -6,17 +6,17 @@ import gleam/result
 import gleam/string
 import gleam/function
 import gleam/erlang/charlist.{Charlist}
+import gleam/erlang.{start_arguments}
 import cmd/base.{Async, Sync, Timing, exec}
 import cmd/run
 import cmd/new
 import parse.{Day}
 import snag.{Result}
 
-external fn args() -> List(Charlist) =
-  "init" "get_plain_arguments"
-
+// external fn args() -> List(Charlist) =
+//   "init" "get_plain_arguments"
 pub fn main() {
-  let args = list.map(args(), charlist.to_string)
+  let args = start_arguments()
   case parse_command(args) {
     Ok(Do(cmd, timing, days)) ->
       case cmd {

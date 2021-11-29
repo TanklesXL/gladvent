@@ -32,7 +32,7 @@ For the sake of convenience,   `cmd/run.gleam` contains commented imports for `d
 
 Where `X` is the day number to create:
 
-1. to create input/day_1.txt and src/days/day_1.gleam, run `_build/default/bin/advent_of_code new X`
+1. to create input/day_1.txt and src/days/day_1.gleam, run `gleam run new X`
 2. add your input and solution to the created files
 3. uncomment `import days/day_X` in `cmd/run.gleam`
 4. uncomment  `// X -> Ok(day_X.runners())` in `select_day_runner`
