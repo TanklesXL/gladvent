@@ -28,14 +28,14 @@ It has 2 commands, `new` and `run`:
 
 ### Adding your first 3 solutions
 
-For the sake of convenience,   `cmd/run.gleam` contains commented imports for `days/day_1`, `days/day_2` and `days/day_3` and commented uses for them in  `select_day_runner`
+For the sake of convenience,   `advent_of_code.gleam` contains commented imports for `days/day_1`, `days/day_2` and `days/day_3` and commented uses for them in  `runners()`
 
 Where `X` is the day number to create:
 
 1. to create input/day_1.txt and src/days/day_1.gleam, run `gleam run new X`
 2. add your input and solution to the created files
-3. uncomment `import days/day_X` in `cmd/run.gleam`
-4. uncomment  `// X -> Ok(day_X.run)` in `select_day_runner`
+3. uncomment `import days/day_X` in `advent_of_code.gleam`
+4. uncomment  `// X -> Ok(day_X.run)` in `runners()`
 5. to run day_x, run `gleam run run X`
 
 ### Adding subsequent solutions
@@ -45,8 +45,8 @@ Where `X` is the day number to create:
 It should be fairly obvious here,
 
 1. follow steps 1-2 above
-1. add `import days/day_X` to `cmd/run.gleam`
-2. add  `X -> Ok(day_X.run)` in `select_day_runner`
+1. add `import days/day_X` to `advent_of_code.gleam`
+2. add  `X -> Ok(day_X.run)` in `runners()`
 3. follow step 5 above
 
 ## FAQ

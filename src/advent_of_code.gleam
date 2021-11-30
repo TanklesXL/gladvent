@@ -1,9 +1,13 @@
+// import days/day_1
+// import days/day_2
+// import days/day_3
 import gleam/list
 import gleam/io
 import gleam/int
 import gleam/iterator
 import gleam/result
 import gleam/string
+import gleam/map
 import gleam/erlang/charlist.{Charlist}
 import gleam/erlang.{start_arguments}
 import cmd.{Async, Sync, Timing, exec}
@@ -12,13 +16,20 @@ import cmd/new
 import parse.{Day}
 import snag.{Result}
 
+fn runners() {
+  map.new()
+  // |> map.insert(1, day_1.run)
+  // |> map.insert(2, day_2.run)
+  // |> map.insert(3, day_3.run)
+}
+
 pub fn main() {
   let args = start_arguments()
   case parse_command(args) {
     Ok(Do(cmd, timing, days)) ->
       case cmd {
         New -> exec(days, new.exec(timing))
-        Run -> exec(days, run.exec(timing))
+        Run -> exec(days, run.exec(timing, runners()))
       }
     Error(err) -> [
       err

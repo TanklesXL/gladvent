@@ -13,18 +13,27 @@ import ffi/file
 import ffi/time
 import async
 import parse.{Day}
-import gleam
+import gleam/map.{Map}
 import cmd.{Exec, Timing}
 
 type Solution =
   #(Int, Int)
 
-pub fn exec(timing: Timing) -> Exec(Solution) {
-  Exec(do: do, collect: collect, timing: timing)
+type DayRunner =
+  fn(String) -> Solution
+
+pub fn exec(timing: Timing, runners: Map(Day, DayRunner)) -> Exec(Solution) {
+  Exec(do: do(_, runners), collect: collect, timing: timing)
 }
 
-fn do(day: Day) -> Result(Solution) {
-  try day_runner = select_day_runner(day)
+fn do(day: Day, runners: Map(Day, DayRunner)) -> Result(Solution) {
+  try day_runner =
+    map.get(runners, day)
+    |> result.replace_error(snag.new(string.append(
+      "unrecognized day: ",
+      int.to_string(day),
+    )))
+
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
   try input =
@@ -36,19 +45,6 @@ fn do(day: Day) -> Result(Solution) {
     )
 
   Ok(day_runner(input))
-}
-
-type DayRunner =
-  fn(String) -> Solution
-
-fn select_day_runner(day: Int) -> Result(DayRunner) {
-  case day {
-    // 1 -> Ok(day_1.run)
-    // 2 -> Ok(day_2.run)
-    // 3 -> Ok(day_3.run)
-    _ ->
-      Error(snag.new(string.append("unrecognized day: ", int.to_string(day))))
-  }
 }
 
 fn collect(x: #(Result(Solution), Day)) -> String {
