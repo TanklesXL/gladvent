@@ -95,8 +95,8 @@ fn parse_command(l: List(String)) -> Result(Do) {
       )))
     [cmd, ..args] -> Ok(#(cmd, args))
   }
-  try build_do = parse_command_args(args)
   try cmd = parse_command_name(cmd)
+  try build_do = parse_command_args(args)
 
   Ok(build_do(cmd))
 }
