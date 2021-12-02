@@ -35,11 +35,11 @@ const gleam_starter = "pub fn run(input) {
 }
 
 fn pt_1(input: String) -> Int {
-  todo
+  0
 }
 
 fn pt_2(input: String) -> Int {
-  todo
+  0
 }
 "
 
