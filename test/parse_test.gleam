@@ -3,18 +3,24 @@ import gleam/int
 import gleam/list
 import gleam/function.{compose}
 import snag
+import gleeunit/should
 
 pub fn timeout_test() {
-  assert Ok(1) = timeout("1")
+  "1"
+  |> timeout()
+  |> should.be_ok()
 
-  ["", "0", "-1"]
-  |> list.each(fn(s) { assert Error(_) = timeout(s) })
+  list.each(["", "0", "-1"], compose(timeout, should.be_error))
 }
 
 pub fn day_test() {
-  assert Ok(1) = day("1")
+  list.range(1, 26)
+  |> list.each(fn(x) {
+    x
+    |> int.to_string()
+    |> day()
+    |> should.equal(Ok(x))
+  })
 
-  // TODO: make better when readding gleam_should_assertions
-  ["", "0", "-1", "26"]
-  |> list.each(fn(s) { assert Error(_) = day(s) })
+  list.each(["", "0", "-1", "26"], compose(day, should.be_error))
 }

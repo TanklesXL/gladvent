@@ -9,5 +9,4 @@ gleam_erlang = "~> 0.4"
 snag = "~> 0.2"
 
 [dev-dependencies]
-gleeunit = "~> 0.4"
-# gleam_should_assertions = "~> 0.2"
+gleeunit = "~> 0.5"

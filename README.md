@@ -2,7 +2,7 @@
 
 A repository template for getting started with advent of code in gleam.
 
-This template is intended to be forked, modified and run by the gleam build tool using `gleam run`.
+This is a GitHub Template, you can use it by clicking the`Use This Template` button, it is to be modified and subsequently run by the gleam build tool using `gleam run`.
 
 It has 2 commands, `new` and `run`:
 
