@@ -63,6 +63,7 @@ fn collect(x: #(Result(Solution), Day)) -> String {
 
 pub fn run(l: List(String), runners: Map(Day, DayRunner)) {
   case parse.days(l) {
+    Ok([]) -> cmd.no_days_selected_err()
     Ok(days) ->
       days
       |> cmd.exec(cmd.Sync, do(_, runners), collect)
@@ -74,6 +75,7 @@ pub fn run(l: List(String), runners: Map(Day, DayRunner)) {
 
 pub fn run_async(l: List(String), runners: Map(Day, DayRunner)) {
   case parse.timeout_and_days(l) {
+    Ok(#(_, [])) -> cmd.no_days_selected_err()
     Ok(#(timeout, days)) ->
       days
       |> cmd.exec(cmd.Async(timeout), do(_, runners), collect)
