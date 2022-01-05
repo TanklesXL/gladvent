@@ -59,3 +59,19 @@ pub fn timeout(s: String) -> Result(Timeout) {
   valid_int(s, greater_than_0, "timeout must be greater than or equal to 1 ms")
   |> snag.context(string.concat(["invalid timeout value ", "'", s, "'"]))
 }
+
+pub fn timeout_and_days(l: List(String)) -> Result(#(Timeout, List(Day))) {
+  try timeout =
+    l
+    |> list.first()
+    |> result.replace_error(snag.new("no value given for timeout"))
+    |> result.then(timeout)
+
+  try days =
+    l
+    |> list.rest()
+    |> result.replace_error(snag.new("no values given for days"))
+    |> result.then(days)
+
+  Ok(#(timeout, days))
+}

@@ -5,7 +5,7 @@ version = "0.1.0"
 [dependencies]
 gleam_stdlib = "~> 0.18"
 gleam_otp = "~> 0.3"
-gleam_erlang = "~> 0.4"
+gleam_erlang = "~> 0.6"
 snag = "~> 0.2"
 
 [dev-dependencies]

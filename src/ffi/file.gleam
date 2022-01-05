@@ -19,9 +19,6 @@ pub type FileMode {
   Exclusive
 }
 
-pub external fn read_file(String) -> Result(String, Reason) =
-  "file" "read_file"
-
 pub external fn open_file(String, List(FileMode)) -> Result(IODevice, Reason) =
   "file" "open"
 

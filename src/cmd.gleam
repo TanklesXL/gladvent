@@ -4,33 +4,36 @@ import gleam/result
 import parse.{Day, Timeout}
 import snag.{Result}
 
-pub type Exec(a) {
-  Exec(
-    do: fn(Day) -> Result(a),
-    collect: fn(#(Result(a), Day)) -> String,
-    timing: Timing,
-  )
-}
-
 pub type Timing {
   Sync
   Async(Timeout)
 }
 
-pub fn exec(days: List(Day), cmd: Exec(a)) -> List(String) {
-  case cmd.timing {
+pub fn exec(
+  days: List(Day),
+  timing: Timing,
+  do: fn(Day) -> Result(a),
+  collect: fn(#(Result(a), Day)) -> String,
+) -> List(String) {
+  case timing {
     Sync ->
       days
       |> iterator.from_list()
-      |> iterator.map(cmd.do)
+      |> iterator.map(do)
     Async(timeout) ->
       days
-      |> async.list_map(cmd.do)
+      |> async.list_map(do)
       |> async.try_await_many(timeout)
       |> iterator.from_list()
       |> iterator.map(result.flatten)
   }
   |> iterator.zip(iterator.from_list(days))
-  |> iterator.map(cmd.collect)
+  |> iterator.map(collect)
   |> iterator.to_list()
+}
+
+pub fn no_days_selected_err() -> String {
+  "no days selected"
+  |> snag.new()
+  |> snag.pretty_print()
 }

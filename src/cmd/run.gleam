@@ -1,6 +1,3 @@
-// import days/day_1
-// import days/day_2
-// import days/day_3
 import gleam/list
 import gleam/io
 import gleam/int
@@ -8,23 +5,19 @@ import gleam/iterator
 import gleam/result
 import gleam/string
 import gleam/function
-import snag.{Result}
-import ffi/file
+import snag.{Result, Snag}
+import gleam/erlang/file
 import ffi/time
 import async
 import parse.{Day}
 import gleam/map.{Map}
-import cmd.{Exec, Timing}
+import cmd
 
 type Solution =
   #(Int, Int)
 
 type DayRunner =
   fn(String) -> Solution
-
-pub fn exec(timing: Timing, runners: Map(Day, DayRunner)) -> Exec(Solution) {
-  Exec(do: do(_, runners), collect: collect, timing: timing)
-}
 
 fn do(day: Day, runners: Map(Day, DayRunner)) -> Result(Solution) {
   try day_runner =
@@ -38,7 +31,7 @@ fn do(day: Day, runners: Map(Day, DayRunner)) -> Result(Solution) {
 
   try input =
     input_path
-    |> file.read_file()
+    |> file.read()
     |> result.replace_error(
       snag.new(input_path)
       |> snag.layer("failed to read input file"),
@@ -66,4 +59,35 @@ fn collect(x: #(Result(Solution), Day)) -> String {
       |> snag.layer(err, _)
       |> snag.pretty_print()
   }
+}
+
+pub fn run(l: List(String), runners: Map(Day, DayRunner)) {
+  case parse.days(l) {
+    Ok([]) -> cmd.no_days_selected_err()
+    Ok(days) ->
+      days
+      |> cmd.exec(cmd.Sync, do(_, runners), collect)
+      |> string.join(with: "\n\n")
+    Error(err) -> failed_to_run(err, l)
+  }
+  |> io.println()
+}
+
+pub fn run_async(l: List(String), runners: Map(Day, DayRunner)) {
+  case parse.timeout_and_days(l) {
+    Ok(#(_, [])) -> cmd.no_days_selected_err()
+    Ok(#(timeout, days)) ->
+      days
+      |> cmd.exec(cmd.Async(timeout), do(_, runners), collect)
+      |> string.join(with: "\n\n")
+    Error(err) -> failed_to_run(err, l)
+  }
+  |> io.println()
+}
+
+pub fn failed_to_run(err: Snag, args: List(String)) -> String {
+  err
+  |> snag.layer(string.join(["failed to parse arguments:", ..args], " "))
+  |> snag.layer("failed to run advent of code")
+  |> snag.pretty_print()
 }
