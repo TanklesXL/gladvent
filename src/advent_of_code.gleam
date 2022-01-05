@@ -10,11 +10,11 @@ import gleam/string
 import gleam/map
 import gleam/erlang/charlist.{Charlist}
 import gleam/erlang.{start_arguments}
-import cmd.{Async, Sync, Timing, exec}
 import cmd/run
 import cmd/new
 import parse.{Day}
 import snag.{Result}
+import cli
 
 fn runners() {
   map.new()
@@ -24,79 +24,11 @@ fn runners() {
 }
 
 pub fn main() {
-  let args = start_arguments()
-  case parse_command(args) {
-    Ok(Do(cmd, timing, days)) ->
-      case cmd {
-        New -> exec(days, new.exec(timing))
-        Run -> exec(days, run.exec(timing, runners()))
-      }
-    Error(err) -> [
-      err
-      |> snag.layer(string.join(["failed to parse command:", ..args], " "))
-      |> snag.pretty_print(),
-    ]
-  }
-  |> string.join(with: "\n\n")
-  |> io.println()
-}
+  let runners = runners()
 
-type Days =
-  List(Day)
-
-type Do {
-  Do(Command, Timing, Days)
-}
-
-type Command {
-  New
-  Run
-}
-
-const available_commands_msg = "the available commands are 'run', 'run async', 'new' and 'new async'"
-
-fn parse_command_name(cmd: String) -> Result(Command) {
-  case cmd {
-    "run" -> Ok(Run)
-    "new" -> Ok(New)
-    _ ->
-      Error(snag.new(string.append(
-        "unrecognized command, ",
-        available_commands_msg,
-      )))
-  }
-}
-
-fn parse_command_args(args: List(String)) -> Result(fn(Command) -> Do) {
-  case args {
-    [] -> Error(snag.new("missing command arguments"))
-    ["async"] -> Error(snag.new("async called with no arguments"))
-    ["async", _] -> Error(snag.new("no days selected"))
-    ["async", timeout, ..days] -> {
-      try timeout =
-        parse.timeout(timeout)
-        |> snag.context("bad timeout for run command")
-      try days = parse.days(days)
-      Ok(Do(_, Async(timeout), days))
-    }
-    days -> {
-      try days = parse.days(days)
-      Ok(Do(_, Sync, days))
-    }
-  }
-}
-
-fn parse_command(l: List(String)) -> Result(Do) {
-  try #(cmd, args) = case l {
-    [] ->
-      Error(snag.new(string.append(
-        "no command provided, ",
-        available_commands_msg,
-      )))
-    [cmd, ..args] -> Ok(#(cmd, args))
-  }
-  try cmd = parse_command_name(cmd)
-  try build_do = parse_command_args(args)
-
-  Ok(build_do(cmd))
+  cli.new()
+  |> cli.add_command(["run"], run.run(_, runners))
+  |> cli.add_command(["run", "async"], run.run_async(_, runners))
+  |> cli.add_command(["new"], new.run)
+  |> cli.run(start_arguments())
 }

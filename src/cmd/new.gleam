@@ -10,11 +10,7 @@ import ffi/time
 import async
 import parse.{Day}
 import gleam/erlang/charlist
-import cmd.{Exec, Timing}
-
-pub fn exec(timing: Timing) -> Exec(Nil) {
-  Exec(do: do, collect: collect, timing: timing)
-}
+import cmd
 
 fn do(day: Day) -> Result(Nil) {
   let day = int.to_string(day)
@@ -70,4 +66,15 @@ fn collect(x: #(Result(Nil), Day)) -> String {
     Ok(_) -> string.append("initialized day: ", day)
     Error(reason) -> reason
   }
+}
+
+pub fn run(l: List(String)) {
+  case parse.days(l) {
+    Ok(days) ->
+      days
+      |> cmd.exec(cmd.Sync, do, collect)
+      |> string.join(with: "\n\n")
+    Error(err) -> snag.pretty_print(err)
+  }
+  |> io.println()
 }
