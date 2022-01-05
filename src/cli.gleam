@@ -67,12 +67,11 @@ pub fn execute(cmd: Command, args: List(String)) -> Result(Nil) {
 }
 
 pub fn run(cmd: Command, args: List(String)) -> Nil {
-  cmd
-  |> execute(args)
-  |> result.map_error(fn(err) {
-    err
-    |> snag.pretty_print()
-    |> io.println()
-  })
-  Nil
+  case execute(cmd, args) {
+    Ok(Nil) -> Nil
+    Error(err) ->
+      err
+      |> snag.pretty_print()
+      |> io.println()
+  }
 }

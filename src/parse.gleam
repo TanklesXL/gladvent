@@ -70,7 +70,7 @@ pub fn timeout_and_days(l: List(String)) -> Result(#(Timeout, List(Day))) {
   try days =
     l
     |> list.rest()
-    |> result.replace_error(snag.new("no value given for days"))
+    |> result.replace_error(snag.new("no values given for days"))
     |> result.then(days)
 
   Ok(#(timeout, days))
