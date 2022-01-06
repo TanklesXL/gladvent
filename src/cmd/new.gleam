@@ -70,7 +70,6 @@ fn collect(x: #(Result(Nil), Day)) -> String {
 
 pub fn run(l: List(String)) {
   case parse.days(l) {
-    Ok([]) -> cmd.no_days_selected_err()
     Ok(days) ->
       days
       |> cmd.exec(cmd.Sync, do, collect)

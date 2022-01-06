@@ -11,7 +11,7 @@ import ffi/time
 import async
 import parse.{Day}
 import gleam/map.{Map}
-import cmd
+import cmd.{Async, Sync, Timing}
 
 type Solution =
   #(Int, Int)
@@ -61,13 +61,15 @@ fn collect(x: #(Result(Solution), Day)) -> String {
   }
 }
 
+fn exec(days: List(Day), timing: Timing, runners: Map(Day, DayRunner)) -> String {
+  days
+  |> cmd.exec(timing, do(_, runners), collect)
+  |> string.join(with: "\n\n")
+}
+
 pub fn run(l: List(String), runners: Map(Day, DayRunner)) {
   case parse.days(l) {
-    Ok([]) -> cmd.no_days_selected_err()
-    Ok(days) ->
-      days
-      |> cmd.exec(cmd.Sync, do(_, runners), collect)
-      |> string.join(with: "\n\n")
+    Ok(days) -> exec(days, Sync, runners)
     Error(err) -> failed_to_run(err, l)
   }
   |> io.println()
@@ -75,11 +77,7 @@ pub fn run(l: List(String), runners: Map(Day, DayRunner)) {
 
 pub fn run_async(l: List(String), runners: Map(Day, DayRunner)) {
   case parse.timeout_and_days(l) {
-    Ok(#(_, [])) -> cmd.no_days_selected_err()
-    Ok(#(timeout, days)) ->
-      days
-      |> cmd.exec(cmd.Async(timeout), do(_, runners), collect)
-      |> string.join(with: "\n\n")
+    Ok(#(timeout, days)) -> exec(days, Async(timeout), runners)
     Error(err) -> failed_to_run(err, l)
   }
   |> io.println()
@@ -87,7 +85,7 @@ pub fn run_async(l: List(String), runners: Map(Day, DayRunner)) {
 
 pub fn failed_to_run(err: Snag, args: List(String)) -> String {
   err
-  |> snag.layer(string.join(["failed to parse arguments:", ..args], " "))
+  |> snag.layer(string.join(["failed to parse arguments", ..args], " "))
   |> snag.layer("failed to run advent of code")
   |> snag.pretty_print()
 }

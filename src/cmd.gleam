@@ -31,9 +31,3 @@ pub fn exec(
   |> iterator.map(collect)
   |> iterator.to_list()
 }
-
-pub fn no_days_selected_err() -> String {
-  "no days selected"
-  |> snag.new()
-  |> snag.pretty_print()
-}

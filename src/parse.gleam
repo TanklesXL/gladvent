@@ -47,9 +47,13 @@ pub fn day(s: String) -> Result(Day) {
 }
 
 pub fn days(l: List(String)) -> Result(List(Day)) {
-  l
-  |> list.try_map(day)
-  |> snag.context("could not map day values to integers")
+  case l {
+    [] -> Error(snag.new("no days selected"))
+    _ ->
+      l
+      |> list.try_map(day)
+      |> snag.context("could not map day values to integers")
+  }
 }
 
 pub type Timeout =
