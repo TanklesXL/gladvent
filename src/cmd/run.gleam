@@ -22,22 +22,28 @@ type DayRunner =
 fn do(day: Day, runners: Map(Day, DayRunner)) -> Result(Solution) {
   try day_runner =
     map.get(runners, day)
-    |> result.replace_error(snag.new(string.append(
-      "unrecognized day: ",
-      int.to_string(day),
-    )))
+    |> result.replace_error(unrecognized_day_err(day))
 
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
-  try input =
-    input_path
-    |> file.read()
-    |> result.replace_error(
-      snag.new(input_path)
-      |> snag.layer("failed to read input file"),
-    )
+  input_path
+  |> file.read()
+  |> result.replace_error(failed_to_read_input_err(input_path))
+  |> result.map(string.trim)
+  |> result.map(day_runner)
+}
 
-  Ok(day_runner(input))
+fn unrecognized_day_err(day: Day) -> Snag {
+  day
+  |> int.to_string()
+  |> string.append("unrecognized day: ", _)
+  |> snag.new()
+}
+
+fn failed_to_read_input_err(input_path: String) -> Snag {
+  input_path
+  |> snag.new()
+  |> snag.layer("failed to read input file")
 }
 
 fn collect(x: #(Result(Solution), Day)) -> String {
