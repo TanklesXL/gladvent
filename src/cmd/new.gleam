@@ -10,13 +10,26 @@ import ffi/time
 import async
 import parse.{Day}
 import gleam/erlang/charlist
+import gleam/erlang/file as efile
 import cmd
+
+const input_dir = "input/"
+
+const days_dir = "src/days/"
 
 fn do(day: Day) -> Result(Nil) {
   let day = int.to_string(day)
 
-  let input_path = string.concat(["input/day_", day, ".txt"])
-  let gleam_src_path = string.concat(["src/days/day_", day, ".gleam"])
+  try _ =
+    file.ensure_dir(input_dir)
+    |> result.replace_error(failed_to_create_dir_err(input_dir))
+
+  try _ =
+    file.ensure_dir(days_dir)
+    |> result.replace_error(failed_to_create_dir_err(days_dir))
+
+  let input_path = string.concat([input_dir, "day_", day, ".txt"])
+  let gleam_src_path = string.concat([days_dir, "day_", day, ".gleam"])
 
   try _ =
     file.open_file_exclusive(input_path)
@@ -39,9 +52,9 @@ fn pt_2(input: String) -> Int {
 }
 "
 
-fn handle_file_open_failure(reason: file.Reason, filename: String) -> Snag {
+fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Snag {
   case reason {
-    file.Eexist -> file_already_exists_err(filename)
+    efile.Eexist -> file_already_exists_err(filename)
     _ -> failed_to_create_file_err(filename)
   }
 }
@@ -56,6 +69,12 @@ fn failed_to_create_file_err(filename: String) -> Snag {
   filename
   |> snag.new()
   |> snag.layer("failed to create file")
+}
+
+fn failed_to_create_dir_err(dir: String) -> Snag {
+  dir
+  |> snag.new()
+  |> snag.layer("failed to create dir")
 }
 
 fn collect(x: #(Result(Nil), Day)) -> String {

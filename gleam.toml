@@ -3,10 +3,10 @@ version = "0.1.0"
 # repository = { type = "github", user = "my-user", repo = "advent_of_code" }
 
 [dependencies]
-gleam_stdlib = "~> 0.18"
+gleam_stdlib = "~> 0.19"
 gleam_otp = "~> 0.3"
 gleam_erlang = "~> 0.6"
 snag = "~> 0.2"
 
 [dev-dependencies]
-gleeunit = "~> 0.5"
+gleeunit = "~> 0.6"
