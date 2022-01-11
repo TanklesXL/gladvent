@@ -6,6 +6,7 @@ import gleam/erlang.{start_arguments as args}
 import cmd/run
 import cmd/new
 import cli
+import cli/flag
 
 fn runners() {
   map.new()
@@ -19,9 +20,8 @@ pub fn main() {
 
   let commands =
     cli.new()
-    |> cli.add_command(["run"], run.run(_, runners))
-    |> cli.add_command(["run", "async"], run.run_async(_, runners))
-    |> cli.add_command(["new"], new.run)
+    |> run.register_command(runners)
+    |> cli.add_command(["new"], new.run, [])
 
   cli.run(commands, args())
 }

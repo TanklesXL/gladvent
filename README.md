@@ -11,9 +11,9 @@ It has 2 commands, `new` and `run`:
   - used like `gleam run new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
 - `run`:
   - format:
-    - sync: `gleam run run a b c ...`
-    - async: `gleam run run async {timeout in ms} a b c ...`
-  - used like `gleam run run async 1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+    - sync: `gleam run -- run a b c ...`
+    - async: `gleam run -- run -async={timeout in ms} a b c ...`
+  - used like `gleam run -- run -async=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
 
 ## General Workflow
 
@@ -36,7 +36,7 @@ Where `X` is the day number to create:
 2. add your input and solution to the created files
 3. uncomment `import days/day_X` in `advent_of_code.gleam`
 4. uncomment  `// X -> Ok(day_X.run)` in `runners()`
-5. to run day_x, run `gleam run run X`
+5. to run day_x, run `gleam run -- run X`
 
 ### Adding subsequent solutions
 

@@ -2,23 +2,47 @@ import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import gleam/list
 import gleam/io
+import gleam/int
 import gleam/result
-import snag.{Result, Snag}
+import gleam/string
+import snag.{Result}
+import cli/flag.{Flag, FlagMap}
+
+pub type CommandInput {
+  CommandInput(args: List(String), flags: FlagMap)
+}
 
 pub type Runner =
-  fn(List(String)) -> Nil
+  fn(CommandInput) -> Nil
+
+pub opaque type Command {
+  Command(do: Option(Runner), subcommands: CommandTree, flags: FlagMap)
+}
+
+type CommandTree =
+  Map(String, Command)
 
 pub fn new() -> Command {
-  Command(do: None, subcommands: map.new())
+  Command(do: None, subcommands: map.new(), flags: map.new())
 }
 
 pub fn add_command(
   to root: Command,
   at path: List(String),
   do f: Runner,
+  with flags: List(Flag),
 ) -> Command {
   case path {
-    [] -> Command(..root, do: Some(f))
+    [] ->
+      Command(
+        ..root,
+        do: Some(f),
+        flags: list.fold(
+          flags,
+          map.new(),
+          fn(m, flag: Flag) { map.insert(m, flag.name, flag.value) },
+        ),
+      )
     [x, ..xs] ->
       Command(
         ..root,
@@ -28,8 +52,13 @@ pub fn add_command(
           fn(node) {
             case node {
               None ->
-                add_command(Command(do: None, subcommands: map.new()), xs, f)
-              Some(node) -> add_command(node, xs, f)
+                add_command(
+                  Command(do: None, subcommands: map.new(), flags: map.new()),
+                  xs,
+                  f,
+                  flags,
+                )
+              Some(node) -> add_command(node, xs, f, flags)
             }
           },
         ),
@@ -37,21 +66,10 @@ pub fn add_command(
   }
 }
 
-pub opaque type Command {
-  Command(do: Option(Runner), subcommands: CommandTree)
-}
-
-type CommandTree =
-  Map(String, Command)
-
-fn command_not_found() -> Snag {
-  snag.new("command not found")
-}
-
 fn execute_root(cmd: Command, args: List(String)) -> Result(Nil) {
   case cmd.do {
-    Some(f) -> Ok(f(args))
-    None -> Error(command_not_found())
+    Some(f) -> Ok(f(CommandInput(args, cmd.flags)))
+    None -> Error(snag.new("command not found"))
   }
 }
 
@@ -59,9 +77,18 @@ pub fn execute(cmd: Command, args: List(String)) -> Result(Nil) {
   case args {
     [] -> execute_root(cmd, [])
     [arg, ..rest] ->
-      case map.get(cmd.subcommands, arg) {
-        Ok(cmd) -> execute(cmd, rest)
-        Error(_) -> execute_root(cmd, args)
+      case string.starts_with(arg, "-") {
+        True -> {
+          try new_flags =
+            flag.update_flags(cmd.flags, string.drop_left(arg, 1))
+            |> snag.context("failed to run command")
+          execute(Command(..cmd, flags: new_flags), rest)
+        }
+        False ->
+          case map.get(cmd.subcommands, arg) {
+            Ok(cmd) -> execute(cmd, rest)
+            Error(_) -> execute_root(cmd, args)
+          }
       }
   }
 }
