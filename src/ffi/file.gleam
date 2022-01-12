@@ -1,14 +1,6 @@
 import gleam/erlang/charlist.{Charlist}
+import gleam/erlang/file.{Reason}
 import gleam
-
-pub type Reason {
-  Enoent
-  Eaccess
-  Eisdir
-  Enotdir
-  Enospc
-  Eexist
-}
 
 pub external type IODevice
 
@@ -47,4 +39,14 @@ pub fn open_and_write_exclusive(
 ) -> Result(Nil, Reason) {
   try iod = open_file_exclusive(path)
   write_file(iod, contents)
+}
+
+external fn do_ensure_dir(String) -> WriteResult =
+  "filelib" "ensure_dir"
+
+pub fn ensure_dir(dir: String) -> Result(Nil, Reason) {
+  case do_ensure_dir(dir) {
+    Ok -> gleam.Ok(Nil)
+    Error(reason) -> gleam.Error(reason)
+  }
 }
