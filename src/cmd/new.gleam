@@ -12,7 +12,7 @@ import parse.{Day}
 import gleam/erlang/charlist
 import gleam/erlang/file as efile
 import cmd
-import cli.{CommandInput}
+import glint.{CommandInput}
 
 const input_dir = "input/"
 

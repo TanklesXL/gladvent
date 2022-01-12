@@ -12,8 +12,8 @@ import async
 import parse.{Day}
 import gleam/map.{Map}
 import cmd.{Async, Sync, Timing}
-import cli.{CommandInput}
-import cli/flag
+import glint.{CommandInput}
+import glint/flag
 
 type Solution =
   #(Int, Int)
@@ -78,9 +78,12 @@ fn exec(days: List(Day), timing: Timing, runners: RunnerMap) -> String {
   |> string.join(with: "\n\n")
 }
 
-pub fn register_command(cli: cli.Command, runners: RunnerMap) -> cli.Command {
-  cli.add_command(
-    cli,
+pub fn register_command(
+  glint: glint.Command,
+  runners: RunnerMap,
+) -> glint.Command {
+  glint.add_command(
+    glint,
     ["run"],
     run(_, runners),
     [flag.int(called: "async", default: 0)],

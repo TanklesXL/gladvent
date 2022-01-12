@@ -5,8 +5,8 @@ import gleam/map
 import gleam/erlang.{start_arguments as args}
 import cmd/run
 import cmd/new
-import cli
-import cli/flag
+import glint
+import glint/flag
 
 fn runners() {
   map.new()
@@ -19,9 +19,9 @@ pub fn main() {
   let runners = runners()
 
   let commands =
-    cli.new()
+    glint.new()
     |> run.register_command(runners)
-    |> cli.add_command(["new"], new.run, [])
+    |> glint.add_command(["new"], new.run, [])
 
-  cli.run(commands, args())
+  glint.run(commands, args())
 }
