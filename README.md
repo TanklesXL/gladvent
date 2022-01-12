@@ -10,10 +10,12 @@ It has 2 commands, `new` and `run`:
   - format: `gleam run new a b c ...`
   - used like `gleam run new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
 - `run`:
-  - format:
-    - sync: `gleam run -- run a b c ...`
-    - async: `gleam run -- run --async={timeout in ms} a b c ...`
-  - used like `gleam run -- run --async=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+  - format: `gleam run run a b c ...`
+  - flags:
+    - `--async`: `gleam run run --async={timeout in ms} a b c ...`
+      - usage example: `gleam run run --async=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+    - `--all`: runs all registered days in ascending numerical order..
+      - usage example: `gleam run run --all=true` or  `gleam run run --async=1000 --all=true`
 
 ## General Workflow
 

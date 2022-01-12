@@ -86,7 +86,10 @@ pub fn register_command(
     glint,
     ["run"],
     run(_, runners),
-    [flag.int(called: "async", default: 0)],
+    [
+      flag.int(called: "async", default: 0),
+      flag.bool(called: "all", default: False),
+    ],
   )
 }
 
@@ -95,40 +98,45 @@ pub fn run(input: CommandInput, runners: RunnerMap) {
     map.get(input.flags, "async")
     |> result.unwrap(flag.IntFlag(0))
 
-  case parse.days(input.args), timeout {
-    Ok(days), 0 ->
-      string.append("running synchronously\n", exec(days, Sync, runners))
-    Ok(_), _ if timeout < 0 -> invalid_timeout_err(timeout)
-    Ok(days), _ ->
-      [
-        "running asynchronously with timeout of ",
-        int.to_string(timeout),
-        "ms \n",
-        exec(days, Async(timeout), runners),
-      ]
-      |> string.concat()
+  let timing = case timeout {
+    0 -> Ok(Sync)
+    _ if timeout < 0 -> Error(invalid_timeout_err(timeout))
+    _ -> Ok(Async(timeout))
+  }
 
+  let flag.BoolFlag(all) =
+    map.get(input.flags, "all")
+    |> result.unwrap(flag.BoolFlag(False))
+
+  let days = case all {
+    True ->
+      runners
+      |> map.keys()
+      |> list.sort(by: int.compare)
+      |> Ok()
+
+    False -> parse.days(input.args)
+  }
+
+  case days, timing {
+    Ok(days), Ok(timing) -> exec(days, timing, runners)
+    _, Error(err) -> snag.pretty_print(err)
     Error(err), _ -> failed_to_parse_err(err, input.args)
   }
   |> io.println()
 }
 
-fn invalid_timeout_err(timeout: Int) -> String {
+fn invalid_timeout_err(timeout: Int) -> Snag {
   ["invalid timeout value ", "'", int.to_string(timeout), "'"]
   |> string.concat()
   |> snag.new()
   |> snag.layer("timeout must be greater than or equal to 1 ms")
-  |> failed_to_run()
+  |> snag.layer("failed to run advent of code")
 }
 
 fn failed_to_parse_err(err: Snag, args: List(String)) -> String {
   err
   |> snag.layer(string.join(["failed to parse arguments", ..args], " "))
-  |> failed_to_run()
-}
-
-fn failed_to_run(err: Snag) -> String {
-  err
   |> snag.layer("failed to run advent of code")
   |> snag.pretty_print()
 }
