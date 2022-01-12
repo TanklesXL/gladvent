@@ -12,8 +12,8 @@ It has 2 commands, `new` and `run`:
 - `run`:
   - format:
     - sync: `gleam run -- run a b c ...`
-    - async: `gleam run -- run -async={timeout in ms} a b c ...`
-  - used like `gleam run -- run -async=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+    - async: `gleam run -- run --async={timeout in ms} a b c ...`
+  - used like `gleam run -- run --async=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
 
 ## General Workflow
 
