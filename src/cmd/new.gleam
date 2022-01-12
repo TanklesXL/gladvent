@@ -12,6 +12,7 @@ import parse.{Day}
 import gleam/erlang/charlist
 import gleam/erlang/file as efile
 import cmd
+import glint.{CommandInput}
 
 const input_dir = "input/"
 
@@ -87,8 +88,8 @@ fn collect(x: #(Result(Nil), Day)) -> String {
   }
 }
 
-pub fn run(l: List(String)) {
-  case parse.days(l) {
+pub fn run(input: CommandInput) {
+  case parse.days(input.args) {
     Ok(days) ->
       days
       |> cmd.exec(cmd.Sync, do, collect)
