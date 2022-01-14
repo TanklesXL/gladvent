@@ -3,19 +3,23 @@ import gleam/list
 import gleam/result
 import gleam/otp/task.{Task}
 import snag.{Result, Snag}
-import ffi/time
+import gleam/erlang
 import gleam/int
 import parse.{Timeout}
 import gleam
+
+fn now_ms() {
+  erlang.system_time(erlang.Millisecond)
+}
 
 pub fn list_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
   list.map(l, fn(x) { task.async(fn() { f(x) }) })
 }
 
 pub fn try_await_many(tasks: List(Task(a)), timeout: Timeout) -> List(Result(a)) {
-  let end = time.now_ms() + timeout
+  let end = now_ms() + timeout
   let delayed_try_await = fn(t) {
-    end - time.now_ms()
+    end - now_ms()
     |> int.clamp(min: 0, max: timeout)
     |> task.try_await(t, _)
   }

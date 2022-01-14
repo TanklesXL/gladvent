@@ -6,7 +6,6 @@ import gleam/result
 import gleam/string
 import snag.{Result, Snag}
 import ffi/file
-import ffi/time
 import async
 import parse.{Day}
 import gleam/erlang/charlist
@@ -21,23 +20,47 @@ const days_dir = "src/days/"
 fn do(day: Day) -> Result(Nil) {
   let day = int.to_string(day)
 
-  try _ =
-    file.ensure_dir(input_dir)
-    |> result.replace_error(failed_to_create_dir_err(input_dir))
+  try _ = case efile.make_directory(input_dir) {
+    Ok(_) -> Ok(print_dir_created(input_dir))
+    Error(efile.Eexist) -> Ok(Nil)
+    _ -> Error(failed_to_create_dir_err(input_dir))
+  }
 
-  try _ =
-    file.ensure_dir(days_dir)
-    |> result.replace_error(failed_to_create_dir_err(days_dir))
+  try _ = case efile.make_directory(days_dir) {
+    Ok(_) -> Ok(print_dir_created(days_dir))
+    Error(efile.Eexist) -> Ok(Nil)
+    _ -> Error(failed_to_create_dir_err(days_dir))
+  }
 
   let input_path = string.concat([input_dir, "day_", day, ".txt"])
-  let gleam_src_path = string.concat([days_dir, "day_", day, ".gleam"])
 
   try _ =
     file.open_file_exclusive(input_path)
     |> result.map_error(handle_file_open_failure(_, input_path))
 
-  file.open_and_write_exclusive(gleam_src_path, gleam_starter)
-  |> result.map_error(handle_file_open_failure(_, gleam_src_path))
+  print_file_created(input_path)
+
+  let gleam_src_path = string.concat([days_dir, "day_", day, ".gleam"])
+
+  try _ =
+    file.open_and_write_exclusive(gleam_src_path, gleam_starter)
+    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
+
+  print_file_created(gleam_src_path)
+
+  Ok(Nil)
+}
+
+fn print_dir_created(dir) {
+  "- created dir:  "
+  |> string.append(dir)
+  |> io.println()
+}
+
+fn print_file_created(file) {
+  "- created file: "
+  |> string.append(file)
+  |> io.println()
 }
 
 const gleam_starter = "pub fn run(input) {

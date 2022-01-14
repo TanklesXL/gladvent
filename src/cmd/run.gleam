@@ -7,7 +7,6 @@ import gleam/string
 import gleam/function
 import snag.{Result, Snag}
 import gleam/erlang/file
-import ffi/time
 import async
 import parse.{Day}
 import gleam/map.{Map}
@@ -94,9 +93,9 @@ pub fn register_command(
 }
 
 pub fn run(input: CommandInput, runners: RunnerMap) {
-  let flag.IntFlag(timeout) =
+  let flag.I(timeout) =
     map.get(input.flags, "async")
-    |> result.unwrap(flag.IntFlag(0))
+    |> result.unwrap(flag.I(0))
 
   let timing = case timeout {
     0 -> Ok(Sync)
@@ -104,9 +103,9 @@ pub fn run(input: CommandInput, runners: RunnerMap) {
     _ -> Ok(Async(timeout))
   }
 
-  let flag.BoolFlag(all) =
+  let flag.B(all) =
     map.get(input.flags, "all")
-    |> result.unwrap(flag.BoolFlag(False))
+    |> result.unwrap(flag.B(False))
 
   let days = case all {
     True ->
