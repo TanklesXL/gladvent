@@ -7,7 +7,6 @@ import gleam/string
 import gleam/function
 import snag.{Result, Snag}
 import gleam/erlang/file
-import async
 import parse.{Day}
 import gleam/map.{Map}
 import cmd.{Async, Sync, Timing}

@@ -6,7 +6,6 @@ import gleam/result
 import gleam/string
 import snag.{Result, Snag}
 import ffi/file
-import async
 import parse.{Day}
 import gleam/erlang/charlist
 import gleam/erlang/file as efile

@@ -55,6 +55,3 @@ pub fn days(l: List(String)) -> Result(List(Day)) {
       |> snag.context("could not map day values to integers")
   }
 }
-
-pub type Timeout =
-  Int
