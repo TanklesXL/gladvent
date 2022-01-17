@@ -7,11 +7,12 @@ import gleam/erlang
 import gleam/list
 import gleam/result
 import gleam/int
+import gleam/function
 import gleam
 
 pub type Timing {
-  Sync
-  Async(Timeout)
+  Endless
+  Ending(Timeout)
 }
 
 pub type Timeout =
@@ -23,18 +24,11 @@ pub fn exec(
   do: fn(Day) -> Result(a),
   collect: fn(#(Result(a), Day)) -> String,
 ) -> List(String) {
-  case timing {
-    Sync ->
-      days
-      |> iterator.from_list()
-      |> iterator.map(do)
-    Async(timeout) ->
-      days
-      |> task_map(do)
-      |> try_await_many(timeout)
-      |> iterator.from_list()
-      |> iterator.map(result.flatten)
-  }
+  days
+  |> task_map(do)
+  |> try_await_many(timing)
+  |> iterator.from_list()
+  |> iterator.map(result.flatten)
   |> iterator.zip(iterator.from_list(days))
   |> iterator.map(collect)
   |> iterator.to_list()
@@ -48,16 +42,26 @@ fn task_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
   list.map(l, fn(x) { task.async(fn() { f(x) }) })
 }
 
-fn try_await_many(tasks: List(Task(a)), timeout: Timeout) -> List(Result(a)) {
-  let end = now_ms() + timeout
-  let delayed_try_await = fn(t) {
-    end - now_ms()
-    |> int.clamp(min: 0, max: timeout)
-    |> task.try_await(t, _)
-    |> result.map_error(snag_task_error)
+fn try_await_many(tasks: List(Task(a)), timing: Timing) -> List(Result(a)) {
+  let await = case timing {
+    // currently no await_forever so we'll use 10 mins  
+    Endless -> fn(t) {
+      t
+      |> task.try_await(600_000)
+      |> result.map_error(snag_task_error)
+    }
+    Ending(timeout) -> {
+      let end = now_ms() + timeout
+      fn(t) {
+        end - now_ms()
+        |> int.clamp(min: 0, max: timeout)
+        |> task.try_await(t, _)
+        |> result.map_error(snag_task_error)
+      }
+    }
   }
 
-  list.map(tasks, delayed_try_await)
+  list.map(tasks, await)
 }
 
 fn snag_task_error(err: task.AwaitError) -> Snag {

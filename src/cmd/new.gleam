@@ -14,52 +14,40 @@ import glint.{CommandInput}
 
 const input_dir = "input/"
 
+fn input_path(day: Day) -> String {
+  string.concat([input_dir, "day_", int.to_string(day), ".txt"])
+}
+
 const days_dir = "src/days/"
 
-fn do(day: Day) -> Result(Nil) {
-  let day = int.to_string(day)
+fn gleam_src_path(day: Day) -> String {
+  string.concat([days_dir, "day_", int.to_string(day), ".gleam"])
+}
 
+fn do(day: Day) -> Result(Nil) {
   try _ = case efile.make_directory(input_dir) {
-    Ok(_) -> Ok(print_dir_created(input_dir))
-    Error(efile.Eexist) -> Ok(Nil)
+    Ok(_) | Error(efile.Eexist) -> Ok(Nil)
     _ -> Error(failed_to_create_dir_err(input_dir))
   }
 
   try _ = case efile.make_directory(days_dir) {
-    Ok(_) -> Ok(print_dir_created(days_dir))
-    Error(efile.Eexist) -> Ok(Nil)
+    Ok(_) | Error(efile.Eexist) -> Ok(Nil)
     _ -> Error(failed_to_create_dir_err(days_dir))
   }
 
-  let input_path = string.concat([input_dir, "day_", day, ".txt"])
+  let input_path = input_path(day)
 
   try _ =
     file.open_file_exclusive(input_path)
     |> result.map_error(handle_file_open_failure(_, input_path))
 
-  print_file_created(input_path)
-
-  let gleam_src_path = string.concat([days_dir, "day_", day, ".gleam"])
+  let gleam_src_path = gleam_src_path(day)
 
   try _ =
     file.open_and_write_exclusive(gleam_src_path, gleam_starter)
     |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 
-  print_file_created(gleam_src_path)
-
   Ok(Nil)
-}
-
-fn print_dir_created(dir) {
-  "- created dir:  "
-  |> string.append(dir)
-  |> io.println()
-}
-
-fn print_file_created(file) {
-  "- created file: "
-  |> string.append(file)
-  |> io.println()
 }
 
 const gleam_starter = "pub fn run(input) {
@@ -67,11 +55,11 @@ const gleam_starter = "pub fn run(input) {
 }
 
 fn pt_1(input: String) -> Int {
-  0
+  todo
 }
 
 fn pt_2(input: String) -> Int {
-  0
+  todo
 }
 "
 
@@ -114,7 +102,7 @@ pub fn run(input: CommandInput) {
   case parse.days(input.args) {
     Ok(days) ->
       days
-      |> cmd.exec(cmd.Sync, do, collect)
+      |> cmd.exec(cmd.Endless, do, collect)
       |> string.join(with: "\n\n")
     Error(err) -> snag.pretty_print(err)
   }

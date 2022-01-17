@@ -9,7 +9,7 @@ import snag.{Result, Snag}
 import gleam/erlang/file
 import parse.{Day}
 import gleam/map.{Map}
-import cmd.{Async, Sync, Timing}
+import cmd.{Ending, Endless, Timing}
 import glint.{CommandInput}
 import glint/flag
 
@@ -85,7 +85,7 @@ pub fn register_command(
     ["run"],
     run(_, runners),
     [
-      flag.int(called: "async", default: 0),
+      flag.int(called: "timeout", default: 0),
       flag.bool(called: "all", default: False),
     ],
   )
@@ -93,13 +93,13 @@ pub fn register_command(
 
 pub fn run(input: CommandInput, runners: RunnerMap) {
   let flag.I(timeout) =
-    map.get(input.flags, "async")
+    map.get(input.flags, "timeout")
     |> result.unwrap(flag.I(0))
 
   let timing = case timeout {
-    0 -> Ok(Sync)
+    0 -> Ok(Endless)
     _ if timeout < 0 -> Error(invalid_timeout_err(timeout))
-    _ -> Ok(Async(timeout))
+    _ -> Ok(Ending(timeout))
   }
 
   let flag.B(all) =

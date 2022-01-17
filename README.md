@@ -12,10 +12,10 @@ It has 2 commands, `new` and `run`:
 - `run`:
   - format: `gleam run run a b c ...`
   - flags:
-    - `--async`: `gleam run run --async={timeout in ms} a b c ...`
-      - usage example: `gleam run run --async=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+    - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
+      - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
     - `--all`: runs all registered days in ascending numerical order..
-      - usage example: `gleam run run --all=true` or  `gleam run run --async=1000 --all=true`
+      - usage example: `gleam run run --all=true` or  `gleam run run --timeout=1000 --all=true`
 
 ## General Workflow
 
