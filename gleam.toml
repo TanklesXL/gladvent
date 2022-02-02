@@ -1,6 +1,8 @@
 name = "gladvent"
 version = "0.1.0"
 # repository = { type = "github", user = "my-user", repo = "advent_of_code" }
+description = "An Advent Of Code runner for gleam"
+licences = ["Apache-2.0"]
 
 [dependencies]
 gleam_stdlib = "~> 0.19"
