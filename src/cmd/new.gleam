@@ -9,16 +9,12 @@ import ffi/file
 import parse.{Day}
 import gleam/erlang/charlist
 import gleam/erlang/file as efile
-import cmd
+import cmd.{days_dir, input_dir}
 import glint.{CommandInput}
-
-const input_dir = "input/"
 
 fn input_path(day: Day) -> String {
   string.concat([input_dir, "day_", int.to_string(day), ".txt"])
 }
-
-const days_dir = "src/days/"
 
 fn gleam_src_path(day: Day) -> String {
   string.concat([days_dir, "day_", int.to_string(day), ".gleam"])

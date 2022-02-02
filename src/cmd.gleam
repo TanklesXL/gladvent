@@ -12,6 +12,10 @@ import gleam/int
 import gleam/function
 import gleam
 
+pub const input_dir = "input/"
+
+pub const days_dir = "src/days/"
+
 pub type Timing {
   Endless
   Ending(Timeout)

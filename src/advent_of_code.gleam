@@ -9,8 +9,15 @@ import glint/flag
 import snag
 
 pub fn main() {
-  assert Ok(runners) = run.build_runners_from_days_dir()
-  advent(runners)
+  case run.build_runners_from_days_dir() {
+    Ok(runners) -> advent(runners)
+    Error(err) -> {
+      err
+      |> snag.pretty_print()
+      |> io.println()
+      exit(1)
+    }
+  }
 }
 
 pub fn advent(runners: RunnerMap) {

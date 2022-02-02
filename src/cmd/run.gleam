@@ -10,7 +10,7 @@ import gleam/erlang/file
 import gleam/erlang/atom.{Atom}
 import parse.{Day}
 import gleam/map.{Map}
-import cmd.{Ending, Endless, Timing}
+import cmd.{Ending, Endless, Timing, days_dir}
 import glint.{CommandInput}
 import glint/flag
 import gleam
@@ -24,7 +24,7 @@ pub type DayRunner =
 pub type RunnerMap =
   Map(Day, DayRunner)
 
-external fn find_day_files(matching: String, in: String) -> List(String) =
+external fn find_files(matching: String, in: String) -> List(String) =
   "run_ffi" "find_files"
 
 type Module =
@@ -46,6 +46,7 @@ fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
     string.replace(filename, "day_", "")
     |> string.replace(".gleam", "")
     |> parse.day()
+    |> snag.context(string.append("cannot create runner for ", filename))
 
   let run =
     filename
@@ -57,7 +58,7 @@ fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
 }
 
 fn get_runners() -> Result(List(#(Day, DayRunner))) {
-  find_day_files("day_*.gleam", "src/days")
+  find_files(matching: "day_*.gleam", in: days_dir)
   |> list.try_map(get_runner)
 }
 
