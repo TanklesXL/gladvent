@@ -7,20 +7,66 @@ import gleam/string
 import gleam/function
 import snag.{Result, Snag}
 import gleam/erlang/file
+import gleam/erlang/atom.{Atom}
 import parse.{Day}
 import gleam/map.{Map}
 import cmd.{Ending, Endless, Timing}
 import glint.{CommandInput}
 import glint/flag
+import gleam
 
-type Solution =
+pub type Solution =
   #(Int, Int)
 
-type DayRunner =
+pub type DayRunner =
   fn(String) -> Solution
 
-type RunnerMap =
+pub type RunnerMap =
   Map(Day, DayRunner)
+
+external fn find_day_files(matching: String, in: String) -> List(String) =
+  "run_ffi" "find_files"
+
+type Module =
+  Atom
+
+fn to_module(file: String) -> Module {
+  file
+  |> string.replace(".gleam", "")
+  |> string.replace(".erl", "")
+  |> string.replace("/", "@")
+  |> atom.create_from_string()
+}
+
+external fn get_run(Module) -> DayRunner =
+  "run_ffi" "get_run"
+
+fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
+  try day =
+    string.replace(filename, "day_", "")
+    |> string.replace(".gleam", "")
+    |> parse.day()
+
+  let run =
+    filename
+    |> string.append("days/", _)
+    |> to_module()
+    |> get_run()
+
+  Ok(#(day, run))
+}
+
+fn get_runners() -> Result(List(#(Day, DayRunner))) {
+  find_day_files("day_*.gleam", "src/days")
+  |> list.try_map(get_runner)
+}
+
+pub fn build_runners_from_days_dir() -> Result(
+  Map(Day, fn(String) -> #(Int, Int)),
+) {
+  try runners = get_runners()
+  Ok(map.from_list(runners))
+}
 
 fn do(day: Day, runners: RunnerMap) -> Result(Solution) {
   try day_runner =
@@ -92,9 +138,7 @@ pub fn register_command(
 }
 
 pub fn run(input: CommandInput, runners: RunnerMap) {
-  let flag.I(timeout) =
-    map.get(input.flags, "timeout")
-    |> result.unwrap(flag.I(0))
+  assert Ok(flag.I(timeout)) = map.get(input.flags, "timeout")
 
   let timing = case timeout {
     0 -> Ok(Endless)
@@ -102,9 +146,7 @@ pub fn run(input: CommandInput, runners: RunnerMap) {
     _ -> Ok(Ending(timeout))
   }
 
-  let flag.B(all) =
-    map.get(input.flags, "all")
-    |> result.unwrap(flag.B(False))
+  assert Ok(flag.B(all)) = map.get(input.flags, "all")
 
   let days = case all {
     True ->

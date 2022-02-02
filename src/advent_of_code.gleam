@@ -1,26 +1,19 @@
-// import days/day_1
-// import days/day_2
-// import days/day_3
 import gleam/map
 import gleam/string
 import gleam/io
 import gleam/erlang.{start_arguments as args}
-import cmd/run
+import cmd/run.{RunnerMap}
 import cmd/new
 import glint
 import glint/flag
 import snag
 
-fn runners() {
-  map.new()
-  // |> map.insert(1, day_1.run)
-  // |> map.insert(2, day_2.run)
-  // |> map.insert(3, day_3.run)
+pub fn main() {
+  assert Ok(runners) = run.build_runners_from_days_dir()
+  advent(runners)
 }
 
-pub fn main() {
-  let runners = runners()
-
+pub fn advent(runners: RunnerMap) {
   let commands =
     glint.new()
     |> glint.add_command([], fn(_) { io.println(help) }, [])
@@ -39,7 +32,7 @@ pub fn main() {
   }
 }
 
-const help = "\e[1;4mAvailable Commands\e[0m
+const help = "\n\e[1;4mAvailable Commands\e[0m
 \e[1;3mrun\e[0m: run the specified days
   usage: gleam run run <dayX> <dayY> <...>
   flags:
