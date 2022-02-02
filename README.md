@@ -1,19 +1,18 @@
 # Gladvent
 
-Advent of code runner for gleam
+An Advent of code runner for gleam
 
 This library is intended to be imported to your gleam project and used as a command runner for your advent of code project in gleam.
 
 To add this library to your project run: `gleam add gladvent` and add `import gladvent` to your main gleam file.
-## Workflow
 
-### Using the library
+## Using the library
 This library provides 2 options to run your advent of code solvers:
 
 1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
 2. Create your own `Map(Int, fn(String) -> #(Int, Int))` and pass it to `gladvent.`
 
-### Available commands
+## Available commands
 This project provides your application with 2 commands, `new` and `run`:
 
 - `new`: create `.gleam` and `.txt` days that correspond to the specified days 
@@ -27,6 +26,14 @@ This project provides your application with 2 commands, `new` and `run`:
     - `--all`: runs all registered days in ascending numerical order..
       - usage example: `gleam run run --all=true` or  `gleam run run --timeout=1000 --all=true`
 
+## General Workflow
+
+Where X is the day you'd like to add:
+
+1. run `gleam run new X`
+2. add your input to `input/day_X.txt`
+3. add your code to `src/days/day_X.gleam`
+4. run `gleam run run X`
 
 ## FAQ
 
