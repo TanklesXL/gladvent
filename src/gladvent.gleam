@@ -8,9 +8,11 @@ import glint
 import glint/flag
 import snag
 
+/// find all runners in the project src/days/ directory and
+/// run either the 'run' or 'new' command as specified
 pub fn main() {
   case run.build_runners_from_days_dir() {
-    Ok(runners) -> advent(runners)
+    Ok(runners) -> execute(given: runners)
     Error(err) -> {
       err
       |> snag.pretty_print()
@@ -20,18 +22,18 @@ pub fn main() {
   }
 }
 
-pub fn advent(runners: RunnerMap) {
+/// given the daily runners, create the command tree and run the specified command
+pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
     |> glint.add_command([], fn(_) { io.println(help) }, [])
     |> run.register_command(runners)
-    |> glint.add_command(["new"], new.run, [])
+    |> new.register_command()
 
   case glint.execute(commands, args()) {
     Ok(Nil) -> Nil
     Error(err) -> {
-      let err = snag.pretty_print(err)
-      [err, help]
+      [snag.pretty_print(err), help]
       |> string.join("\n")
       |> io.println()
       exit(1)

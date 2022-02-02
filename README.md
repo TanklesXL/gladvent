@@ -1,15 +1,25 @@
-# Advent Of Code Gleam Template
+# Gladvent
 
-A repository template for getting started with advent of code in gleam.
+Advent of code runner for gleam
 
-This is a GitHub Template, you can use it by clicking the`Use This Template` button, it is to be modified and subsequently run by the gleam build tool using `gleam run`.
+This library is intended to be imported to your gleam project and used as a command runner for your advent of code project in gleam.
 
-It has 2 commands, `new` and `run`:
+To add this library to your project run: `gleam add gladvent` and add `import gladvent` to your main gleam file.
+## Workflow
 
-- `new`:
+### Using the library
+This library provides 2 options to run your advent of code solvers:
+
+1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
+2. Create your own `Map(Int, fn(String) -> #(Int, Int))` and pass it to `gladvent.`
+
+### Available commands
+This project provides your application with 2 commands, `new` and `run`:
+
+- `new`: create `.gleam` and `.txt` days that correspond to the specified days 
   - format: `gleam run new a b c ...`
   - used like `gleam run new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
-- `run`:
+- `run`: run the specified days
   - format: `gleam run run a b c ...`
   - flags:
     - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
@@ -17,39 +27,6 @@ It has 2 commands, `new` and `run`:
     - `--all`: runs all registered days in ascending numerical order..
       - usage example: `gleam run run --all=true` or  `gleam run run --timeout=1000 --all=true`
 
-## General Workflow
-
-1. run the `new` command with the desired day to set up the code stub and create the input file
-2. copy-paste the input from the `advent of code` website for that day into the input file that was created
-3. fill in your implementation for the day's problem in the `.gleam` file that was created
-4. add a reference to your solution to the code handling the `run` command
-5. compile your code and generate the escript
-6. run your new solution and whatever other days you want with the `run` command
-
-## Adding solutions and running them
-
-### Adding your first 3 solutions
-
-For the sake of convenience,   `advent_of_code.gleam` contains commented imports for `days/day_1`, `days/day_2` and `days/day_3` and commented uses for them in  `runners()`
-
-Where `X` is the day number to create:
-
-1. to create input/day_1.txt and src/days/day_1.gleam, run `gleam run new X`
-2. add your input and solution to the created files
-3. uncomment `import days/day_X` in `advent_of_code.gleam`
-4. uncomment  `// X -> Ok(day_X.run)` in `runners()`
-5. to run day_x, run `gleam run -- run X`
-
-### Adding subsequent solutions
-
-Where `X` is the day number to create:
-
-It should be fairly obvious here,
-
-1. follow steps 1-2 above
-1. add `import days/day_X` to `advent_of_code.gleam`
-2. add  `X -> Ok(day_X.run)` in `runners()`
-3. follow step 5 above
 
 ## FAQ
 
@@ -66,4 +43,4 @@ A few reasons:
 
 ### Why run as a command line utility and not just use unit tests?
 
-I thought a lot about that and I prefer the overally interactivity of a CLI better, as well as allowing for endless runs or runs with configurable timeouts. Having it run as part of `eunit` doesnt provide as much flexibility as I would like.
+I thought a lot about that and I prefer the overall interactivity of a CLI better, as well as allowing for endless runs or runs with configurable timeouts. Having it run as part of `eunit` doesnt provide as much flexibility as I would like.

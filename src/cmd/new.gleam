@@ -94,6 +94,10 @@ fn collect(x: #(Result(Nil), Day)) -> String {
   }
 }
 
+pub fn register_command(glint: glint.Command) -> glint.Command {
+  glint.add_command(glint, ["new"], run, [])
+}
+
 pub fn run(input: CommandInput) {
   case parse.days(input.args) {
     Ok(days) ->
