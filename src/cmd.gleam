@@ -4,11 +4,17 @@ import parse.{Day}
 import snag.{Result, Snag}
 import gleam/otp/task.{Task}
 import gleam/erlang
+import gleam/erlang/atom
+import gleam/dynamic
 import gleam/list
 import gleam/result
 import gleam/int
 import gleam/function
 import gleam
+
+pub const input_dir = "input/"
+
+pub const days_dir = "src/days/"
 
 pub type Timing {
   Endless
@@ -64,10 +70,19 @@ fn try_await_many(tasks: List(Task(a)), timing: Timing) -> List(Result(a)) {
   list.map(tasks, await)
 }
 
+type UndefRun {
+  Undef
+  Run
+}
+
 fn snag_task_error(err: task.AwaitError) -> Snag {
   case err {
     task.Timeout -> "task timed out"
-    task.Exit(_) -> "task exited for some reason"
+    task.Exit(dyn) ->
+      case dynamic.unsafe_coerce(dyn) {
+        #(Undef, [#(_, Run, _, _), ..]) -> "Run function missing"
+        _ -> "task exited for some reason"
+      }
   }
   |> snag.new()
 }

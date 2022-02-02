@@ -9,16 +9,12 @@ import ffi/file
 import parse.{Day}
 import gleam/erlang/charlist
 import gleam/erlang/file as efile
-import cmd
+import cmd.{days_dir, input_dir}
 import glint.{CommandInput}
-
-const input_dir = "input/"
 
 fn input_path(day: Day) -> String {
   string.concat([input_dir, "day_", int.to_string(day), ".txt"])
 }
-
-const days_dir = "src/days/"
 
 fn gleam_src_path(day: Day) -> String {
   string.concat([days_dir, "day_", int.to_string(day), ".gleam"])
@@ -55,11 +51,11 @@ const gleam_starter = "pub fn run(input) {
 }
 
 fn pt_1(input: String) -> Int {
-  todo
+  0
 }
 
 fn pt_2(input: String) -> Int {
-  todo
+  0
 }
 "
 
@@ -96,6 +92,10 @@ fn collect(x: #(Result(Nil), Day)) -> String {
     Ok(_) -> string.append("initialized day: ", day)
     Error(reason) -> reason
   }
+}
+
+pub fn register_command(glint: glint.Command) -> glint.Command {
+  glint.add_command(glint, ["new"], run, [])
 }
 
 pub fn run(input: CommandInput) {
