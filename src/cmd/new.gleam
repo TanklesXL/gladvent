@@ -95,7 +95,7 @@ fn failed_to_create_dir_err(dir: String) -> Snag {
 fn collect(x: #(Result(Nil), Day)) -> String {
   let day = int.to_string(x.1)
   case x.0
-  |> snag.context(string.append("failed to initialize day ", day))
+  |> snag.context(string.append("error occurred when initializing day ", day))
   |> result.map_error(snag.pretty_print) {
     Ok(_) -> string.append("initialized day: ", day)
     Error(reason) -> reason
