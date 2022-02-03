@@ -41,6 +41,12 @@ fn to_module(file: String) -> Module {
 external fn get_run(Module) -> DayRunner =
   "gladvent_ffi" "get_run"
 
+pub external fn do_run(
+  fn(String) -> Solution,
+  String,
+) -> gleam.Result(Solution, RunError) =
+  "gladvent_ffi" "do_run"
+
 fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
   try day =
     string.replace(filename, "day_", "")
@@ -69,6 +75,11 @@ pub fn build_runners_from_days_dir() -> Result(
   Ok(map.from_list(runners))
 }
 
+pub type RunError {
+  Undef
+  RunFailed
+}
+
 fn do(day: Day, runners: RunnerMap) -> Result(Solution) {
   try day_runner =
     map.get(runners, day)
@@ -76,11 +87,17 @@ fn do(day: Day, runners: RunnerMap) -> Result(Solution) {
 
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
-  input_path
-  |> file.read()
-  |> result.replace_error(failed_to_read_input_err(input_path))
-  |> result.map(string.trim)
-  |> result.map(day_runner)
+  try input =
+    input_path
+    |> file.read()
+    |> result.replace_error(failed_to_read_input_err(input_path))
+    |> result.map(string.trim)
+
+  case do_run(day_runner, input) {
+    Error(Undef) -> snag.error("run function undefined")
+    Error(_) -> snag.error("some error occurred")
+    Ok(res) -> Ok(res)
+  }
 }
 
 fn unrecognized_day_err(day: Day) -> Snag {
@@ -120,7 +137,7 @@ fn collect(x: #(Result(Solution), Day)) -> String {
 fn exec(days: List(Day), timing: Timing, runners: RunnerMap) -> String {
   days
   |> cmd.exec(timing, do(_, runners), collect)
-  |> string.join(with: "\n\n")
+  |> string.join(with: "\n")
 }
 
 pub fn register_command(

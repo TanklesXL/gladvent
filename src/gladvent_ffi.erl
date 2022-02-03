@@ -1,6 +1,6 @@
 -module(gladvent_ffi).
 
--export([find_files/2, get_run/1, open_file_exclusive/1, write/2, ensure_dir/1]).
+-export([find_files/2, get_run/1, open_file_exclusive/1, write/2, ensure_dir/1, do_run/2]).
 
 find_files(Pattern, In) ->
     Results = filelib:wildcard(binary_to_list(Pattern), binary_to_list(In)),
@@ -8,6 +8,14 @@ find_files(Pattern, In) ->
 
 get_run(A) ->
     fun A:run/1.
+
+do_run(Run, Input) ->
+    try
+        {ok, Run(Input)}
+    catch
+        _:undef -> {error, undef};
+        _ -> {error, run_failed}
+    end.
 
 open_file_exclusive(File) ->
     file:open(File, [exclusive]).

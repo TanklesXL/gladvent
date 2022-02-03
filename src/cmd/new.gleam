@@ -45,8 +45,8 @@ fn do(day: Day) -> Result(Nil) {
     |> result.map_error(handle_file_open_failure(_, input_path))
   case create_src_res, create_input_res {
     Ok(_), Ok(_) -> Ok(Nil)
-    Error(snag1), Error(snag2) ->
-      [snag.line_print(snag1), snag.line_print(snag2)]
+    Error(Snag(s1, errs1)), Error(Snag(s2, errs2)) ->
+      [string.join([s1, ..errs1], ": "), string.join([s2, ..errs2], ": ")]
       |> string.join(" && ")
       |> snag.error()
     _, Error(err) -> Error(err)
