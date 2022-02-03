@@ -31,19 +31,27 @@ fn do(day: Day) -> Result(Nil) {
     _ -> Error(failed_to_create_dir_err(days_dir))
   }
 
-  let input_path = input_path(day)
-
-  try _ =
-    file.open_file_exclusive(input_path)
-    |> result.map_error(handle_file_open_failure(_, input_path))
-
   let gleam_src_path = gleam_src_path(day)
 
-  try _ =
-    file.open_and_write_exclusive(gleam_src_path, gleam_starter)
+  let create_src_res =
+    file.open_file_exclusive(gleam_src_path)
+    |> result.then(file.write(_, gleam_starter))
     |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 
-  Ok(Nil)
+  let input_path = input_path(day)
+
+  let create_input_res =
+    file.open_file_exclusive(input_path)
+    |> result.map_error(handle_file_open_failure(_, input_path))
+  case create_src_res, create_input_res {
+    Ok(_), Ok(_) -> Ok(Nil)
+    Error(snag1), Error(snag2) ->
+      [snag.line_print(snag1), snag.line_print(snag2)]
+      |> string.join(" && ")
+      |> snag.error()
+    _, Error(err) -> Error(err)
+    Error(err), _ -> Error(err)
+  }
 }
 
 const gleam_starter = "pub fn run(input) {

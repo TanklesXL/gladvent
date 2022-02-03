@@ -21,7 +21,7 @@ pub fn valid_int(
 ) -> Result(Int) {
   try i = int(s)
   case is_valid(i) {
-    False -> Error(snag.new(invalid_msg))
+    False -> snag.error(invalid_msg)
     True -> Ok(i)
   }
 }
@@ -48,7 +48,7 @@ pub fn day(s: String) -> Result(Day) {
 
 pub fn days(l: List(String)) -> Result(List(Day)) {
   case l {
-    [] -> Error(snag.new("no days selected"))
+    [] -> snag.error("no days selected")
     _ ->
       l
       |> list.try_map(day)

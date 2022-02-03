@@ -1,6 +1,6 @@
 name = "gladvent"
-version = "0.1.0"
-# repository = { type = "github", user = "my-user", repo = "advent_of_code" }
+version = "0.1.1"
+repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
 

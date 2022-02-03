@@ -17,7 +17,7 @@ This library provides 2 options to run your advent of code solvers:
 
 This project provides your application with 2 commands, `new` and `run`:
 
-- `new`: create `.gleam` and `.txt` days that correspond to the specified days
+- `new`: create `src/days/*.gleam` and `input/*.txt` files that correspond to the specified days
   - format: `gleam run new a b c ...`
   - used like `gleam run new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
 - `run`: run the specified days

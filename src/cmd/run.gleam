@@ -25,7 +25,7 @@ pub type RunnerMap =
   Map(Day, DayRunner)
 
 external fn find_files(matching: String, in: String) -> List(String) =
-  "run_ffi" "find_files"
+  "gladvent_ffi" "find_files"
 
 type Module =
   Atom
@@ -39,7 +39,7 @@ fn to_module(file: String) -> Module {
 }
 
 external fn get_run(Module) -> DayRunner =
-  "run_ffi" "get_run"
+  "gladvent_ffi" "get_run"
 
 fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
   try day =
