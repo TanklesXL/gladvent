@@ -28,9 +28,16 @@ This project provides your application with 2 commands, `new` and `run`:
     - `--all`: runs all registered days in ascending numerical order..
       - usage example: `gleam run run --all=true` or  `gleam run run --timeout=1000 --all=true`
 
+*Note:*
+
+- the `new` command creates source files in `src/days/` and input files in the `input/` directory.
+- the `run` command expects input files to be in the `input/` directory.
+
 ## General Workflow
 
 Where X is the day you'd like to add (when using `gladvent.main()`):
+
+*Note:* this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing a `fn run(String) -> #(Int, Int)`
 
 1. run `gleam run new X`
 2. add your input to `input/day_X.txt`
