@@ -6,7 +6,7 @@ packages = [
   { name = "gleam_otp", version = "0.3.1", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "9F779074D0CD3760E280E24247BA17FC673D654234D56B3A8F187DC8FDE299B7" },
   { name = "gleam_stdlib", version = "0.19.3", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "CA579C2FF0621E93FF6EFEF61BAFFCF0505732BA073F616E28878042F1A1F401" },
   { name = "gleeunit", version = "0.6.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "5BF486C3E135B7F5ED8C054925FC48E5B2C79016A39F416FD8CF2E860520EE55" },
-  { name = "glint", version = "0.5.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "snag"], otp_app = "glint", source = "hex", outer_checksum = "9E2AE7E57E1B07604672622A6C677EE41DF3A540179B426AF613A0D05C05AB2A" },
+  { name = "glint", version = "0.6.0", build_tools = ["gleam"], requirements = ["snag", "gleam_stdlib"], otp_app = "glint", source = "hex", outer_checksum = "BFEE772C84196DCA3C2869FEF6AA78AF15F1EA5F8DA75FE36E6D19ED5D2229F3" },
   { name = "snag", version = "0.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "35C63E478782C58236F1050297C2FDF9806A4DD55C6FAF0B6EC5E54BC119342D" },
 ]
 
@@ -15,5 +15,5 @@ gleam_erlang = "~> 0.7"
 gleam_otp = "~> 0.3"
 gleam_stdlib = "~> 0.19"
 gleeunit = "~> 0.6"
-glint = "~> 0.5"
+glint = "~> 0.6"
 snag = "~> 0.2"

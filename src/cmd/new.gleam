@@ -102,17 +102,14 @@ fn collect(x: #(Result(Nil), Day)) -> String {
   }
 }
 
-pub fn register_command(glint: glint.Command) -> glint.Command {
+pub fn register_command(
+  glint: glint.Command(Result(List(String))),
+) -> glint.Command(Result(List(String))) {
   glint.add_command(glint, ["new"], run, [])
 }
 
-pub fn run(input: CommandInput) {
-  case parse.days(input.args) {
-    Ok(days) ->
-      days
-      |> cmd.exec(cmd.Endless, do, collect)
-      |> string.join(with: "\n\n")
-    Error(err) -> snag.pretty_print(err)
-  }
-  |> io.println()
+pub fn run(input: CommandInput) -> Result(List(String)) {
+  input.args
+  |> parse.days
+  |> result.map(cmd.exec(_, cmd.Endless, do, collect))
 }

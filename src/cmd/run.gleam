@@ -10,7 +10,7 @@ import gleam/erlang/file
 import gleam/erlang/atom.{Atom}
 import parse.{Day}
 import gleam/map.{Map}
-import cmd.{Ending, Endless, Timing, days_dir}
+import cmd.{Ending, Endless, days_dir}
 import glint.{CommandInput}
 import glint/flag
 import gleam
@@ -134,16 +134,10 @@ fn collect(x: #(Result(Solution), Day)) -> String {
   }
 }
 
-fn exec(days: List(Day), timing: Timing, runners: RunnerMap) -> String {
-  days
-  |> cmd.exec(timing, do(_, runners), collect)
-  |> string.join(with: "\n")
-}
-
 pub fn register_command(
-  glint: glint.Command,
+  glint: glint.Command(Result(List(String))),
   runners: RunnerMap,
-) -> glint.Command {
+) -> glint.Command(Result(List(String))) {
   glint.add_command(
     glint,
     ["run"],
@@ -155,46 +149,44 @@ pub fn register_command(
   )
 }
 
-pub fn run(input: CommandInput, runners: RunnerMap) {
+pub fn run(input: CommandInput, runners: RunnerMap) -> Result(List(String)) {
   assert Ok(flag.I(timeout)) = map.get(input.flags, "timeout")
 
-  let timing = case timeout {
+  try timing = case timeout {
     0 -> Ok(Endless)
-    _ if timeout < 0 -> Error(invalid_timeout_err(timeout))
+    _ if timeout < 0 -> invalid_timeout_err(timeout)
     _ -> Ok(Ending(timeout))
   }
 
   assert Ok(flag.B(all)) = map.get(input.flags, "all")
 
-  let days = case all {
+  try days = case all {
     True ->
       runners
       |> map.keys()
       |> list.sort(by: int.compare)
-      |> Ok()
+      |> Ok
 
-    False -> parse.days(input.args)
+    False ->
+      parse.days(input.args)
+      |> wrap_failed_to_parse_err(input.args)
   }
 
-  case days, timing {
-    Ok(days), Ok(timing) -> exec(days, timing, runners)
-    _, Error(err) -> snag.pretty_print(err)
-    Error(err), _ -> failed_to_parse_err(err, input.args)
-  }
-  |> io.println()
+  days
+  |> cmd.exec(timing, do(_, runners), collect)
+  |> Ok
 }
 
-fn invalid_timeout_err(timeout: Int) -> Snag {
+fn invalid_timeout_err(timeout: Int) -> Result(a) {
   ["invalid timeout value ", "'", int.to_string(timeout), "'"]
   |> string.concat()
-  |> snag.new()
-  |> snag.layer("timeout must be greater than or equal to 1 ms")
-  |> snag.layer("failed to run advent of code")
+  |> snag.error()
+  |> snag.context("timeout must be greater than or equal to 1 ms")
+  |> snag.context("failed to run advent of code")
 }
 
-fn failed_to_parse_err(err: Snag, args: List(String)) -> String {
-  err
-  |> snag.layer(string.join(["failed to parse arguments", ..args], " "))
-  |> snag.layer("failed to run advent of code")
-  |> snag.pretty_print()
+fn wrap_failed_to_parse_err(res: Result(a), args: List(String)) -> Result(a) {
+  res
+  |> snag.context(string.join(["failed to parse arguments:", ..args], " "))
+  |> snag.context("failed to run advent of code")
 }
