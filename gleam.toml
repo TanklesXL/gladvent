@@ -1,5 +1,5 @@
 name = "gladvent"
-version = "0.1.2"
+version = "0.1.3"
 repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
