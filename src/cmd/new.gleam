@@ -105,7 +105,14 @@ fn collect(x: #(Result(Nil), Day)) -> String {
 pub fn register_command(
   glint: glint.Command(Result(List(String))),
 ) -> glint.Command(Result(List(String))) {
-  glint.add_command(glint, ["new"], run, [])
+  glint.add_command(
+    to: glint,
+    at: ["new"],
+    do: run,
+    with: [],
+    described: "Create .gleam and input files",
+    used: "gleam run new <dayX> <dayY> <...> ",
+  )
 }
 
 pub fn run(input: CommandInput) -> Result(List(String)) {

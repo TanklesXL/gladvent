@@ -26,12 +26,19 @@ This project provides your application with 2 commands, `new` and `run`:
     - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
       - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
     - `--all`: runs all registered days in ascending numerical order..
-      - usage example: `gleam run run --all=true` or  `gleam run run --timeout=1000 --all=true`
+      - usage example: `gleam run run --all` or  `gleam run run --all=true`
 
 *Note:*
 
 - the `new` command creates source files in `src/days/` and input files in the `input/` directory.
 - the `run` command expects input files to be in the `input/` directory.
+- using `gladvent.main` expects gleam day runners to be in `src/days/`
+
+## Seeing help messages
+
+- To see available subcommands: `gleam run -- --help`
+- To see help for the `run` command: `gleam run run --help`
+- To see help for the `new` command: `gleam run new --help`
 
 ## General Workflow
 

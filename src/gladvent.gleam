@@ -15,12 +15,7 @@ import snag
 pub fn main() {
   case run.build_runners_from_days_dir() {
     Ok(runners) -> execute(given: runners)
-    Error(err) -> {
-      err
-      |> snag.pretty_print()
-      |> io.println()
-      exit(1)
-    }
+    Error(err) -> print_snag_and_halt(err)
   }
 }
 
@@ -29,41 +24,27 @@ pub fn main() {
 pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
-    |> glint.add_command([], fn(_) { Ok([help]) }, [])
     |> run.register_command(runners)
     |> new.register_command()
 
+  let args = args()
   case commands
-  |> glint.execute(args())
-  |> result.flatten {
-    Ok(output) ->
+  |> glint.execute(args) {
+    Ok(glint.Out(Ok(output))) ->
       output
       |> string.join("\n\n")
       |> io.println
-    Error(err) -> {
-      [snag.pretty_print(err), help]
-      |> string.join("\n")
-      |> io.println()
-      exit(1)
-    }
+    Ok(glint.Help(help)) -> io.println(help)
+    Ok(glint.Out(Error(err))) | Error(err) -> print_snag_and_halt(err)
   }
 }
 
-const help = "\n\e[1;4mAvailable Commands\e[0m
-\e[1;3mrun\e[0m: run the specified days
-  usage: gleam run run <dayX> <dayY> <...>
-  flags:
-      --timeout: run with specified timeout
-        type: Int > 0 
-        usage: gleam run run --timeout=1000 <dayX> <dayY> <...>
-
-      --all: run all registered days
-        type: Bool
-        usage: gleam run run --all
-
-\e[1;3mnew\e[0m: create .gleam and input files
-  usage: gleam run new <dayX> <dayY> <...>  
-"
-
 external fn exit(Int) -> Nil =
   "erlang" "halt"
+
+fn print_snag_and_halt(err: snag.Snag) -> Nil {
+  err
+  |> snag.pretty_print()
+  |> io.println()
+  exit(1)
+}

@@ -139,18 +139,28 @@ pub fn register_command(
   runners: RunnerMap,
 ) -> glint.Command(Result(List(String))) {
   glint.add_command(
-    glint,
-    ["run"],
-    run(_, runners),
-    [
-      flag.int(called: "timeout", default: 0),
-      flag.bool(called: "all", default: False),
+    to: glint,
+    at: ["run"],
+    do: run(_, runners),
+    with: [
+      flag.int(
+        called: "timeout",
+        default: 0,
+        explained: "Run with specified timeout",
+      ),
+      flag.bool(
+        called: "all",
+        default: False,
+        explained: "Run all registered days",
+      ),
     ],
+    described: "Run the specified days",
+    used: "gleam run run <FLAGS> <dayX> <dayY> <...>",
   )
 }
 
 pub fn run(input: CommandInput, runners: RunnerMap) -> Result(List(String)) {
-  assert Ok(flag.I(timeout)) = map.get(input.flags, "timeout")
+  assert Ok(flag.I(timeout)) = flag.get_value(input.flags, "timeout")
 
   try timing = case timeout {
     0 -> Ok(Endless)
@@ -158,7 +168,7 @@ pub fn run(input: CommandInput, runners: RunnerMap) -> Result(List(String)) {
     _ -> Ok(Ending(timeout))
   }
 
-  assert Ok(flag.B(all)) = map.get(input.flags, "all")
+  assert Ok(flag.B(all)) = flag.get_value(input.flags, "all")
 
   try days = case all {
     True ->
