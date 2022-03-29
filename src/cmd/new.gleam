@@ -1,13 +1,9 @@
-import gleam/list
-import gleam/io
 import gleam/int
-import gleam/iterator
 import gleam/result
 import gleam/string
 import snag.{Result, Snag}
 import ffi/file
 import parse.{Day}
-import gleam/erlang/charlist
 import gleam/erlang/file as efile
 import cmd.{days_dir, input_dir}
 import glint.{CommandInput}

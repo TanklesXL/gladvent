@@ -1,10 +1,7 @@
 import gleam/list
-import gleam/io
 import gleam/int
-import gleam/iterator
 import gleam/result
 import gleam/string
-import gleam/function
 import snag.{Result, Snag}
 import gleam/erlang/file
 import gleam/erlang/atom.{Atom}
@@ -135,31 +132,37 @@ fn collect(x: #(Result(Solution), Day)) -> String {
 }
 
 pub fn register_command(
-  glint: glint.Command(Result(List(String))),
+  cli: glint.Command(Result(List(String))),
   runners: RunnerMap,
 ) -> glint.Command(Result(List(String))) {
-  glint.add_command(
-    to: glint,
+  let timeout_flag =
+    flag.int(
+      called: "timeout",
+      default: 0,
+      explained: "Run with specified timeout",
+    )
+  cli
+  |> glint.add_command(
     at: ["run"],
-    do: run(_, runners),
-    with: [
-      flag.int(
-        called: "timeout",
-        default: 0,
-        explained: "Run with specified timeout",
-      ),
-      flag.bool(
-        called: "all",
-        default: False,
-        explained: "Run all registered days",
-      ),
-    ],
+    do: run(_, runners, False),
+    with: [timeout_flag],
     described: "Run the specified days",
     used: "gleam run run <FLAGS> <dayX> <dayY> <...>",
   )
+  |> glint.add_command(
+    at: ["run", "all"],
+    do: run(_, runners, True),
+    with: [timeout_flag],
+    described: "Run all registered days",
+    used: "gleam run run <FLAGS>",
+  )
 }
 
-pub fn run(input: CommandInput, runners: RunnerMap) -> Result(List(String)) {
+pub fn run(
+  input: CommandInput,
+  runners: RunnerMap,
+  run_all: Bool,
+) -> Result(List(String)) {
   assert Ok(flag.I(timeout)) = flag.get_value(input.flags, "timeout")
 
   try timing = case timeout {
@@ -168,9 +171,7 @@ pub fn run(input: CommandInput, runners: RunnerMap) -> Result(List(String)) {
     _ -> Ok(Ending(timeout))
   }
 
-  assert Ok(flag.B(all)) = flag.get_value(input.flags, "all")
-
-  try days = case all {
+  try days = case run_all {
     True ->
       runners
       |> map.keys()

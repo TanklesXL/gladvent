@@ -1,12 +1,9 @@
-import gleam/map
 import gleam/string
-import gleam/result
 import gleam/io
 import gleam/erlang.{start_arguments as args}
 import cmd/run.{RunnerMap}
 import cmd/new
 import glint
-import glint/flag
 import snag
 
 /// Find all runners in the project src/days/ directory and

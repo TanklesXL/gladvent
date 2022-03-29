@@ -1,6 +1,5 @@
 import gleam/erlang/charlist.{Charlist}
 import gleam/erlang/file.{Reason}
-import gleam
 
 pub external type IODevice
 

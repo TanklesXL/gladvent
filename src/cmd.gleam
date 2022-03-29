@@ -4,13 +4,9 @@ import parse.{Day}
 import snag.{Result, Snag}
 import gleam/otp/task.{Task}
 import gleam/erlang
-import gleam/erlang/atom
-import gleam/dynamic
 import gleam/list
 import gleam/result
 import gleam/int
-import gleam/function
-import gleam
 
 pub const input_dir = "input/"
 

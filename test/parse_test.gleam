@@ -2,7 +2,6 @@ import parse.{day}
 import gleam/int
 import gleam/list
 import gleam/function.{compose}
-import snag
 import gleeunit/should
 
 pub fn day_test() {
