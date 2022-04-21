@@ -49,7 +49,7 @@ fn try_await_many(tasks: List(Task(a)), timing: Timing) -> List(Result(a)) {
     // currently no await_forever so we'll use 10 mins  
     Endless -> fn(t) {
       t
-      |> task.try_await(600_000)
+      |> task.try_await_forever()
       |> result.map_error(snag_task_error)
     }
     Ending(timeout) -> {
