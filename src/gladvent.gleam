@@ -1,7 +1,8 @@
 import gleam/string
 import gleam/io
 import gleam/erlang.{start_arguments as args}
-import cmd/run.{RunnerMap}
+import runners.{RunnerMap}
+import cmd/run
 import cmd/new
 import glint
 import snag
@@ -10,7 +11,7 @@ import snag
 /// run either the 'run' or 'new' command as specified
 ///
 pub fn main() {
-  case run.build_runners_from_days_dir() {
+  case runners.build_from_days_dir() {
     Ok(runners) -> execute(given: runners)
     Error(err) -> print_snag_and_halt(err)
   }

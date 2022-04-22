@@ -1,49 +1,33 @@
 import snag.{Result}
+import gleam
 import gleam/int
 import gleam/list
-import gleam/string
 import gleam/result
-
-pub fn int(s: String) -> Result(Int) {
-  s
-  |> int.parse()
-  |> result.replace_error(
-    ["failed to parse \"", s, "\" as int"]
-    |> string.concat()
-    |> snag.new(),
-  )
-}
-
-pub fn valid_int(
-  s: String,
-  is_valid: fn(Int) -> Bool,
-  invalid_msg: String,
-) -> Result(Int) {
-  try i = int(s)
-  case is_valid(i) {
-    False -> snag.error(invalid_msg)
-    True -> Ok(i)
-  }
-}
-
-fn greater_than_0(i: Int) -> Bool {
-  i > 0
-}
-
-fn less_than_26(i: Int) -> Bool {
-  i < 26
-}
+import gleam/string
 
 pub type Day =
   Int
 
-fn valid_day(i: Int) -> Bool {
-  greater_than_0(i) && less_than_26(i)
+pub fn int(s: String) -> Result(Int) {
+  s
+  |> int.parse
+  |> replace_error(
+    ["failed to parse \"", s, "\" as int"]
+    |> string.concat(),
+  )
 }
 
 pub fn day(s: String) -> Result(Day) {
-  valid_int(s, valid_day, "day must be an integer from 1 to 25")
-  |> snag.context(string.concat(["invalid day value ", "'", s, "'"]))
+  try i = int(s)
+
+  case i > 0 && i < 26 {
+    True -> Ok(i)
+    False ->
+      ["invalid day value ", "'", s, "'"]
+      |> string.concat
+      |> snag.error
+      |> snag.context("day must be an integer from 1 to 25")
+  }
 }
 
 pub fn days(l: List(String)) -> Result(List(Day)) {
@@ -54,4 +38,8 @@ pub fn days(l: List(String)) -> Result(List(Day)) {
       |> list.try_map(day)
       |> snag.context("could not map day values to integers")
   }
+}
+
+pub fn replace_error(r: gleam.Result(a, b), s: String) -> Result(a) {
+  result.replace_error(r, snag.new(s))
 }

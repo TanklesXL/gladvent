@@ -1,16 +1,12 @@
 import gleam/iterator
 import gleam/result
 import parse.{Day}
-import snag.{Result, Snag}
 import gleam/otp/task.{Task}
 import gleam/erlang
+import gleam/pair
 import gleam/list
 import gleam/result
 import gleam/int
-
-pub const input_dir = "input/"
-
-pub const days_dir = "src/days/"
 
 pub type Timing {
   Endless
@@ -23,15 +19,19 @@ pub type Timeout =
 pub fn exec(
   days: List(Day),
   timing: Timing,
-  do: fn(Day) -> Result(a),
-  collect: fn(#(Result(a), Day)) -> String,
+  do: fn(Day) -> Result(a, b),
+  other: fn(String) -> b,
+  collect: fn(#(Day, Result(a, b))) -> String,
 ) -> List(String) {
   days
   |> task_map(do)
   |> try_await_many(timing)
   |> iterator.from_list()
-  |> iterator.map(result.flatten)
-  |> iterator.zip(iterator.from_list(days))
+  |> iterator.map(fn(x) {
+    x
+    |> pair.map_second(result.map_error(_, other))
+    |> pair.map_second(result.flatten)
+  })
   |> iterator.map(collect)
   |> iterator.to_list()
 }
@@ -40,36 +40,36 @@ fn now_ms() {
   erlang.system_time(erlang.Millisecond)
 }
 
-fn task_map(over l: List(a), with f: fn(a) -> b) -> List(Task(b)) {
-  list.map(l, fn(x) { task.async(fn() { f(x) }) })
+fn task_map(over l: List(a), with f: fn(a) -> b) -> List(#(a, Task(b))) {
+  list.map(l, fn(x) { #(x, task.async(fn() { f(x) })) })
 }
 
-fn try_await_many(tasks: List(Task(a)), timing: Timing) -> List(Result(a)) {
-  let await = case timing {
-    // currently no await_forever so we'll use 10 mins  
-    Endless -> fn(t) {
-      t
-      |> task.try_await_forever()
-      |> result.map_error(snag_task_error)
-    }
+fn try_await_many(
+  tasks: List(#(x, Task(a))),
+  timing: Timing,
+) -> List(#(x, Result(a, String))) {
+  case timing {
+    Endless -> pair.map_second(_, fn(t) {
+      task.try_await_forever(t)
+      |> result.map_error(await_err_to_string)
+    })
+
     Ending(timeout) -> {
       let end = now_ms() + timeout
-      fn(t) {
+      pair.map_second(_, fn(t: Task(a)) {
         end - now_ms()
         |> int.clamp(min: 0, max: timeout)
         |> task.try_await(t, _)
-        |> result.map_error(snag_task_error)
-      }
+        |> result.map_error(await_err_to_string)
+      })
     }
   }
-
-  list.map(tasks, await)
+  |> list.map(tasks, _)
 }
 
-fn snag_task_error(err: task.AwaitError) -> Snag {
+fn await_err_to_string(err: task.AwaitError) -> String {
   case err {
     task.Timeout -> "task timed out"
     task.Exit(_) -> "task exited for some reason"
   }
-  |> snag.new()
 }

@@ -9,7 +9,7 @@ pub fn day_test() {
   |> list.each(fn(x) {
     x
     |> int.to_string()
-    |> day()
+    |> day
     |> should.equal(Ok(x))
   })
 

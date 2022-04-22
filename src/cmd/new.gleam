@@ -1,12 +1,22 @@
 import gleam/int
 import gleam/result
+import gleam/list
 import gleam/string
-import snag.{Result, Snag}
+import snag.{Snag}
 import ffi/file
-import parse.{Day}
+import runners.{days_dir, input_dir}
 import gleam/erlang/file as efile
-import cmd.{days_dir, input_dir}
+import cmd
 import glint.{CommandInput}
+import parse.{Day}
+
+type Err {
+  FailedToCreateDir(String)
+  FailedToCreateFile(String)
+  FileAlreadyExists(String)
+  Combo(String, String)
+  Other(String)
+}
 
 fn input_path(day: Day) -> String {
   string.concat([input_dir, "day_", int.to_string(day), ".txt"])
@@ -16,17 +26,27 @@ fn gleam_src_path(day: Day) -> String {
   string.concat([days_dir, "day_", int.to_string(day), ".gleam"])
 }
 
-fn do(day: Day) -> Result(Nil) {
-  try _ = case efile.make_directory(input_dir) {
-    Ok(_) | Error(efile.Eexist) -> Ok(Nil)
-    _ -> Error(failed_to_create_dir_err(input_dir))
-  }
+fn create_dir(dir: String) -> Result(Nil, Err) {
+  dir
+  |> efile.make_directory()
+  |> handle_dir_open_res(dir)
+}
 
-  try _ = case efile.make_directory(days_dir) {
-    Ok(_) | Error(efile.Eexist) -> Ok(Nil)
-    _ -> Error(failed_to_create_dir_err(days_dir))
+fn handle_dir_open_res(
+  res: Result(Nil, efile.Reason),
+  filename: String,
+) -> Result(Nil, Err) {
+  case res {
+    Ok(Nil) | Error(efile.Eexist) -> Ok(Nil)
+    _ ->
+      filename
+      |> FailedToCreateDir
+      |> Error
   }
+}
 
+fn create_files(day: Day) -> Result(Nil, Err) {
+  let input_path = input_path(day)
   let gleam_src_path = gleam_src_path(day)
 
   let create_src_res =
@@ -34,20 +54,37 @@ fn do(day: Day) -> Result(Nil) {
     |> result.then(file.write(_, gleam_starter))
     |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 
-  let input_path = input_path(day)
-
   let create_input_res =
     file.open_file_exclusive(input_path)
     |> result.map_error(handle_file_open_failure(_, input_path))
-  case create_src_res, create_input_res {
+
+  case create_input_res, create_src_res {
     Ok(_), Ok(_) -> Ok(Nil)
-    Error(Snag(s1, errs1)), Error(Snag(s2, errs2)) ->
-      [string.join([s1, ..errs1], ": "), string.join([s2, ..errs2], ": ")]
-      |> string.join(" && ")
-      |> snag.error()
-    _, Error(err) -> Error(err)
-    Error(err), _ -> Error(err)
+    r1, r2 -> Error(Combo(res_to_string(r1), res_to_string(r2)))
   }
+}
+
+fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Err {
+  case reason {
+    efile.Eexist -> FileAlreadyExists(filename)
+    _ -> FailedToCreateFile(filename)
+  }
+}
+
+fn res_to_string(r: Result(a, Err)) -> String {
+  case r {
+    Ok(_) -> ""
+    Error(e) ->
+      e
+      |> to_snag
+      |> snag.line_print
+  }
+}
+
+fn do(day: Day) -> Result(Nil, Err) {
+  [input_dir, days_dir]
+  |> list.try_map(create_dir)
+  |> result.then(fn(_) { create_files(day) })
 }
 
 const gleam_starter = "pub fn run(input) {
@@ -63,34 +100,10 @@ fn pt_2(input: String) -> Int {
 }
 "
 
-fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Snag {
-  case reason {
-    efile.Eexist -> file_already_exists_err(filename)
-    _ -> failed_to_create_file_err(filename)
-  }
-}
-
-fn file_already_exists_err(filename: String) -> Snag {
-  filename
-  |> snag.new()
-  |> snag.layer("file already exists")
-}
-
-fn failed_to_create_file_err(filename: String) -> Snag {
-  filename
-  |> snag.new()
-  |> snag.layer("failed to create file")
-}
-
-fn failed_to_create_dir_err(dir: String) -> Snag {
-  dir
-  |> snag.new()
-  |> snag.layer("failed to create dir")
-}
-
-fn collect(x: #(Result(Nil), Day)) -> String {
-  let day = int.to_string(x.1)
-  case x.0
+fn collect(x: #(Day, Result(Nil, Err))) -> String {
+  let day = int.to_string(x.0)
+  case x.1
+  |> result.map_error(to_snag)
   |> snag.context(string.append("error occurred when initializing day ", day))
   |> result.map_error(snag.pretty_print) {
     Ok(_) -> string.append("initialized day: ", day)
@@ -99,8 +112,8 @@ fn collect(x: #(Result(Nil), Day)) -> String {
 }
 
 pub fn register_command(
-  glint: glint.Command(Result(List(String))),
-) -> glint.Command(Result(List(String))) {
+  glint: glint.Command(snag.Result(List(String))),
+) -> glint.Command(snag.Result(List(String))) {
   glint.add_command(
     to: glint,
     at: ["new"],
@@ -111,8 +124,19 @@ pub fn register_command(
   )
 }
 
-pub fn run(input: CommandInput) -> Result(List(String)) {
+pub fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args
   |> parse.days
-  |> result.map(cmd.exec(_, cmd.Endless, do, collect))
+  |> result.map(cmd.exec(_, cmd.Endless, do, Other, collect))
+}
+
+fn to_snag(e: Err) -> Snag {
+  case e {
+    FailedToCreateDir(d) -> string.append("failed to create dir: ", d)
+    FailedToCreateFile(f) -> string.append("failed to create file: ", f)
+    FileAlreadyExists(f) -> string.append("file already exists: ", f)
+    Combo(e1, e2) -> string.join([e1, e2], " && ")
+    Other(s) -> s
+  }
+  |> snag.new
 }
