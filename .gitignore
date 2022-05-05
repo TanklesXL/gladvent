@@ -20,3 +20,5 @@ log
 logs
 rebar3.crashdump
 build
+src/days
+input
