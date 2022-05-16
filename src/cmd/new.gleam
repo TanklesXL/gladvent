@@ -111,20 +111,17 @@ fn collect(x: #(Day, Result(Nil, Err))) -> String {
   }
 }
 
-pub fn register_command(
-  glint: glint.Command(snag.Result(List(String))),
-) -> glint.Command(snag.Result(List(String))) {
-  glint.add_command(
-    to: glint,
-    at: ["new"],
-    do: run,
-    with: [],
-    described: "Create .gleam and input files",
-    used: "gleam run new <dayX> <dayY> <...> ",
+pub fn new_command() -> glint.Stub(snag.Result(List(String))) {
+  glint.Stub(
+    path: ["new"],
+    run: run,
+    flags: [],
+    description: "Create .gleam and input files",
+    usage: "gleam run new <dayX> <dayY> <...> ",
   )
 }
 
-pub fn run(input: CommandInput) -> snag.Result(List(String)) {
+fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args
   |> parse.days
   |> result.map(cmd.exec(_, cmd.Endless, do, Other, collect))

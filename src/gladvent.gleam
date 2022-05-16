@@ -22,12 +22,11 @@ pub fn main() {
 pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
-    |> run.register_command(runners)
-    |> new.register_command()
+    |> glint.add_command_from_stub(new.new_command())
+    |> glint.add_command_from_stub(run.run_command(runners))
+    |> glint.add_command_from_stub(run.run_all_command(runners))
 
-  let args = args()
-  case commands
-  |> glint.execute(args) {
+  case glint.execute(commands, args()) {
     Ok(glint.Out(Ok(output))) ->
       output
       |> string.join("\n\n")

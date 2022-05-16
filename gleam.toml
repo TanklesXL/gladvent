@@ -9,7 +9,7 @@ gleam_stdlib = "~> 0.19"
 gleam_otp = "~> 0.4"
 gleam_erlang = "~> 0.7"
 snag = "~> 0.2"
-glint = "~> 0.6"
+glint = "~> 0.8"
 eval = "~> 0.1"
 
 [dev-dependencies]

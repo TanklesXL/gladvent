@@ -12,13 +12,13 @@ import glint/flag
 import gleam
 import runners.{RunnerMap, Solution}
 
-pub external fn do_run(
+external fn do_run(
   fn(String) -> Solution,
   String,
 ) -> gleam.Result(Solution, Err) =
   "gladvent_ffi" "do_run"
 
-pub type Err {
+type Err {
   Undef
   RunFailed
   FailedToReadInput(String)
@@ -78,40 +78,37 @@ fn collect(x: #(Day, gleam.Result(Solution, Err))) -> String {
   }
 }
 
-pub fn register_command(
-  cli: glint.Command(Result(List(String))),
-  runners: RunnerMap,
-) -> glint.Command(Result(List(String))) {
-  let timeout_flag =
-    flag.int(
-      called: "timeout",
-      default: 0,
-      explained: "Run with specified timeout",
-    )
+const timeout_flag: flag.Flag = #(
+  "timeout",
+  flag.Contents(flag.I(0), "Run with specified timeout"),
+)
 
-  cli
-  |> glint.add_command(
-    at: ["run"],
-    do: run(_, runners, False),
-    with: [timeout_flag],
-    described: "Run the specified days",
-    used: "gleam run run <FLAGS> <dayX> <dayY> <...>",
-  )
-  |> glint.add_command(
-    at: ["run", "all"],
-    do: run(_, runners, True),
-    with: [timeout_flag],
-    described: "Run all registered days",
-    used: "gleam run run <FLAGS>",
+pub fn run_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
+  glint.Stub(
+    path: ["run"],
+    run: run(_, runners, False),
+    flags: [timeout_flag],
+    description: "Run the specified days",
+    usage: "gleam run run <FLAGS> <dayX> <dayY> <...>",
   )
 }
 
-pub fn run(
+pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
+  glint.Stub(
+    path: ["run", "all"],
+    run: run(_, runners, True),
+    flags: [timeout_flag],
+    description: "Run all registered days",
+    usage: "gleam run run all <FLAGS>",
+  )
+}
+
+fn run(
   input: CommandInput,
   runners: RunnerMap,
   run_all: Bool,
 ) -> Result(List(String)) {
-  assert Ok(flag.I(timeout)) = flag.get_value(input.flags, "timeout")
+  assert Ok(flag.I(timeout)) = flag.get_value(input.flags, timeout_flag.0)
 
   try timing = case timeout {
     0 -> Ok(Endless)
