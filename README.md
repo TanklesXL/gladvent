@@ -16,7 +16,7 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 This library provides 2 options to run your advent of code solvers:
 
 1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
-2. Create your own `Map(Int, fn(String) -> #(Int, Int))` and pass it to `gladvent.execute`
+2. Create your own `Map(Int, #(fn(String) -> Int, fn(String) -> Int))` and pass it to `gladvent.execute`
 
 ## Available commands
 
@@ -53,8 +53,7 @@ This project provides your application with 2 commands, `new` and `run`:
 
 Where X is the day you'd like to add (when using `gladvent.main()`):
 
-*Note:* this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing a `fn run(String) -> #(Int, Int)`
-
+*Note:* this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int` 
 1. run `gleam run new X`
 2. add your input to `input/day_X.txt`
 3. add your code to `src/days/day_X.gleam`

@@ -10,11 +10,11 @@ pub const input_dir = "input/"
 
 pub const days_dir = "src/days/"
 
-pub type Solution =
-  #(Int, Int)
+pub type PartRunner =
+  fn(String) -> Int
 
 pub type DayRunner =
-  fn(String) -> Solution
+  #(PartRunner, PartRunner)
 
 pub type RunnerMap =
   Map(Day, DayRunner)

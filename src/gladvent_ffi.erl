@@ -7,7 +7,7 @@ find_files(Pattern, In) ->
     lists:map(fun list_to_binary/1, Results).
 
 get_run(A) ->
-    fun A:run/1.
+        {fun A:pt_1/1,fun A:pt_2/1}.
 
 do_run(Run, Input) ->
     try

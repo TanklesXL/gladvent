@@ -10,28 +10,26 @@ import cmd.{Ending, Endless}
 import glint.{CommandInput}
 import glint/flag
 import gleam
-import runners.{RunnerMap, Solution}
+import runners.{PartRunner, RunnerMap}
 
-external fn do_run(
-  fn(String) -> Solution,
-  String,
-) -> gleam.Result(Solution, Err) =
+external fn do_run(PartRunner, String) -> gleam.Result(Int, SolveErr) =
   "gladvent_ffi" "do_run"
 
-type Err {
+type SolveErr {
   Undef
   RunFailed
+}
+
+type Err {
   FailedToReadInput(String)
-  Unrecognized(Day)
+  Unregistered(Day)
   Other(String)
 }
 
-fn to_snag(err: Err) -> Snag {
+fn err_to_snag(err: Err) -> Snag {
   case err {
-    Undef -> "run function undefined"
-    RunFailed -> "some error occurred"
-    Unrecognized(day) ->
-      string.join(["day", int.to_string(day), "unrecognized"], " ")
+    Unregistered(day) ->
+      string.join(["day", int.to_string(day), "unregistered"], " ")
     FailedToReadInput(input_path) ->
       string.append("failed to read input file: ", input_path)
     Other(s) -> s
@@ -39,10 +37,16 @@ fn to_snag(err: Err) -> Snag {
   |> snag.new
 }
 
-fn do(day: Day, runners: RunnerMap) -> gleam.Result(Solution, Err) {
-  try day_runner =
+type RunResult =
+  gleam.Result(Int, SolveErr)
+
+fn do(
+  day: Day,
+  runners: RunnerMap,
+) -> gleam.Result(#(RunResult, RunResult), Err) {
+  try #(pt_1, pt_2) =
     map.get(runners, day)
-    |> result.replace_error(Unrecognized(day))
+    |> result.replace_error(Unregistered(day))
 
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
@@ -52,28 +56,40 @@ fn do(day: Day, runners: RunnerMap) -> gleam.Result(Solution, Err) {
     |> result.map(string.trim)
     |> result.replace_error(FailedToReadInput(input_path))
 
-  do_run(day_runner, input)
+  Ok(#(do_run(pt_1, input), do_run(pt_2, input)))
 }
 
-fn collect(x: #(Day, gleam.Result(Solution, Err))) -> String {
+fn run_res_to_string(res: RunResult) -> String {
+  case res {
+    Ok(res) -> int.to_string(res)
+    Error(err) ->
+      case err {
+        Undef -> "function undefined"
+        RunFailed -> "some error occurred"
+      }
+  }
+}
+
+fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
   let day = int.to_string(x.0)
   case x.1 {
     Ok(#(res_1, res_2)) ->
       [
         "Ran day ",
         day,
-        ":",
-        "\n  Part 1: ",
-        int.to_string(res_1),
-        "\n  Part 2: ",
-        int.to_string(res_2),
+        ":\n",
+        "  Part 1: ",
+        run_res_to_string(res_1),
+        "\n",
+        "  Part 2: ",
+        run_res_to_string(res_2),
       ]
       |> string.concat()
+
     Error(err) ->
       err
-      |> to_snag
-      |> snag.layer(string.append("Error on day ", day))
-      |> snag.layer("failed to run advent of code")
+      |> err_to_snag
+      |> snag.layer(string.append("failed to run day ", day))
       |> snag.pretty_print()
   }
 }
