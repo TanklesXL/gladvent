@@ -60,7 +60,17 @@ fn create_files(day: Day) -> Result(Nil, Err) {
 
   case create_input_res, create_src_res {
     Ok(_), Ok(_) -> Ok(Nil)
-    r1, r2 -> Error(Combo(res_to_string(r1), res_to_string(r2)))
+    Error(e1), Ok(_) -> Error(e1)
+    Ok(_), Error(e2) -> Error(e2)
+    Error(e1), Error(e2) ->
+      Error(Combo(
+        e1
+        |> to_snag
+        |> snag.line_print,
+        e2
+        |> to_snag
+        |> snag.line_print,
+      ))
   }
 }
 
@@ -71,31 +81,21 @@ fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Err {
   }
 }
 
-fn res_to_string(r: Result(a, Err)) -> String {
-  case r {
-    Ok(_) -> ""
-    Error(e) ->
-      e
-      |> to_snag
-      |> snag.line_print
-  }
-}
-
 fn do(day: Day) -> Result(Nil, Err) {
-  [input_dir, days_dir]
-  |> list.try_map(create_dir)
-  |> result.then(fn(_) { create_files(day) })
+  try _ = list.try_map([input_dir, days_dir], create_dir)
+  create_files(day)
 }
 
 fn gleam_starter(day: Day) {
+  let day = int.to_string(day)
   string.concat([
     "pub fn pt_1(input: String) -> Int {\n",
     "  todo(\"day ",
-    int.to_string(day),
+    day,
     " part 1 unimplemented\")\n}\n\n",
     "pub fn pt_2(input: String) -> Int {\n",
     "  todo(\"day ",
-    int.to_string(day),
+    day,
     " part 2 unimplemented\")\n}\n",
   ])
 }
@@ -132,7 +132,10 @@ fn to_snag(e: Err) -> Snag {
     FailedToCreateDir(d) -> string.append("failed to create dir: ", d)
     FailedToCreateFile(f) -> string.append("failed to create file: ", f)
     FileAlreadyExists(f) -> string.append("file already exists: ", f)
-    Combo(e1, e2) -> string.join([e1, e2], " && ")
+    Combo(e1, e2) ->
+      [e1, e2]
+      |> list.filter(fn(s) { s != "" })
+      |> string.join(" && ")
     Other(s) -> s
   }
   |> snag.new
