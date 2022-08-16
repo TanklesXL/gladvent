@@ -102,24 +102,24 @@ fn gleam_starter(day: Day) {
 
 fn collect(x: #(Day, Result(Nil, Err))) -> String {
   let day = int.to_string(x.0)
-  case x.1
-  |> result.map_error(to_snag)
-  |> snag.context(string.append("error occurred when initializing day ", day))
-  |> result.map_error(snag.pretty_print) {
+  case
+    x.1
+    |> result.map_error(to_snag)
+    |> snag.context(string.append("error occurred when initializing day ", day))
+    |> result.map_error(snag.pretty_print)
+  {
     Ok(_) -> string.append("initialized day: ", day)
     Error(reason) -> reason
   }
 }
 
-pub fn new_command() -> glint.Stub(snag.Result(List(String))) {
-  glint.Stub(
-    path: ["new"],
-    run: run,
-    flags: [],
-    description: "Create .gleam and input files",
-    usage: "gleam run new <dayX> <dayY> <...> ",
-  )
-}
+pub const new_command = glint.Stub(
+  path: ["new"],
+  run: run,
+  flags: [],
+  description: "Create .gleam and input files",
+  usage: "gleam run new <dayX> <dayY> <...> ",
+)
 
 fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args

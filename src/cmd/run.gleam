@@ -4,20 +4,20 @@ import gleam/result
 import gleam/string
 import snag.{Result, Snag}
 import gleam/erlang/file
+import gleam/erlang
+import gleam/erlang/atom
+import gleam/dynamic
 import parse.{Day}
 import gleam/map
 import cmd.{Ending, Endless}
 import glint.{CommandInput}
 import glint/flag
 import gleam
-import runners.{PartRunner, RunnerMap}
-
-external fn do_run(PartRunner, String) -> gleam.Result(Int, SolveErr) =
-  "gladvent_ffi" "do_run"
+import runners.{RunnerMap}
 
 type SolveErr {
   Undef
-  RunFailed
+  RunFailed(String)
 }
 
 type Err {
@@ -56,7 +56,36 @@ fn do(
     |> result.map(string.trim)
     |> result.replace_error(FailedToReadInput(input_path))
 
-  Ok(#(do_run(pt_1, input), do_run(pt_2, input)))
+  let pt_1 =
+    erlang.rescue(fn() { pt_1(input) })
+    |> result.map_error(run_err_to_string)
+
+  let pt_2 =
+    erlang.rescue(fn() { pt_2(input) })
+    |> result.map_error(run_err_to_string)
+
+  Ok(#(pt_1, pt_2))
+}
+
+fn run_err_to_string(err: erlang.Crash) -> SolveErr {
+  case err {
+    erlang.Errored(dyn) ->
+      case atom.from_dynamic(dyn) == Ok(atom.create_from_string("undef")) {
+        // function undefined
+        True -> Undef
+        // some other error, try to decode
+        False ->
+          dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
+          |> result.then(fn(m) {
+            map.get(m, atom.create_from_string("message"))
+            |> result.replace_error([])
+            |> result.then(dynamic.string)
+          })
+          |> result.unwrap("run failed for some reason")
+          |> RunFailed
+      }
+    _ -> RunFailed("run failed for some reason")
+  }
 }
 
 fn run_res_to_string(res: RunResult) -> String {
@@ -65,7 +94,7 @@ fn run_res_to_string(res: RunResult) -> String {
     Error(err) ->
       case err {
         Undef -> "function undefined"
-        RunFailed -> "some error occurred"
+        RunFailed(s) -> s
       }
   }
 }
