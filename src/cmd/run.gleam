@@ -69,22 +69,18 @@ fn do(
 
 fn run_err_to_string(err: erlang.Crash) -> SolveErr {
   case err {
-    erlang.Errored(dyn) ->
-      case atom.from_dynamic(dyn) == Ok(atom.create_from_string("undef")) {
-        // function undefined
-        True -> Undef
-        // some other error, try to decode
-        False ->
-          dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
-          |> result.then(fn(m) {
-            map.get(m, atom.create_from_string("message"))
-            |> result.replace_error([])
-            |> result.then(dynamic.string)
-          })
-          |> result.unwrap("run failed for some reason")
-          |> RunFailed
-      }
-    _ -> RunFailed("run failed for some reason")
+    erlang.Errored(dyn) | erlang.Exited(dyn) | erlang.Thrown(dyn) ->
+      dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
+      |> result.then(fn(m) {
+        map.get(m, atom.create_from_string("message"))
+        |> result.replace_error([])
+        |> result.then(dynamic.string)
+      })
+      |> result.unwrap(string.append(
+        "run failed for some reason: ",
+        string.inspect(dyn),
+      ))
+      |> RunFailed
   }
 }
 

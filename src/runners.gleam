@@ -5,6 +5,7 @@ import snag.{Result}
 import parse.{Day}
 import gleam/list
 import gleam/result
+import gleam
 
 pub const input_dir = "input/"
 
@@ -25,16 +26,44 @@ external fn find_files(matching: String, in: String) -> List(String) =
 type Module =
   Atom
 
-fn to_module(file: String) -> Module {
+fn to_module_name(file: String) -> String {
   file
   |> string.replace(".gleam", "")
   |> string.replace(".erl", "")
   |> string.replace("/", "@")
-  |> atom.create_from_string()
 }
 
-external fn get_run(Module) -> DayRunner =
-  "gladvent_ffi" "get_run"
+external fn module_exists(Module) -> Bool =
+  "gladvent_ffi" "module_exists"
+
+external fn do_function_exists(Module, Atom) -> gleam.Result(PartRunner, Nil) =
+  "gladvent_ffi" "function_arity_one_exists"
+
+fn function_exists(
+  filename: String,
+  mod: Atom,
+  func_name: String,
+) -> Result(PartRunner) {
+  case module_exists(mod) {
+    False ->
+      ["module ", filename, " not found"]
+      |> string.concat
+      |> snag.error
+    True ->
+      func_name
+      |> atom.create_from_string
+      |> do_function_exists(mod, _)
+      |> result.replace_error(snag.new(string.concat([
+        "module ",
+        days_dir,
+        filename,
+        " does not define a \"pub fn ",
+        func_name,
+        "(String) -> Int\"",
+      ])))
+      |> snag.context("function missing")
+  }
+}
 
 fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
   try day =
@@ -43,13 +72,16 @@ fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
     |> parse.day
     |> snag.context(string.append("cannot create runner for ", filename))
 
-  let run =
+  let module =
     filename
     |> string.append("days/", _)
-    |> to_module()
-    |> get_run()
+    |> to_module_name
+    |> atom.create_from_string
 
-  Ok(#(day, run))
+  try pt_1 = function_exists(filename, module, "pt_1")
+  try pt_2 = function_exists(filename, module, "pt_2")
+
+  Ok(#(day, #(pt_1, pt_2)))
 }
 
 pub fn build_from_days_dir() -> Result(Map(Day, DayRunner)) {
