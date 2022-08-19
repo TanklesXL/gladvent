@@ -51,7 +51,7 @@ fn create_files(day: Day) -> Result(Nil, Err) {
 
   let create_src_res =
     file.open_file_exclusive(gleam_src_path)
-    |> result.then(file.write(_, gleam_starter(day)))
+    |> result.then(file.write(_, gleam_starter))
     |> result.map_error(handle_file_open_failure(_, gleam_src_path))
 
   let create_input_res =
@@ -86,19 +86,14 @@ fn do(day: Day) -> Result(Nil, Err) {
   create_files(day)
 }
 
-fn gleam_starter(day: Day) {
-  let day = int.to_string(day)
-  string.concat([
-    "pub fn pt_1(input: String) -> Int {\n",
-    "  todo(\"day ",
-    day,
-    " part 1 unimplemented\")\n}\n\n",
-    "pub fn pt_2(input: String) -> Int {\n",
-    "  todo(\"day ",
-    day,
-    " part 2 unimplemented\")\n}\n",
-  ])
+const gleam_starter = "pub fn pt_1(input: String) -> Int {
+  todo
 }
+
+pub fn pt_2(input: String) -> Int {
+  todo
+}
+"
 
 fn collect(x: #(Day, Result(Nil, Err))) -> String {
   let day = int.to_string(x.0)
@@ -113,13 +108,15 @@ fn collect(x: #(Day, Result(Nil, Err))) -> String {
   }
 }
 
-pub const new_command = glint.Stub(
-  path: ["new"],
-  run: run,
-  flags: [],
-  description: "Create .gleam and input files",
-  usage: "gleam run new <dayX> <dayY> <...> ",
-)
+pub fn new_command() {
+  glint.Stub(
+    path: ["new"],
+    run: run,
+    flags: [],
+    description: "Create .gleam and input files",
+    usage: "gleam run new <dayX> <dayY> <...> ",
+  )
+}
 
 fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args
