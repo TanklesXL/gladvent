@@ -45,7 +45,7 @@ fn handle_dir_open_res(
   }
 }
 
-fn create_files(day: Day) -> Result(Nil, Err) {
+fn create_files(day: Day) -> snag.Result(Nil) {
   let input_path = input_path(day)
   let gleam_src_path = gleam_src_path(day)
 
@@ -60,17 +60,30 @@ fn create_files(day: Day) -> Result(Nil, Err) {
 
   case create_input_res, create_src_res {
     Ok(_), Ok(_) -> Ok(Nil)
-    Error(e1), Ok(_) -> Error(e1)
-    Ok(_), Error(e2) -> Error(e2)
+    Error(e1), Ok(_) ->
+      Error(
+        ["created ", gleam_src_path, ", but failed to create ", input_path]
+        |> string.concat
+        |> snag.layer(to_snag(e1), _),
+      )
+    Ok(_), Error(e2) ->
+      Error(
+        ["created ", input_path, ", but failed to create ", gleam_src_path]
+        |> string.concat
+        |> snag.layer(to_snag(e2), _),
+      )
     Error(e1), Error(e2) ->
-      Error(Combo(
-        e1
-        |> to_snag
-        |> snag.line_print,
-        e2
-        |> to_snag
-        |> snag.line_print,
-      ))
+      Error(
+        Combo(
+          e1
+          |> to_snag
+          |> snag.line_print,
+          e2
+          |> to_snag
+          |> snag.line_print,
+        )
+        |> to_snag,
+      )
   }
 }
 
@@ -81,8 +94,11 @@ fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Err {
   }
 }
 
-fn do(day: Day) -> Result(Nil, Err) {
-  try _ = list.try_map([input_dir, days_dir], create_dir)
+fn do(day: Day) -> snag.Result(Nil) {
+  try _ =
+    list.try_map([input_dir, days_dir], create_dir)
+    |> result.map_error(to_snag)
+
   create_files(day)
 }
 
@@ -95,11 +111,10 @@ pub fn pt_2(input: String) -> Int {
 }
 "
 
-fn collect(x: #(Day, Result(Nil, Err))) -> String {
+fn collect(x: #(Day, snag.Result(Nil))) -> String {
   let day = int.to_string(x.0)
   case
     x.1
-    |> result.map_error(to_snag)
     |> snag.context(string.append("error occurred when initializing day ", day))
     |> result.map_error(snag.pretty_print)
   {
@@ -121,7 +136,7 @@ pub fn new_command() {
 fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args
   |> parse.days
-  |> result.map(cmd.exec(_, cmd.Endless, do, Other, collect))
+  |> result.map(cmd.exec(_, cmd.Endless, do, snag.new, collect))
 }
 
 fn to_snag(e: Err) -> Snag {
