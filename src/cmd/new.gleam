@@ -45,7 +45,7 @@ fn handle_dir_open_res(
   }
 }
 
-fn create_files(day: Day) -> Result(Nil, Err) {
+fn create_files(day: Day) -> snag.Result(Nil) {
   let input_path = input_path(day)
   let gleam_src_path = gleam_src_path(day)
 
@@ -60,7 +60,30 @@ fn create_files(day: Day) -> Result(Nil, Err) {
 
   case create_input_res, create_src_res {
     Ok(_), Ok(_) -> Ok(Nil)
-    r1, r2 -> Error(Combo(res_to_string(r1), res_to_string(r2)))
+    Error(e1), Ok(_) ->
+      Error(
+        ["created ", gleam_src_path, ", but failed to create ", input_path]
+        |> string.concat
+        |> snag.layer(to_snag(e1), _),
+      )
+    Ok(_), Error(e2) ->
+      Error(
+        ["created ", input_path, ", but failed to create ", gleam_src_path]
+        |> string.concat
+        |> snag.layer(to_snag(e2), _),
+      )
+    Error(e1), Error(e2) ->
+      Error(
+        Combo(
+          e1
+          |> to_snag
+          |> snag.line_print,
+          e2
+          |> to_snag
+          |> snag.line_print,
+        )
+        |> to_snag,
+      )
   }
 }
 
@@ -71,60 +94,48 @@ fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Err {
   }
 }
 
-fn res_to_string(r: Result(a, Err)) -> String {
-  case r {
-    Ok(_) -> ""
-    Error(e) ->
-      e
-      |> to_snag
-      |> snag.line_print
-  }
+fn do(day: Day) -> snag.Result(Nil) {
+  try _ =
+    list.try_map([input_dir, days_dir], create_dir)
+    |> result.map_error(to_snag)
+
+  create_files(day)
 }
 
-fn do(day: Day) -> Result(Nil, Err) {
-  [input_dir, days_dir]
-  |> list.try_map(create_dir)
-  |> result.then(fn(_) { create_files(day) })
+const gleam_starter = "pub fn pt_1(input: String) -> Int {
+  todo
 }
 
-const gleam_starter = "pub fn run(input) {
-  #(pt_1(input), pt_2(input))
-}
-
-fn pt_1(input: String) -> Int {
-  0
-}
-
-fn pt_2(input: String) -> Int {
-  0
+pub fn pt_2(input: String) -> Int {
+  todo
 }
 "
 
-fn collect(x: #(Day, Result(Nil, Err))) -> String {
+fn collect(x: #(Day, snag.Result(Nil))) -> String {
   let day = int.to_string(x.0)
-  case x.1
-  |> result.map_error(to_snag)
-  |> snag.context(string.append("error occurred when initializing day ", day))
-  |> result.map_error(snag.pretty_print) {
+  case
+    x.1
+    |> snag.context(string.append("error occurred when initializing day ", day))
+    |> result.map_error(snag.pretty_print)
+  {
     Ok(_) -> string.append("initialized day: ", day)
     Error(reason) -> reason
   }
 }
 
-pub fn new_command() -> glint.Stub(snag.Result(List(String))) {
+pub fn new_command() {
   glint.Stub(
     path: ["new"],
     run: run,
     flags: [],
     description: "Create .gleam and input files",
-    usage: "gleam run new <dayX> <dayY> <...> ",
   )
 }
 
 fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args
   |> parse.days
-  |> result.map(cmd.exec(_, cmd.Endless, do, Other, collect))
+  |> result.map(cmd.exec(_, cmd.Endless, do, snag.new, collect))
 }
 
 fn to_snag(e: Err) -> Snag {
@@ -132,7 +143,10 @@ fn to_snag(e: Err) -> Snag {
     FailedToCreateDir(d) -> string.append("failed to create dir: ", d)
     FailedToCreateFile(f) -> string.append("failed to create file: ", f)
     FileAlreadyExists(f) -> string.append("file already exists: ", f)
-    Combo(e1, e2) -> string.join([e1, e2], " && ")
+    Combo(e1, e2) ->
+      [e1, e2]
+      |> list.filter(fn(s) { s != "" })
+      |> string.join(" && ")
     Other(s) -> s
   }
   |> snag.new

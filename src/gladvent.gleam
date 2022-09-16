@@ -22,6 +22,7 @@ pub fn main() {
 pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
+    |> glint.with_pretty_help(glint.default_pretty_help)
     |> glint.add_command_from_stub(new.new_command())
     |> glint.add_command_from_stub(run.run_command(runners))
     |> glint.add_command_from_stub(run.run_all_command(runners))

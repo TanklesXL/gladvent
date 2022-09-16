@@ -4,34 +4,32 @@ import gleam/result
 import gleam/string
 import snag.{Result, Snag}
 import gleam/erlang/file
+import gleam/erlang
+import gleam/erlang/atom
+import gleam/dynamic
 import parse.{Day}
 import gleam/map
 import cmd.{Ending, Endless}
 import glint.{CommandInput}
 import glint/flag
 import gleam
-import runners.{RunnerMap, Solution}
+import runners.{RunnerMap}
 
-external fn do_run(
-  fn(String) -> Solution,
-  String,
-) -> gleam.Result(Solution, Err) =
-  "gladvent_ffi" "do_run"
+type SolveErr {
+  Undef
+  RunFailed(String)
+}
 
 type Err {
-  Undef
-  RunFailed
   FailedToReadInput(String)
-  Unrecognized(Day)
+  Unregistered(Day)
   Other(String)
 }
 
-fn to_snag(err: Err) -> Snag {
+fn err_to_snag(err: Err) -> Snag {
   case err {
-    Undef -> "run function undefined"
-    RunFailed -> "some error occurred"
-    Unrecognized(day) ->
-      string.join(["day", int.to_string(day), "unrecognized"], " ")
+    Unregistered(day) ->
+      string.join(["day", int.to_string(day), "unregistered"], " ")
     FailedToReadInput(input_path) ->
       string.append("failed to read input file: ", input_path)
     Other(s) -> s
@@ -39,10 +37,16 @@ fn to_snag(err: Err) -> Snag {
   |> snag.new
 }
 
-fn do(day: Day, runners: RunnerMap) -> gleam.Result(Solution, Err) {
-  try day_runner =
+type RunResult =
+  gleam.Result(Int, SolveErr)
+
+fn do(
+  day: Day,
+  runners: RunnerMap,
+) -> gleam.Result(#(RunResult, RunResult), Err) {
+  try #(pt_1, pt_2) =
     map.get(runners, day)
-    |> result.replace_error(Unrecognized(day))
+    |> result.replace_error(Unregistered(day))
 
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
@@ -52,44 +56,79 @@ fn do(day: Day, runners: RunnerMap) -> gleam.Result(Solution, Err) {
     |> result.map(string.trim)
     |> result.replace_error(FailedToReadInput(input_path))
 
-  do_run(day_runner, input)
+  let pt_1 =
+    erlang.rescue(fn() { pt_1(input) })
+    |> result.map_error(run_err_to_string)
+
+  let pt_2 =
+    erlang.rescue(fn() { pt_2(input) })
+    |> result.map_error(run_err_to_string)
+
+  Ok(#(pt_1, pt_2))
 }
 
-fn collect(x: #(Day, gleam.Result(Solution, Err))) -> String {
+fn run_err_to_string(err: erlang.Crash) -> SolveErr {
+  case err {
+    erlang.Errored(dyn) | erlang.Exited(dyn) | erlang.Thrown(dyn) ->
+      dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
+      |> result.then(fn(m) {
+        map.get(m, atom.create_from_string("message"))
+        |> result.replace_error([])
+        |> result.then(dynamic.string)
+      })
+      |> result.unwrap(string.append(
+        "run failed for some reason: ",
+        string.inspect(dyn),
+      ))
+      |> RunFailed
+  }
+}
+
+fn run_res_to_string(res: RunResult) -> String {
+  case res {
+    Ok(res) -> int.to_string(res)
+    Error(err) ->
+      case err {
+        Undef -> "function undefined"
+        RunFailed(s) -> s
+      }
+  }
+}
+
+fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
   let day = int.to_string(x.0)
   case x.1 {
     Ok(#(res_1, res_2)) ->
       [
         "Ran day ",
         day,
-        ":",
-        "\n  Part 1: ",
-        int.to_string(res_1),
-        "\n  Part 2: ",
-        int.to_string(res_2),
+        ":\n",
+        "  Part 1: ",
+        run_res_to_string(res_1),
+        "\n",
+        "  Part 2: ",
+        run_res_to_string(res_2),
       ]
       |> string.concat()
+
     Error(err) ->
       err
-      |> to_snag
-      |> snag.layer(string.append("Error on day ", day))
-      |> snag.layer("failed to run advent of code")
+      |> err_to_snag
+      |> snag.layer(string.append("failed to run day ", day))
       |> snag.pretty_print()
   }
 }
 
-const timeout_flag: flag.Flag = #(
-  "timeout",
-  flag.Contents(flag.I(0), "Run with specified timeout"),
-)
+fn timeout_flag() {
+  flag.int("timeout", 0, "Run with specified timeout")
+}
 
 pub fn run_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
   glint.Stub(
     path: ["run"],
     run: run(_, runners, False),
-    flags: [timeout_flag],
+    flags: [timeout_flag()],
     description: "Run the specified days",
-    usage: "gleam run run <FLAGS> <dayX> <dayY> <...>",
   )
 }
 
@@ -97,9 +136,8 @@ pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
   glint.Stub(
     path: ["run", "all"],
     run: run(_, runners, True),
-    flags: [timeout_flag],
+    flags: [timeout_flag()],
     description: "Run all registered days",
-    usage: "gleam run run all <FLAGS>",
   )
 }
 
@@ -108,7 +146,7 @@ fn run(
   runners: RunnerMap,
   run_all: Bool,
 ) -> Result(List(String)) {
-  assert Ok(flag.I(timeout)) = flag.get_value(input.flags, timeout_flag.0)
+  assert Ok(flag.I(timeout)) = flag.get(input.flags, timeout_flag().0)
 
   try timing = case timeout {
     0 -> Ok(Endless)

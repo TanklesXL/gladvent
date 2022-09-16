@@ -5,8 +5,8 @@ import gleam/otp/task.{Task}
 import gleam/erlang
 import gleam/pair
 import gleam/list
-import gleam/result
 import gleam/int
+import gleam/string
 
 pub type Timing {
   Endless
@@ -70,6 +70,7 @@ fn try_await_many(
 fn await_err_to_string(err: task.AwaitError) -> String {
   case err {
     task.Timeout -> "task timed out"
-    task.Exit(_) -> "task exited for some reason"
+    task.Exit(s) ->
+      string.append("task exited for some reason: ", string.inspect(s))
   }
 }
