@@ -26,6 +26,7 @@ This project provides your application with 2 commands, `new` and `run`:
   - format: `gleam run new a b c ...`
   - used like `gleam run new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
 - `run`: run the specified days
+
   - format: `gleam run run a b c ...`
   - flags:
     - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
@@ -37,7 +38,7 @@ This project provides your application with 2 commands, `new` and `run`:
     - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
       - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
 
-*Note:*
+_Note:_
 
 - the `new` command creates source files in `src/days/` and input files in the `input/` directory.
 - the `run` command expects input files to be in the `input/` directory.
@@ -53,7 +54,8 @@ This project provides your application with 2 commands, `new` and `run`:
 
 Where X is the day you'd like to add (when using `gladvent.main()`):
 
-*Note:* this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int` 
+_Note:_ this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
+
 1. run `gleam run new X`
 2. add your input to `input/day_X.txt`
 3. add your code to `src/days/day_X.gleam`
