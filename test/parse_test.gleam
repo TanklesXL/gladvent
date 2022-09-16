@@ -5,7 +5,7 @@ import gleam/function.{compose}
 import gleeunit/should
 
 pub fn day_test() {
-  list.range(1, 26)
+  list.range(1, 25)
   |> list.each(fn(x) {
     x
     |> int.to_string()

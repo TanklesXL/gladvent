@@ -119,18 +119,16 @@ fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
   }
 }
 
-const timeout_flag: flag.Flag = #(
-  "timeout",
-  flag.Contents(flag.I(0), "Run with specified timeout"),
-)
+fn timeout_flag() {
+  flag.int("timeout", 0, "Run with specified timeout")
+}
 
 pub fn run_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
   glint.Stub(
     path: ["run"],
     run: run(_, runners, False),
-    flags: [timeout_flag],
+    flags: [timeout_flag()],
     description: "Run the specified days",
-    usage: "gleam run run <FLAGS> <dayX> <dayY> <...>",
   )
 }
 
@@ -138,9 +136,8 @@ pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
   glint.Stub(
     path: ["run", "all"],
     run: run(_, runners, True),
-    flags: [timeout_flag],
+    flags: [timeout_flag()],
     description: "Run all registered days",
-    usage: "gleam run run all <FLAGS>",
   )
 }
 
@@ -149,7 +146,7 @@ fn run(
   runners: RunnerMap,
   run_all: Bool,
 ) -> Result(List(String)) {
-  assert Ok(flag.I(timeout)) = flag.get_value(input.flags, timeout_flag.0)
+  assert Ok(flag.I(timeout)) = flag.get(input.flags, timeout_flag().0)
 
   try timing = case timeout {
     0 -> Ok(Endless)

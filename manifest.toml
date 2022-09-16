@@ -4,9 +4,10 @@
 packages = [
   { name = "gleam_erlang", version = "0.15.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_erlang", source = "hex", outer_checksum = "0C22868854FBF76F16D5B8BEFCC58C4EEAB85FF0C37214CFD06C2E3A56ACB2AC" },
   { name = "gleam_otp", version = "0.5.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_erlang"], otp_app = "gleam_otp", source = "hex", outer_checksum = "43CDB5284EEFEE6E006A3B067E23E567ACE1224A72487491E47708FB506CC8F7" },
-  { name = "gleam_stdlib", version = "0.22.3", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "F2C2D389B06426E1289D5419F89BDE8E0F7F35A40B2BBB3C88188481F0D44A9F" },
+  { name = "gleam_stdlib", version = "0.23.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "6BF84F0A486192488F7A2DF44F90B1964831CB374C05F4856A7A0BB1DD37F68C" },
   { name = "gleeunit", version = "0.6.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "A006864621DB80C4FBB0746580703502FD81A4D38D23FCB20A8120984D353DF0" },
-  { name = "glint", version = "0.8.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "snag"], otp_app = "glint", source = "hex", outer_checksum = "A9A240E130913266E9BC42F65704832233A4E119E476A24062AD34C892FBC971" },
+  { name = "glint", version = "0.9.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "shellout", "snag"], otp_app = "glint", source = "hex", outer_checksum = "893D19F5A8400CFD75E7D16417F72F45A9A6E16CA72C574ECCCD262772EA689B" },
+  { name = "shellout", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "shellout", source = "hex", outer_checksum = "310662075CDCB6E3928B03E3FD371B1DDCD691E1C709E606AB02195E36675D4E" },
   { name = "snag", version = "0.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "35C63E478782C58236F1050297C2FDF9806A4DD55C6FAF0B6EC5E54BC119342D" },
 ]
 

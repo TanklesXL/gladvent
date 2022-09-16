@@ -129,7 +129,6 @@ pub fn new_command() {
     run: run,
     flags: [],
     description: "Create .gleam and input files",
-    usage: "gleam run new <dayX> <dayY> <...> ",
   )
 }
 
