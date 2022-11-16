@@ -41,7 +41,8 @@ fn now_ms() {
 }
 
 fn task_map(over l: List(a), with f: fn(a) -> b) -> List(#(a, Task(b))) {
-  list.map(l, fn(x) { #(x, task.async(fn() { f(x) })) })
+  use x <- list.map(l)
+  #(x, task.async(fn() { f(x) }))
 }
 
 fn try_await_many(
@@ -49,28 +50,28 @@ fn try_await_many(
   timing: Timing,
 ) -> List(#(x, Result(a, String))) {
   case timing {
-    Endless -> pair.map_second(_, fn(t) {
+    Endless -> {
+      use tup <- list.map(tasks)
+      use t <- pair.map_second(tup)
       task.try_await_forever(t)
       |> result.map_error(await_err_to_string)
-    })
+    }
 
     Ending(timeout) -> {
       let end = now_ms() + timeout
-      pair.map_second(_, fn(t: Task(a)) {
-        end - now_ms()
-        |> int.clamp(min: 0, max: timeout)
-        |> task.try_await(t, _)
-        |> result.map_error(await_err_to_string)
-      })
+      use tup <- list.map(tasks)
+      use t <- pair.map_second(tup)
+      end - now_ms()
+      |> int.clamp(min: 0, max: timeout)
+      |> task.try_await(t, _)
+      |> result.map_error(await_err_to_string)
     }
   }
-  |> list.map(tasks, _)
 }
 
 fn await_err_to_string(err: task.AwaitError) -> String {
   case err {
     task.Timeout -> "task timed out"
-    task.Exit(s) ->
-      string.append("task exited for some reason: ", string.inspect(s))
+    task.Exit(s) -> "task exited for some reason: " <> string.inspect(s)
   }
 }

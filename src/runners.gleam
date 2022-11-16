@@ -53,14 +53,9 @@ fn function_exists(
       func_name
       |> atom.create_from_string
       |> do_function_exists(mod, _)
-      |> result.replace_error(snag.new(string.concat([
-        "module ",
-        days_dir,
-        filename,
-        " does not define a \"pub fn ",
-        func_name,
-        "(String) -> Int\"",
-      ])))
+      |> result.replace_error(snag.new(
+        "module " <> days_dir <> filename <> " does not define a \"pub fn " <> func_name <> "(String) -> Int\"",
+      ))
       |> snag.context("function missing")
   }
 }

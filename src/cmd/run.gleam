@@ -29,9 +29,8 @@ type Err {
 fn err_to_snag(err: Err) -> Snag {
   case err {
     Unregistered(day) ->
-      string.join(["day", int.to_string(day), "unregistered"], " ")
-    FailedToReadInput(input_path) ->
-      string.append("failed to read input file: ", input_path)
+      "day" <> " " <> int.to_string(day) <> " " <> "unregistered"
+    FailedToReadInput(input_path) -> "failed to read input file: " <> input_path
     Other(s) -> s
   }
   |> snag.new
@@ -67,21 +66,24 @@ fn do(
   Ok(#(pt_1, pt_2))
 }
 
-fn run_err_to_string(err: erlang.Crash) -> SolveErr {
+fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
   case err {
-    erlang.Errored(dyn) | erlang.Exited(dyn) | erlang.Thrown(dyn) ->
-      dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
-      |> result.then(fn(m) {
-        map.get(m, atom.create_from_string("message"))
-        |> result.replace_error([])
-        |> result.then(dynamic.string)
-      })
-      |> result.unwrap(string.append(
-        "run failed for some reason: ",
-        string.inspect(dyn),
-      ))
-      |> RunFailed
+    erlang.Errored(dyn) | erlang.Exited(dyn) | erlang.Thrown(dyn) -> dyn
   }
+}
+
+fn run_err_to_string(err: erlang.Crash) -> SolveErr {
+  let dyn = crash_to_dyn(err)
+  {
+    try m = dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
+    map.get(m, atom.create_from_string("message"))
+    |> result.replace_error([])
+    |> result.then(dynamic.string)
+  }
+  |> result.lazy_unwrap(fn() {
+    "run failed for some reason: " <> string.inspect(dyn)
+  })
+  |> RunFailed
 }
 
 fn run_res_to_string(res: RunResult) -> String {
@@ -99,17 +101,9 @@ fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
   let day = int.to_string(x.0)
   case x.1 {
     Ok(#(res_1, res_2)) ->
-      [
-        "Ran day ",
-        day,
-        ":\n",
-        "  Part 1: ",
-        run_res_to_string(res_1),
-        "\n",
-        "  Part 2: ",
-        run_res_to_string(res_2),
-      ]
-      |> string.concat()
+      "Ran day " <> day <> ":\n" <> "  Part 1: " <> run_res_to_string(res_1) <> "\n" <> "  Part 2: " <> run_res_to_string(
+        res_2,
+      )
 
     Error(err) ->
       err

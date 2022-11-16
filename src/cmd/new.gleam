@@ -14,7 +14,7 @@ type Err {
   FailedToCreateDir(String)
   FailedToCreateFile(String)
   FileAlreadyExists(String)
-  Combo(String, String)
+  Combo(Err, Err)
   Other(String)
 }
 
@@ -74,14 +74,7 @@ fn create_files(day: Day) -> snag.Result(Nil) {
       )
     Error(e1), Error(e2) ->
       Error(
-        Combo(
-          e1
-          |> to_snag
-          |> snag.line_print,
-          e2
-          |> to_snag
-          |> snag.line_print,
-        )
+        Combo(e1, e2)
         |> to_snag,
       )
   }
@@ -118,7 +111,7 @@ fn collect(x: #(Day, snag.Result(Nil))) -> String {
     |> snag.context(string.append("error occurred when initializing day ", day))
     |> result.map_error(snag.pretty_print)
   {
-    Ok(_) -> string.append("initialized day: ", day)
+    Ok(_) -> "initialized day: " <> day
     Error(reason) -> reason
   }
 }
@@ -140,11 +133,13 @@ fn run(input: CommandInput) -> snag.Result(List(String)) {
 
 fn to_snag(e: Err) -> Snag {
   case e {
-    FailedToCreateDir(d) -> string.append("failed to create dir: ", d)
-    FailedToCreateFile(f) -> string.append("failed to create file: ", f)
-    FileAlreadyExists(f) -> string.append("file already exists: ", f)
+    FailedToCreateDir(d) -> "failed to create dir: " <> d
+    FailedToCreateFile(f) -> "failed to create file: " <> f
+    FileAlreadyExists(f) -> "file already exists: " <> f
     Combo(e1, e2) ->
       [e1, e2]
+      |> list.map(to_snag)
+      |> list.map(snag.line_print)
       |> list.filter(fn(s) { s != "" })
       |> string.join(" && ")
     Other(s) -> s
