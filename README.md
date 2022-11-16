@@ -3,7 +3,7 @@
 [![Hex Package](https://img.shields.io/hexpm/v/gladvent?color=ffaff3&label=%F0%9F%93%A6)](https://hex.pm/packages/gladvent)
 [![Hex.pm](https://img.shields.io/hexpm/dt/gladvent?color=ffaff3)](https://hex.pm/packages/gladvent)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3?label=%F0%9F%93%9A)](https://hexdocs.pm/gladvent/)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tanklesxl/gladvent/test)](https://github.com/tanklesxl/gladvent/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tanklesxl/gladvent/main)](https://github.com/tanklesxl/gladvent/actions)
 
 An Advent Of Code runner for Gleam
 
