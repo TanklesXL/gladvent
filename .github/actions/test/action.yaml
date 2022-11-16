@@ -11,10 +11,6 @@ inputs:
     description: erlang-otp version
     required: false
     default: 24.3.4
-  node-version:
-    description: nodeJS version
-    required: false
-    default: 16.15.0
 
 runs:
   using: composite
@@ -33,6 +29,4 @@ runs:
     - run: gleam check
       shell: bash
     - run: gleam test --target=erlang
-      shell: bash
-    - run: gleam test --target=javascript
       shell: bash
