@@ -108,7 +108,7 @@ fn collect(x: #(Day, snag.Result(Nil))) -> String {
   let day = int.to_string(x.0)
   case
     x.1
-    |> snag.context(string.append("error occurred when initializing day ", day))
+    |> snag.context("error occurred when initializing day " <> day)
     |> result.map_error(snag.pretty_print)
   {
     Ok(_) -> "initialized day: " <> day
@@ -128,6 +128,7 @@ pub fn new_command() {
 fn run(input: CommandInput) -> snag.Result(List(String)) {
   input.args
   |> parse.days
+  |> snag.context(string.join(["failed to initialize:", ..input.args], " "))
   |> result.map(cmd.exec(_, cmd.Endless, do, snag.new, collect))
 }
 
