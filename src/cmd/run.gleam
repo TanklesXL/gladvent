@@ -5,6 +5,7 @@ import gleam/string
 import snag.{Result, Snag}
 import gleam/erlang/file
 import gleam/erlang
+import gleam/erlang/charlist.{Charlist}
 import gleam/erlang/atom
 import gleam/dynamic
 import parse.{Day}
@@ -39,6 +40,19 @@ fn err_to_snag(err: Err) -> Snag {
 type RunResult =
   gleam.Result(Int, SolveErr)
 
+type Direction {
+  // Leading
+  // Trailing
+  Both
+}
+
+fn string_trim(s: String, dir: Direction, sub: String) -> String {
+  do_trim(s, dir, charlist.from_string(sub))
+}
+
+external fn do_trim(String, Direction, Charlist) -> String =
+  "string" "trim"
+
 fn do(
   day: Day,
   runners: RunnerMap,
@@ -52,9 +66,8 @@ fn do(
   try input =
     input_path
     |> file.read()
-    |> result.map(string.trim)
+    |> result.map(string_trim(_, Both, "\n"))
     |> result.replace_error(FailedToReadInput(input_path))
-
   let pt_1 =
     erlang.rescue(fn() { pt_1(input) })
     |> result.map_error(run_err_to_string)
