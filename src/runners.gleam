@@ -6,13 +6,14 @@ import parse.{Day}
 import gleam/list
 import gleam/result
 import gleam
+import gleam/dynamic.{Dynamic}
 
 pub const input_dir = "input/"
 
 pub const days_dir = "src/days/"
 
 pub type PartRunner =
-  fn(String) -> Int
+  fn(String) -> Dynamic
 
 pub type DayRunner =
   #(PartRunner, PartRunner)

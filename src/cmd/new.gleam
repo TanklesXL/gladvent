@@ -95,11 +95,11 @@ fn do(day: Day) -> snag.Result(Nil) {
   create_files(day)
 }
 
-const gleam_starter = "pub fn pt_1(input: String) -> Int {
+const gleam_starter = "pub fn pt_1(input: String) {
   todo
 }
 
-pub fn pt_2(input: String) -> Int {
+pub fn pt_2(input: String) {
   todo
 }
 "

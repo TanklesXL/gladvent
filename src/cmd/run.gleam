@@ -1,5 +1,5 @@
-import gleam/list
 import gleam/int
+import gleam/list
 import gleam/result
 import gleam/string
 import snag.{Result, Snag}
@@ -7,7 +7,6 @@ import gleam/erlang/file
 import gleam/erlang
 import gleam/erlang/charlist.{Charlist}
 import gleam/erlang/atom
-import gleam/dynamic
 import parse.{Day}
 import gleam/map
 import cmd.{Ending, Endless}
@@ -15,6 +14,8 @@ import glint.{CommandInput}
 import glint/flag
 import gleam
 import runners.{RunnerMap}
+import gleam/dynamic.{Dynamic}
+import gleam/option.{None, Option}
 
 type SolveErr {
   Undef
@@ -38,7 +39,7 @@ fn err_to_snag(err: Err) -> Snag {
 }
 
 type RunResult =
-  gleam.Result(Int, SolveErr)
+  gleam.Result(Dynamic, SolveErr)
 
 type Direction {
   // Leading
@@ -56,6 +57,7 @@ external fn do_trim(String, Direction, Charlist) -> String =
 fn do(
   day: Day,
   runners: RunnerMap,
+  allow_crash: Bool,
 ) -> gleam.Result(#(RunResult, RunResult), Err) {
   try #(pt_1, pt_2) =
     map.get(runners, day)
@@ -68,15 +70,21 @@ fn do(
     |> file.read()
     |> result.map(string_trim(_, Both, "\n"))
     |> result.replace_error(FailedToReadInput(input_path))
-  let pt_1 =
-    erlang.rescue(fn() { pt_1(input) })
-    |> result.map_error(run_err_to_string)
 
-  let pt_2 =
-    erlang.rescue(fn() { pt_2(input) })
-    |> result.map_error(run_err_to_string)
-
-  Ok(#(pt_1, pt_2))
+  case allow_crash {
+    True -> Ok(#(Ok(pt_1(input)), Ok(pt_2(input))))
+    False -> {
+      let pt_1 =
+        fn() { pt_1(input) }
+        |> erlang.rescue
+        |> result.map_error(run_err_to_string)
+      let pt_2 =
+        fn() { pt_2(input) }
+        |> erlang.rescue
+        |> result.map_error(run_err_to_string)
+      Ok(#(pt_1, pt_2))
+    }
+  }
 }
 
 fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
@@ -85,23 +93,69 @@ fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
   }
 }
 
+type GleamErr {
+  GleamErr(
+    gleam_error: atom.Atom,
+    module: String,
+    function: String,
+    line: Int,
+    message: String,
+    value: Option(Dynamic),
+  )
+}
+
+fn decode_gleam_err() {
+  dynamic.decode6(
+    GleamErr,
+    dynamic.field(atom.create_from_string("gleam_error"), atom.from_dynamic),
+    dynamic.field(atom.create_from_string("module"), dynamic.string),
+    dynamic.field(atom.create_from_string("function"), dynamic.string),
+    dynamic.field(atom.create_from_string("line"), dynamic.int),
+    dynamic.field(atom.create_from_string("message"), dynamic.string),
+    dynamic.any([
+      dynamic.field(
+        atom.create_from_string("value"),
+        dynamic.optional(dynamic.dynamic),
+      ),
+      fn(_) { Ok(None) },
+    ]),
+  )
+}
+
+fn gleam_err_to_string(g: GleamErr) -> String {
+  string.join(
+    [
+      "error:",
+      atom.to_string(g.gleam_error),
+      "-",
+      g.message,
+      "in module",
+      g.module,
+      "in function",
+      g.function,
+      "at line",
+      int.to_string(g.line),
+      g.value
+      |> option.map(fn(val) { "with value " <> string.inspect(val) })
+      |> option.unwrap(""),
+    ],
+    " ",
+  )
+}
+
 fn run_err_to_string(err: erlang.Crash) -> SolveErr {
   let dyn = crash_to_dyn(err)
-  {
-    try m = dynamic.map(atom.from_dynamic, dynamic.dynamic)(dyn)
-    map.get(m, atom.create_from_string("message"))
-    |> result.replace_error([])
-    |> result.then(dynamic.string)
-  }
+  decode_gleam_err()(dyn)
+  |> result.map(gleam_err_to_string)
   |> result.lazy_unwrap(fn() {
-    "run failed for some reason: " <> string.inspect(dyn)
+    "run failed for some reason: " <> string.inspect(err)
   })
   |> RunFailed
 }
 
 fn run_res_to_string(res: RunResult) -> String {
   case res {
-    Ok(res) -> int.to_string(res)
+    Ok(res) -> string.inspect(res)
     Error(err) ->
       case err {
         Undef -> "function undefined"
@@ -126,15 +180,21 @@ fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
   }
 }
 
+// ----- CLI -----
+
 fn timeout_flag() {
   flag.int("timeout", 0, "Run with specified timeout")
+}
+
+fn allow_crash_flag() {
+  flag.bool("allow-crash", False, "Don't catch exceptions thrown by runners")
 }
 
 pub fn run_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
   glint.Stub(
     path: ["run"],
     run: run(_, runners, False),
-    flags: [timeout_flag()],
+    flags: [timeout_flag(), allow_crash_flag()],
     description: "Run the specified days",
   )
 }
@@ -143,7 +203,7 @@ pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
   glint.Stub(
     path: ["run", "all"],
     run: run(_, runners, True),
-    flags: [timeout_flag()],
+    flags: [timeout_flag(), allow_crash_flag()],
     description: "Run all registered days",
   )
 }
@@ -154,6 +214,7 @@ fn run(
   run_all: Bool,
 ) -> Result(List(String)) {
   assert Ok(flag.I(timeout)) = flag.get(input.flags, timeout_flag().0)
+  assert Ok(flag.B(allow_crash)) = flag.get(input.flags, allow_crash_flag().0)
 
   try timing = case timeout {
     0 -> Ok(Endless)
@@ -175,7 +236,7 @@ fn run(
   }
 
   days
-  |> cmd.exec(timing, do(_, runners), Other, collect)
+  |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
   |> Ok
 }
 

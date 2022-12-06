@@ -16,7 +16,7 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 This library provides 2 options to run your advent of code solvers:
 
 1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
-2. Create your own `Map(Int, #(fn(String) -> Int, fn(String) -> Int))` and pass it to `gladvent.execute`
+2. Create your own `Map(Int, #(fn(String) -> Dynamic, fn(String) -> Dynamic))` and pass it to `gladvent.execute`
 
 ## Available commands
 
@@ -31,23 +31,31 @@ This project provides your application with 2 commands, `new` and `run`:
   - flags:
     - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
       - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+    - `--allow-crash`: runs days without the use of `rescue` functionality, rendering output text more verbose but also allowing for stacktraces to be printed
+      - usage example: `gleam run run 1 2 3 --allow-crash`
 
 - `run all`: run all registered days
   - format: `gleam run run all`
   - flags:
-    - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
+    - `--timeout`: `gleam run run all --timeout={timeout in ms}`
       - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
+    - `--allow-crash`: runs days without the use of `rescue` functionality, rendering output text more verbose but also allowing for stacktraces to be printed
+      - usage example: `gleam run run all --allow-crash`
 
 _Note:_
 
+- due to how `gladvent` works, the `pt_1` and `pt_2` functions only need to return `Dynamic` when direction building a `RunnerMap` and using `gladvent.execute`, when using `gladvent.main` they can return anything.
 - the `new` command creates source files in `src/days/` and input files in the `input/` directory.
 - the `run` command expects input files to be in the `input/` directory.
 - using `gladvent.main` expects gleam day runners to be in `src/days/`
+- any triggered `assert` will be captured and printed, for example: `error: assert - Assertion pattern match failed in module days/day_1 in function pt_1 at line 2 with value 2`
+- any message in a `todo` will be captured and printed, for example: `error: todo - test in module days/day_1 in function pt_2 at line 7`
 
 ## Seeing help messages
 
 - To see available subcommands: `gleam run -- --help`
 - To see help for the `run` command: `gleam run run --help`
+- To see help for the `run` command: `gleam run run all --help`
 - To see help for the `new` command: `gleam run new --help`
 
 ## General Workflow
