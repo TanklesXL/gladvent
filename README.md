@@ -44,7 +44,7 @@ This project provides your application with 2 commands, `new` and `run`:
 
 _Note:_
 
-- due to how `gladvent` works, the `pt_1` and `pt_2` functions only need to return `Dynamic` when direction building a `RunnerMap` and using `gladvent.execute`, when using `gladvent.main` they can return anything.
+- due to how `gladvent` works, the `pt_1` and `pt_2` functions only need to return `Dynamic` when directly building a `RunnerMap` and using `gladvent.execute`, when using `gladvent.main` they can return anything.
 - the `new` command creates source files in `src/days/` and input files in the `input/` directory.
 - the `run` command expects input files to be in the `input/` directory.
 - using `gladvent.main` expects gleam day runners to be in `src/days/`
