@@ -19,11 +19,11 @@ open_file_exclusive(File) ->
 to_gleam_result(Res) ->
     case Res of
         ok -> {ok, nil};
-        Err -> Err
+        Other -> Other
     end.
 
-write(IODevice, Charlist) ->
-    to_gleam_result(file:write(IODevice, Charlist)).
+write(IODevice, Contents) ->
+    to_gleam_result(file:write(IODevice, Contents)).
 
 ensure_dir(Dir) ->
     to_gleam_result(filelib:ensure_dir(Dir)).
