@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        gleam: ["0.25.0"]
+        gleam: ["0.28.1"]
         erlang: ["24.2"]
     steps:
       - uses: actions/checkout@v2

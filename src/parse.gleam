@@ -13,7 +13,7 @@ pub fn int(s: String) -> Result(Int) {
 }
 
 pub fn day(s: String) -> Result(Day) {
-  try i = int(s)
+  use i <- result.then(int(s))
 
   case i > 0 && i < 26 {
     True -> Ok(i)

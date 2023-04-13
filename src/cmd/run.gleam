@@ -10,7 +10,7 @@ import gleam/erlang/atom
 import parse.{Day}
 import gleam/map
 import cmd.{Ending, Endless}
-import glint.{CommandInput}
+import glint
 import glint/flag
 import gleam
 import runners.{RunnerMap}
@@ -59,17 +59,19 @@ fn do(
   runners: RunnerMap,
   allow_crash: Bool,
 ) -> gleam.Result(#(RunResult, RunResult), Err) {
-  try #(pt_1, pt_2) =
+  use #(pt_1, pt_2) <- result.then(
     map.get(runners, day)
-    |> result.replace_error(Unregistered(day))
+    |> result.replace_error(Unregistered(day)),
+  )
 
   let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
 
-  try input =
+  use input <- result.then(
     input_path
     |> file.read()
     |> result.map(string_trim(_, Both, "\n"))
-    |> result.replace_error(FailedToReadInput(input_path))
+    |> result.replace_error(FailedToReadInput(input_path)),
+  )
 
   case allow_crash {
     True -> Ok(#(Ok(pt_1(input)), Ok(pt_2(input))))
@@ -183,70 +185,78 @@ fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
 // ----- CLI -----
 
 fn timeout_flag() {
-  flag.int("timeout", 0, "Run with specified timeout")
+  flag.int(
+    "timeout",
+    "Run with specified timeout",
+    [
+      flag.WithConstraint(fn(i) {
+        case i > 0 {
+          True -> Ok(Nil)
+          False -> snag.error("timeout value must greater than zero")
+        }
+      }),
+    ],
+  )
 }
 
 fn allow_crash_flag() {
-  flag.bool("allow-crash", False, "Don't catch exceptions thrown by runners")
+  flag.bool(
+    "allow-crash",
+    option.Some(False),
+    "Don't catch exceptions thrown by runners",
+  )
 }
 
 pub fn run_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
-  glint.Stub(
+  use input <- glint.Stub(
     path: ["run"],
-    run: run(_, runners, False),
-    flags: [timeout_flag(), allow_crash_flag()],
+    flags: [timeout_flag(), allow_crash_flag(), cmd.days_flag()],
     description: "Run the specified days",
   )
-}
 
-pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
-  glint.Stub(
-    path: ["run", "all"],
-    run: run(_, runners, True),
-    flags: [timeout_flag(), allow_crash_flag()],
-    description: "Run all registered days",
-  )
-}
+  use allow_crash <- result.then(flag.get_bool(
+    input.flags,
+    allow_crash_flag().0,
+  ))
 
-fn run(
-  input: CommandInput,
-  runners: RunnerMap,
-  run_all: Bool,
-) -> Result(List(String)) {
-  assert Ok(flag.I(timeout)) = flag.get(input.flags, timeout_flag().0)
-  assert Ok(flag.B(allow_crash)) = flag.get(input.flags, allow_crash_flag().0)
+  let timing = timing(input.flags)
 
-  try timing = case timeout {
-    0 -> Ok(Endless)
-    _ if timeout < 0 -> invalid_timeout_err(timeout)
-    _ -> Ok(Ending(timeout))
-  }
-
-  try days = case run_all {
-    True ->
-      runners
-      |> map.keys()
-      |> list.sort(by: int.compare)
-      |> Ok
-
-    False ->
-      input.args
-      |> parse.days()
-      |> wrap_failed_to_parse_err(input.args)
-  }
-
-  days
+  input.flags
+  |> flag.get_ints(cmd.days_flag().0)
+  |> result.lazy_unwrap(fn() { all_days(runners) })
   |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
   |> Ok
 }
 
-fn invalid_timeout_err(timeout: Int) -> Result(a) {
-  ["invalid timeout value ", "'", int.to_string(timeout), "'"]
-  |> string.concat()
-  |> snag.error()
-  |> snag.context("timeout must be greater than or equal to 1 ms")
+pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
+  use input <- glint.Stub(
+    path: ["run", "all"],
+    flags: [timeout_flag(), allow_crash_flag()],
+    description: "Run all registered days",
+  )
+
+  use allow_crash <- result.then(flag.get_bool(
+    input.flags,
+    allow_crash_flag().0,
+  ))
+
+  let timing = timing(input.flags)
+
+  runners
+  |> all_days
+  |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
+  |> Ok
 }
 
-fn wrap_failed_to_parse_err(res: Result(a), args: List(String)) -> Result(a) {
-  snag.context(res, string.join(["failed to parse arguments:", ..args], " "))
+fn timing(flags: flag.Map) {
+  case flag.get_int(flags, timeout_flag().0) {
+    Ok(timeout) -> Ending(timeout)
+    _ -> Endless
+  }
+}
+
+fn all_days(runners) {
+  runners
+  |> map.keys()
+  |> list.sort(by: int.compare)
 }

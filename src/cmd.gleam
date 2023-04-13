@@ -7,6 +7,36 @@ import gleam/pair
 import gleam/list
 import gleam/int
 import gleam/string
+import glint/flag
+import glint/flag/constraint
+import snag
+
+pub fn days_flag() {
+  flag.ints(
+    "days",
+    "a comma separated list of days",
+    [
+      flag.WithConstraint(fn(l) {
+        case l {
+          [] -> snag.error("no days selected")
+          _ -> Ok(Nil)
+        }
+      }),
+      flag.WithConstraint(
+        fn(i) {
+          case i {
+            _ if i > 0 && i < 26 -> Ok(Nil)
+            _ ->
+              snag.error(
+                "invalid day: '" <> int.to_string(i) <> "' must be in range 1 to 25",
+              )
+          }
+        }
+        |> constraint.each(),
+      ),
+    ],
+  )
+}
 
 pub type Timing {
   Endless

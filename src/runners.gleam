@@ -62,11 +62,12 @@ fn function_exists(
 }
 
 fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
-  try day =
+  use day <- result.then(
     string.replace(filename, "day_", "")
     |> string.replace(".gleam", "")
     |> parse.day
-    |> snag.context(string.append("cannot create runner for ", filename))
+    |> snag.context(string.append("cannot create runner for ", filename)),
+  )
 
   let module =
     filename
@@ -74,8 +75,8 @@ fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
     |> to_module_name
     |> atom.create_from_string
 
-  try pt_1 = function_exists(filename, module, "pt_1")
-  try pt_2 = function_exists(filename, module, "pt_2")
+  use pt_1 <- result.then(function_exists(filename, module, "pt_1"))
+  use pt_2 <- result.then(function_exists(filename, module, "pt_2"))
 
   Ok(#(day, #(pt_1, pt_2)))
 }

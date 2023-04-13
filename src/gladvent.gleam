@@ -22,18 +22,18 @@ pub fn main() {
 pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
-    |> glint.with_pretty_help(glint.default_pretty_help)
+    |> glint.with_pretty_help(glint.default_pretty_help())
     |> glint.add_command_from_stub(new.new_command())
     |> glint.add_command_from_stub(run.run_command(runners))
     |> glint.add_command_from_stub(run.run_all_command(runners))
 
-  case glint.execute(commands, args()) {
-    Ok(glint.Out(Ok(output))) ->
-      output
+  use out <- glint.run_and_handle(commands, args())
+  case out {
+    Ok(out) ->
+      out
       |> string.join("\n\n")
       |> io.println
-    Ok(glint.Help(help)) -> io.println(help)
-    Ok(glint.Out(Error(err))) | Error(err) -> print_snag_and_halt(err)
+    Error(err) -> print_snag_and_halt(err)
   }
 }
 

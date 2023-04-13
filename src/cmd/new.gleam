@@ -7,7 +7,8 @@ import ffi/file
 import runners.{days_dir, input_dir}
 import gleam/erlang/file as efile
 import cmd
-import glint.{CommandInput}
+import glint
+import glint/flag
 import parse.{Day}
 
 type Err {
@@ -88,9 +89,10 @@ fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Err {
 }
 
 fn do(day: Day) -> snag.Result(Nil) {
-  try _ =
+  use _ <- result.then(
     list.try_map([input_dir, days_dir], create_dir)
-    |> result.map_error(to_snag)
+    |> result.map_error(to_snag),
+  )
 
   create_files(day)
 }
@@ -117,19 +119,14 @@ fn collect(x: #(Day, snag.Result(Nil))) -> String {
 }
 
 pub fn new_command() {
-  glint.Stub(
+  use input <- glint.Stub(
     path: ["new"],
-    run: run,
-    flags: [],
+    flags: [cmd.days_flag()],
     description: "Create .gleam and input files",
   )
-}
 
-fn run(input: CommandInput) -> snag.Result(List(String)) {
-  input.args
-  |> parse.days
-  |> snag.context(string.join(["failed to initialize:", ..input.args], " "))
-  |> result.map(cmd.exec(_, cmd.Endless, do, snag.new, collect))
+  use days <- result.map(flag.get_ints(input.flags, cmd.days_flag().0))
+  cmd.exec(days, cmd.Endless, do, snag.new, collect)
 }
 
 fn to_snag(e: Err) -> Snag {
