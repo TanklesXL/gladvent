@@ -11,31 +11,31 @@ import glint/flag
 import glint/flag/constraint
 import snag
 
+pub const days = "days"
+
 pub fn days_flag() {
-  flag.ints(
-    "days",
-    "a comma separated list of days",
-    [
-      flag.WithConstraint(fn(l) {
-        case l {
-          [] -> snag.error("no days selected")
-          _ -> Ok(Nil)
+  flag.new(
+    flag.LI
+    |> flag.constraint(fn(l) {
+      case l {
+        [] -> snag.error("no days selected")
+        _ -> Ok(Nil)
+      }
+    })
+    |> flag.constraint(
+      fn(i) {
+        case i {
+          _ if i > 0 && i < 26 -> Ok(Nil)
+          _ ->
+            snag.error(
+              "invalid day: '" <> int.to_string(i) <> "' must be in range 1 to 25",
+            )
         }
-      }),
-      flag.WithConstraint(
-        fn(i) {
-          case i {
-            _ if i > 0 && i < 26 -> Ok(Nil)
-            _ ->
-              snag.error(
-                "invalid day: '" <> int.to_string(i) <> "' must be in range 1 to 25",
-              )
-          }
-        }
-        |> constraint.each(),
-      ),
-    ],
+      }
+      |> constraint.each(),
+    ),
   )
+  |> flag.description("a comma separated list of days")
 }
 
 pub type Timing {

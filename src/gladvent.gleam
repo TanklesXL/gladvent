@@ -23,9 +23,9 @@ pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
     |> glint.with_pretty_help(glint.default_pretty_help())
-    |> glint.add_command_from_stub(new.new_command())
-    |> glint.add_command_from_stub(run.run_command(runners))
-    |> glint.add_command_from_stub(run.run_all_command(runners))
+    |> glint.add(["new"], new.new_command())
+    |> glint.add(["run"], run.run_command(runners))
+    |> glint.add(["run", "all"], run.run_all_command(runners))
 
   use out <- glint.run_and_handle(commands, args())
   case out {

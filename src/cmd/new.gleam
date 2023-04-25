@@ -119,14 +119,13 @@ fn collect(x: #(Day, snag.Result(Nil))) -> String {
 }
 
 pub fn new_command() {
-  use input <- glint.Stub(
-    path: ["new"],
-    flags: [cmd.days_flag()],
-    description: "Create .gleam and input files",
-  )
-
-  use days <- result.map(flag.get_ints(input.flags, cmd.days_flag().0))
-  cmd.exec(days, cmd.Endless, do, snag.new, collect)
+  {
+    use input <- glint.command()
+    use days <- result.map(flag.get_ints(input.flags, cmd.days))
+    cmd.exec(days, cmd.Endless, do, snag.new, collect)
+  }
+  |> glint.flag(cmd.days, cmd.days_flag())
+  |> glint.description("Create .gleam and input files")
 }
 
 fn to_snag(e: Err) -> Snag {

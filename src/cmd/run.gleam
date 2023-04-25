@@ -184,72 +184,68 @@ fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
 
 // ----- CLI -----
 
+const timeout = "timeout"
+
+const allow_crash = "allow-crash"
+
 fn timeout_flag() {
-  flag.int(
-    "timeout",
-    "Run with specified timeout",
-    [
-      flag.WithConstraint(fn(i) {
-        case i > 0 {
-          True -> Ok(Nil)
-          False -> snag.error("timeout value must greater than zero")
-        }
-      }),
-    ],
-  )
+  flag.I
+  |> flag.constraint(fn(i) {
+    case i > 0 {
+      True -> Ok(Nil)
+      False -> snag.error("timeout value must greater than zero")
+    }
+  })
+  |> flag.new
+  |> flag.description("Run with specified timeout")
 }
 
 fn allow_crash_flag() {
-  flag.bool(
-    "allow-crash",
-    option.Some(False),
-    "Don't catch exceptions thrown by runners",
-  )
+  flag.B
+  |> flag.default(False)
+  |> flag.new
+  |> flag.description("Don't catch exceptions thrown by runners")
 }
 
-pub fn run_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
-  use input <- glint.Stub(
-    path: ["run"],
-    flags: [timeout_flag(), allow_crash_flag(), cmd.days_flag()],
-    description: "Run the specified days",
-  )
+pub fn run_command(runners: RunnerMap) -> glint.Command(Result(List(String))) {
+  {
+    use input <- glint.command()
+    use allow_crash <- result.then(flag.get_bool(input.flags, allow_crash))
 
-  use allow_crash <- result.then(flag.get_bool(
-    input.flags,
-    allow_crash_flag().0,
-  ))
+    let timing = timing(input.flags)
 
-  let timing = timing(input.flags)
-
-  input.flags
-  |> flag.get_ints(cmd.days_flag().0)
-  |> result.lazy_unwrap(fn() { all_days(runners) })
-  |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
-  |> Ok
+    input.flags
+    |> flag.get_ints(cmd.days)
+    |> result.lazy_unwrap(fn() { all_days(runners) })
+    |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
+    |> Ok
+  }
+  |> glint.flag(timeout, timeout_flag())
+  |> glint.flag(allow_crash, allow_crash_flag())
+  |> glint.flag(cmd.days, cmd.days_flag())
+  |> glint.description("Run the specified days")
 }
 
-pub fn run_all_command(runners: RunnerMap) -> glint.Stub(Result(List(String))) {
-  use input <- glint.Stub(
-    path: ["run", "all"],
-    flags: [timeout_flag(), allow_crash_flag()],
-    description: "Run all registered days",
-  )
+pub fn run_all_command(
+  runners: RunnerMap,
+) -> glint.Command(Result(List(String))) {
+  {
+    use input <- glint.command()
+    use allow_crash <- result.then(flag.get_bool(input.flags, allow_crash))
 
-  use allow_crash <- result.then(flag.get_bool(
-    input.flags,
-    allow_crash_flag().0,
-  ))
-
-  let timing = timing(input.flags)
-
-  runners
-  |> all_days
-  |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
-  |> Ok
+    let timing = timing(input.flags)
+    runners
+    |> all_days
+    |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
+    |> Ok
+  }
+  |> glint.flag(timeout, timeout_flag())
+  |> glint.flag(allow_crash, allow_crash_flag())
+  |> glint.description("Run all registered days")
 }
 
 fn timing(flags: flag.Map) {
-  case flag.get_int(flags, timeout_flag().0) {
+  case flag.get_int(flags, timeout) {
     Ok(timeout) -> Ending(timeout)
     _ -> Endless
   }
