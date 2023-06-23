@@ -7,15 +7,16 @@ import gleam/erlang/file
 import gleam/erlang
 import gleam/erlang/charlist.{Charlist}
 import gleam/erlang/atom
-import parse.{Day}
+import gladvent/internal/parse.{Day}
 import gleam/map
-import cmd.{Ending, Endless}
+import gladvent/internal/cmd.{Ending, Endless}
 import glint
 import glint/flag
 import gleam
-import runners.{RunnerMap}
+import gladvent/internal/runners.{RunnerMap}
 import gleam/dynamic.{Dynamic}
 import gleam/option.{None, Option}
+import gleam/pair
 
 type SolveErr {
   Undef
@@ -55,16 +56,19 @@ external fn do_trim(String, Direction, Charlist) -> String =
   "string" "trim"
 
 fn do(
+  year: Int,
   day: Day,
   runners: RunnerMap,
   allow_crash: Bool,
 ) -> gleam.Result(#(RunResult, RunResult), Err) {
   use #(pt_1, pt_2) <- result.then(
-    map.get(runners, day)
+    runners
+    |> map.get(day)
     |> result.replace_error(Unregistered(day)),
   )
 
-  let input_path = string.join(["input/day_", int.to_string(day), ".txt"], "")
+  let input_path =
+    "input/" <> int.to_string(year) <> "/" <> int.to_string(day) <> ".txt"
 
   use input <- result.then(
     input_path
@@ -166,18 +170,25 @@ fn run_res_to_string(res: RunResult) -> String {
   }
 }
 
-fn collect(x: #(Day, gleam.Result(#(RunResult, RunResult), Err))) -> String {
+fn collect(
+  year: Int,
+  x: #(Day, gleam.Result(gleam.Result(#(RunResult, RunResult), Err), String)),
+) -> String {
   let day = int.to_string(x.0)
+  let x =
+    x
+    |> pair.map_second(result.map_error(_, Other))
+    |> pair.map_second(result.flatten)
   case x.1 {
     Ok(#(res_1, res_2)) ->
-      "Ran day " <> day <> ":\n" <> "  Part 1: " <> run_res_to_string(res_1) <> "\n" <> "  Part 2: " <> run_res_to_string(
-        res_2,
-      )
+      "Ran " <> int.to_string(year) <> " day " <> day <> ":\n" <> "  Part 1: " <> run_res_to_string(
+        res_1,
+      ) <> "\n" <> "  Part 2: " <> run_res_to_string(res_2)
 
     Error(err) ->
       err
       |> err_to_snag
-      |> snag.layer(string.append("failed to run day ", day))
+      |> snag.layer("Failed to run " <> int.to_string(year) <> " day " <> day)
       |> snag.pretty_print()
   }
 }
@@ -190,53 +201,58 @@ const allow_crash = "allow-crash"
 
 fn timeout_flag() {
   flag.I
+  |> flag.new
   |> flag.constraint(fn(i) {
     case i > 0 {
       True -> Ok(Nil)
       False -> snag.error("timeout value must greater than zero")
     }
   })
-  |> flag.new
   |> flag.description("Run with specified timeout")
 }
 
 fn allow_crash_flag() {
   flag.B
-  |> flag.default(False)
   |> flag.new
+  |> flag.default(False)
   |> flag.description("Don't catch exceptions thrown by runners")
 }
 
-pub fn run_command(runners: RunnerMap) -> glint.Command(Result(List(String))) {
+pub fn run_command() -> glint.Command(Result(List(String))) {
   {
     use input <- glint.command()
-    use allow_crash <- result.then(flag.get_bool(input.flags, allow_crash))
+    let assert Ok(year) = flag.get_int(input.flags, cmd.year)
+    use runners <- result.then(runners.build_from_days_dir(year))
+    use allow_crash <- result.try(flag.get_bool(input.flags, allow_crash))
+    use days <- result.then(parse.days(input.args))
 
-    let timing = timing(input.flags)
-
-    input.flags
-    |> flag.get_ints(cmd.days)
-    |> result.lazy_unwrap(fn() { all_days(runners) })
-    |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
+    days
+    |> cmd.exec(
+      timing(input.flags),
+      do(year, _, runners, allow_crash),
+      collect(year, _),
+    )
     |> Ok
   }
   |> glint.flag(timeout, timeout_flag())
   |> glint.flag(allow_crash, allow_crash_flag())
-  |> glint.flag(cmd.days, cmd.days_flag())
   |> glint.description("Run the specified days")
 }
 
-pub fn run_all_command(
-  runners: RunnerMap,
-) -> glint.Command(Result(List(String))) {
+pub fn run_all_command() -> glint.Command(Result(List(String))) {
   {
     use input <- glint.command()
     use allow_crash <- result.then(flag.get_bool(input.flags, allow_crash))
+    let assert Ok(year) = flag.get_int(input.flags, cmd.year)
+    use runners <- result.then(runners.build_from_days_dir(year))
 
-    let timing = timing(input.flags)
     runners
     |> all_days
-    |> cmd.exec(timing, do(_, runners, allow_crash), Other, collect)
+    |> cmd.exec(
+      timing(input.flags),
+      do(year, _, runners, allow_crash),
+      collect(year, _),
+    )
     |> Ok
   }
   |> glint.flag(timeout, timeout_flag())
@@ -245,10 +261,9 @@ pub fn run_all_command(
 }
 
 fn timing(flags: flag.Map) {
-  case flag.get_int(flags, timeout) {
-    Ok(timeout) -> Ending(timeout)
-    _ -> Endless
-  }
+  flag.get_int(flags, timeout)
+  |> result.map(Ending)
+  |> result.unwrap(Endless)
 }
 
 fn all_days(runners) {

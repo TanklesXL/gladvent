@@ -2,15 +2,12 @@ import gleam/map.{Map}
 import gleam/erlang/atom.{Atom}
 import gleam/string
 import snag.{Result}
-import parse.{Day}
+import gladvent/internal/parse.{Day}
 import gleam/list
 import gleam/result
 import gleam
 import gleam/dynamic.{Dynamic}
-
-pub const input_dir = "input/"
-
-pub const days_dir = "src/days/"
+import gleam/int
 
 pub type PartRunner =
   fn(String) -> Dynamic
@@ -41,6 +38,7 @@ external fn do_function_exists(Module, Atom) -> gleam.Result(PartRunner, Nil) =
   "gladvent_ffi" "function_arity_one_exists"
 
 fn function_exists(
+  year: Int,
   filename: String,
   mod: Atom,
   func_name: String,
@@ -55,13 +53,13 @@ fn function_exists(
       |> atom.create_from_string
       |> do_function_exists(mod, _)
       |> result.replace_error(snag.new(
-        "module " <> days_dir <> filename <> " does not export a function \"" <> func_name <> "/1\"",
+        "module " <> "src/" <> int.to_string(year) <> "/" <> filename <> " does not export a function \"" <> func_name <> "/1\"",
       ))
       |> snag.context("function missing")
   }
 }
 
-fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
+fn get_runner(year: Int, filename: String) -> Result(#(Day, DayRunner)) {
   use day <- result.then(
     string.replace(filename, "day_", "")
     |> string.replace(".gleam", "")
@@ -70,20 +68,19 @@ fn get_runner(filename: String) -> Result(#(Day, DayRunner)) {
   )
 
   let module =
-    filename
-    |> string.append("days/", _)
+    "aoc_" <> int.to_string(year) <> "/" <> filename
     |> to_module_name
     |> atom.create_from_string
 
-  use pt_1 <- result.then(function_exists(filename, module, "pt_1"))
-  use pt_2 <- result.then(function_exists(filename, module, "pt_2"))
+  use pt_1 <- result.then(function_exists(year, filename, module, "pt_1"))
+  use pt_2 <- result.then(function_exists(year, filename, module, "pt_2"))
 
   Ok(#(day, #(pt_1, pt_2)))
 }
 
-pub fn build_from_days_dir() -> Result(Map(Day, DayRunner)) {
-  find_files(matching: "day_*.gleam", in: days_dir)
-  |> list.try_map(get_runner)
+pub fn build_from_days_dir(year: Int) -> Result(Map(Day, DayRunner)) {
+  find_files(matching: "day_*.gleam", in: "src/aoc_" <> int.to_string(year))
+  |> list.try_map(get_runner(year, _))
   |> result.map(map.from_list)
   |> snag.context("failed to generate runners list from filesystem")
 }

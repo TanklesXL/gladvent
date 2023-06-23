@@ -1,4 +1,4 @@
-import parse.{day}
+import gladvent/internal/parse.{day}
 import gleam/int
 import gleam/list
 import gleam/function.{compose}

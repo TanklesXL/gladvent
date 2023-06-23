@@ -1,9 +1,9 @@
 import gleam/string
 import gleam/io
 import gleam/erlang.{start_arguments as args}
-import runners.{RunnerMap}
-import cmd/run
-import cmd/new
+import gladvent/internal/cmd/run
+import gladvent/internal/cmd/new
+import gladvent/internal/cmd
 import glint
 import snag
 
@@ -11,21 +11,13 @@ import snag
 /// run either the 'run' or 'new' command as specified
 ///
 pub fn main() {
-  case runners.build_from_days_dir() {
-    Ok(runners) -> execute(given: runners)
-    Error(err) -> print_snag_and_halt(err)
-  }
-}
-
-/// Given the daily runners, create the command tree and run the specified command
-///
-pub fn execute(given runners: RunnerMap) {
   let commands =
     glint.new()
+    |> glint.global_flag(cmd.year, cmd.year_flag())
     |> glint.with_pretty_help(glint.default_pretty_help())
     |> glint.add(["new"], new.new_command())
-    |> glint.add(["run"], run.run_command(runners))
-    |> glint.add(["run", "all"], run.run_all_command(runners))
+    |> glint.add(["run"], run.run_command())
+    |> glint.add(["run", "all"], run.run_all_command())
 
   use out <- glint.run_and_handle(commands, args())
   case out {

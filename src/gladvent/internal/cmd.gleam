@@ -1,6 +1,5 @@
-import gleam/iterator
 import gleam/result
-import parse.{Day}
+import gladvent/internal/parse.{Day}
 import gleam/otp/task.{Task}
 import gleam/erlang
 import gleam/pair
@@ -8,34 +7,18 @@ import gleam/list
 import gleam/int
 import gleam/string
 import glint/flag
-import glint/flag/constraint
 import snag
 
-pub const days = "days"
+pub fn input_dir(year) {
+  input_root <> int.to_string(year) <> "/"
+}
 
-pub fn days_flag() {
-  flag.new(
-    flag.LI
-    |> flag.constraint(fn(l) {
-      case l {
-        [] -> snag.error("no days selected")
-        _ -> Ok(Nil)
-      }
-    })
-    |> flag.constraint(
-      fn(i) {
-        case i {
-          _ if i > 0 && i < 26 -> Ok(Nil)
-          _ ->
-            snag.error(
-              "invalid day: '" <> int.to_string(i) <> "' must be in range 1 to 25",
-            )
-        }
-      }
-      |> constraint.each(),
-    ),
-  )
-  |> flag.description("a comma separated list of days")
+pub const input_root = "input/"
+
+pub const src_root = "src/"
+
+pub fn src_dir(year) {
+  src_root <> "aoc_" <> int.to_string(year) <> "/"
 }
 
 pub type Timing {
@@ -46,24 +29,19 @@ pub type Timing {
 pub type Timeout =
   Int
 
+pub type Year =
+  Int
+
 pub fn exec(
   days: List(Day),
   timing: Timing,
-  do: fn(Day) -> Result(a, b),
-  other: fn(String) -> b,
-  collect: fn(#(Day, Result(a, b))) -> String,
-) -> List(String) {
+  do: fn(Day) -> a,
+  collect: fn(#(Day, Result(a, String))) -> c,
+) -> List(c) {
   days
   |> task_map(do)
   |> try_await_many(timing)
-  |> iterator.from_list()
-  |> iterator.map(fn(x) {
-    x
-    |> pair.map_second(result.map_error(_, other))
-    |> pair.map_second(result.flatten)
-  })
-  |> iterator.map(collect)
-  |> iterator.to_list()
+  |> list.map(collect)
 }
 
 fn now_ms() {
@@ -104,4 +82,27 @@ fn await_err_to_string(err: task.AwaitError) -> String {
     task.Timeout -> "task timed out"
     task.Exit(s) -> "task exited for some reason: " <> string.inspect(s)
   }
+}
+
+external fn date() -> #(#(Int, Int, Int), #(Int, Int, Int)) =
+  "erlang" "localtime"
+
+fn current_year() -> Int {
+  { date().0 }.0
+}
+
+pub const year = "year"
+
+pub fn year_flag() {
+  flag.new(flag.I)
+  |> flag.default(current_year())
+  |> flag.constraint(fn(year) {
+    case year < 2015 {
+      True ->
+        snag.error(
+          "advent of code did not exist prior to 2015, did you mistype?",
+        )
+      False -> Ok(Nil)
+    }
+  })
 }
