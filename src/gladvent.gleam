@@ -29,8 +29,8 @@ pub fn main() {
   }
 }
 
-external fn exit(Int) -> Nil =
-  "erlang" "halt"
+@external(erlang, "erlang", "halt")
+fn exit(a: Int) -> Nil
 
 fn print_snag_and_halt(err: snag.Snag) -> Nil {
   err

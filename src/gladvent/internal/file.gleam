@@ -1,20 +1,20 @@
 import gleam/erlang/file.{Reason}
 import gleam/result
 
-pub external type IODevice
+pub type IODevice
 
-pub external fn open_file_exclusive(s: String) -> Result(IODevice, Reason) =
-  "gladvent_ffi" "open_file_exclusive"
+@external(erlang, "gladvent_ffi", "open_file_exclusive")
+pub fn open_file_exclusive(s s: String) -> Result(IODevice, Reason)
 
-external fn do_write(IODevice, String) -> Result(Nil, Reason) =
-  "gladvent_ffi" "write"
+@external(erlang, "gladvent_ffi", "write")
+fn do_write(a: IODevice, b: String) -> Result(Nil, Reason)
 
 pub fn write(iod: IODevice, s: String) -> Result(Nil, Reason) {
   do_write(iod, s)
 }
 
-external fn close_iodevice(IODevice) -> Result(Nil, Reason) =
-  "gladvent_ffi" "close_iodevice"
+@external(erlang, "gladvent_ffi", "close_iodevice")
+fn close_iodevice(a: IODevice) -> Result(Nil, Reason)
 
 pub fn do_with_file(filename: String, f: fn(IODevice) -> a) -> Result(a, Reason) {
   use file <- result.map(open_file_exclusive(filename))

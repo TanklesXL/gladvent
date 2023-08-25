@@ -84,8 +84,8 @@ fn await_err_to_string(err: task.AwaitError) -> String {
   }
 }
 
-external fn date() -> #(#(Int, Int, Int), #(Int, Int, Int)) =
-  "erlang" "localtime"
+@external(erlang, "erlang", "localtime")
+fn date() -> #(#(Int, Int, Int), #(Int, Int, Int))
 
 fn current_year() -> Int {
   { date().0 }.0
@@ -94,7 +94,7 @@ fn current_year() -> Int {
 pub const year = "year"
 
 pub fn year_flag() {
-  flag.new(flag.I)
+  flag.int()
   |> flag.default(current_year())
   |> flag.constraint(fn(year) {
     case year < 2015 {

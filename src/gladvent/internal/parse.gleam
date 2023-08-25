@@ -18,7 +18,7 @@ pub fn day(s: String) -> Result(Day) {
   case i > 0 && i < 26 {
     True -> Ok(i)
     False ->
-      "invalid day value " <> "'" <> s <> "'"
+      { "invalid day value " <> "'" <> s <> "'" }
       |> snag.error
       |> snag.context("day must be an integer from 1 to 25")
   }

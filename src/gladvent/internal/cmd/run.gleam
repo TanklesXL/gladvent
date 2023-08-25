@@ -52,8 +52,8 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
   do_trim(s, dir, charlist.from_string(sub))
 }
 
-external fn do_trim(String, Direction, Charlist) -> String =
-  "string" "trim"
+@external(erlang, "string", "trim")
+fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
 fn do(
   year: Int,
@@ -200,8 +200,7 @@ const timeout = "timeout"
 const allow_crash = "allow-crash"
 
 fn timeout_flag() {
-  flag.I
-  |> flag.new
+  flag.int()
   |> flag.constraint(fn(i) {
     case i > 0 {
       True -> Ok(Nil)
@@ -212,8 +211,7 @@ fn timeout_flag() {
 }
 
 fn allow_crash_flag() {
-  flag.B
-  |> flag.new
+  flag.bool()
   |> flag.default(False)
   |> flag.description("Don't catch exceptions thrown by runners")
 }

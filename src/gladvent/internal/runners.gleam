@@ -18,8 +18,8 @@ pub type DayRunner =
 pub type RunnerMap =
   Map(Day, DayRunner)
 
-external fn find_files(matching: String, in: String) -> List(String) =
-  "gladvent_ffi" "find_files"
+@external(erlang, "gladvent_ffi", "find_files")
+fn find_files(matching matching: String, in in: String) -> List(String)
 
 type Module =
   Atom
@@ -31,11 +31,11 @@ fn to_module_name(file: String) -> String {
   |> string.replace("/", "@")
 }
 
-external fn module_exists(Module) -> Bool =
-  "gladvent_ffi" "module_exists"
+@external(erlang, "gladvent_ffi", "module_exists")
+fn module_exists(a: Module) -> Bool
 
-external fn do_function_exists(Module, Atom) -> gleam.Result(PartRunner, Nil) =
-  "gladvent_ffi" "function_arity_one_exists"
+@external(erlang, "gladvent_ffi", "function_arity_one_exists")
+fn do_function_exists(a: Module, b: Atom) -> gleam.Result(PartRunner, Nil)
 
 fn function_exists(
   year: Int,
@@ -68,7 +68,7 @@ fn get_runner(year: Int, filename: String) -> Result(#(Day, DayRunner)) {
   )
 
   let module =
-    "aoc_" <> int.to_string(year) <> "/" <> filename
+    { "aoc_" <> int.to_string(year) <> "/" <> filename }
     |> to_module_name
     |> atom.create_from_string
 
