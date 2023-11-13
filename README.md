@@ -20,7 +20,9 @@ This library provides 3 options to run your advent of code solvers:
 
 ## Multi-year support
 
-Gladvent now comes with out-of-the-box multi-year support via the `--year` flag when running it. For convenience it defaults to the current year. Therefore, passing the `--year=YEAR`flag to either the`run`, `run all`or`new` commands will use the year specified or the current year if the flag was not provided.
+Gladvent now comes with out-of-the-box multi-year support via the `--year` flag when running it.
+
+For convenience it defaults to the current year. Therefore, passing `--year=YEAR` to either the `run`, `run all` or `new` commands will use the year specified or the current year if the flag was not provided.
 
 ## Available commands
 
