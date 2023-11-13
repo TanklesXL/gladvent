@@ -7,11 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        gleam: ["0.28.1"]
         erlang: ["24.2"]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/test
         with:
-          gleam-version: ${{ matrix.gleam }}
           erlang-version: ${{ matrix.erlang }}

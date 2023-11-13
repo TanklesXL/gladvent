@@ -16,20 +16,28 @@ import gleam
 import gladvent/internal/runners.{type RunnerMap}
 import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None}
-import gleam/pair
+
+type AsyncResult =
+  gleam.Result(RunResult, String)
+
+type RunErr {
+  FailedToReadInput(String)
+  Unregistered(Day)
+  Other(String)
+}
+
+type RunResult =
+  gleam.Result(#(SolveResult, SolveResult), RunErr)
 
 type SolveErr {
   Undef
   RunFailed(String)
 }
 
-type Err {
-  FailedToReadInput(String)
-  Unregistered(Day)
-  Other(String)
-}
+type SolveResult =
+  gleam.Result(Dynamic, SolveErr)
 
-fn err_to_snag(err: Err) -> Snag {
+fn run_err_to_snag(err: RunErr) -> Snag {
   case err {
     Unregistered(day) ->
       "day" <> " " <> int.to_string(day) <> " " <> "unregistered"
@@ -38,9 +46,6 @@ fn err_to_snag(err: Err) -> Snag {
   }
   |> snag.new
 }
-
-type RunResult =
-  gleam.Result(Dynamic, SolveErr)
 
 type Direction {
   // Leading
@@ -55,12 +60,7 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
 @external(erlang, "string", "trim")
 fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
-fn do(
-  year: Int,
-  day: Day,
-  runners: RunnerMap,
-  allow_crash: Bool,
-) -> gleam.Result(#(RunResult, RunResult), Err) {
+fn do(year: Int, day: Day, runners: RunnerMap, allow_crash: Bool) -> RunResult {
   use #(pt_1, pt_2) <- result.then(
     runners
     |> map.get(day)
@@ -83,11 +83,11 @@ fn do(
       let pt_1 =
         fn() { pt_1(input) }
         |> erlang.rescue
-        |> result.map_error(run_err_to_string)
+        |> result.map_error(crash_to_string)
       let pt_2 =
         fn() { pt_2(input) }
         |> erlang.rescue
-        |> result.map_error(run_err_to_string)
+        |> result.map_error(crash_to_string)
       Ok(#(pt_1, pt_2))
     }
   }
@@ -149,9 +149,9 @@ fn gleam_err_to_string(g: GleamErr) -> String {
   )
 }
 
-fn run_err_to_string(err: erlang.Crash) -> SolveErr {
-  let dyn = crash_to_dyn(err)
-  decode_gleam_err()(dyn)
+fn crash_to_string(err: erlang.Crash) -> SolveErr {
+  crash_to_dyn(err)
+  |> decode_gleam_err()
   |> result.map(gleam_err_to_string)
   |> result.lazy_unwrap(fn() {
     "run failed for some reason: " <> string.inspect(err)
@@ -159,35 +159,41 @@ fn run_err_to_string(err: erlang.Crash) -> SolveErr {
   |> RunFailed
 }
 
-fn run_res_to_string(res: RunResult) -> String {
-  case res {
-    Ok(res) -> string.inspect(res)
-    Error(err) ->
-      case err {
-        Undef -> "function undefined"
-        RunFailed(s) -> s
-      }
+fn solve_err_to_string(solve_err: SolveErr) -> String {
+  case solve_err {
+    Undef -> "function undefined"
+    RunFailed(s) -> s
   }
 }
 
-fn collect(
-  year: Int,
-  x: #(Day, gleam.Result(gleam.Result(#(RunResult, RunResult), Err), String)),
-) -> String {
+fn solve_res_to_string(res: SolveResult) -> String {
+  case res {
+    Ok(res) -> string.inspect(res)
+    Error(err) -> solve_err_to_string(err)
+  }
+}
+
+import gleam/pair
+
+fn collect_async(year: Int, x: #(Day, AsyncResult)) -> String {
+  x
+  |> pair.map_second(result.map_error(_, Other))
+  |> pair.map_second(result.flatten)
+  |> collect(year, _)
+}
+
+fn collect(year: Int, x: #(Day, RunResult)) -> String {
   let day = int.to_string(x.0)
-  let x =
-    x
-    |> pair.map_second(result.map_error(_, Other))
-    |> pair.map_second(result.flatten)
+
   case x.1 {
     Ok(#(res_1, res_2)) ->
-      "Ran " <> int.to_string(year) <> " day " <> day <> ":\n" <> "  Part 1: " <> run_res_to_string(
+      "Ran " <> int.to_string(year) <> " day " <> day <> ":\n" <> "  Part 1: " <> solve_res_to_string(
         res_1,
-      ) <> "\n" <> "  Part 2: " <> run_res_to_string(res_2)
+      ) <> "\n" <> "  Part 2: " <> solve_res_to_string(res_2)
 
     Error(err) ->
       err
-      |> err_to_snag
+      |> run_err_to_snag
       |> snag.layer("Failed to run " <> int.to_string(year) <> " day " <> day)
       |> snag.pretty_print()
   }
@@ -228,7 +234,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     |> cmd.exec(
       timing(input.flags),
       do(year, _, runners, allow_crash),
-      collect(year, _),
+      collect_async(year, _),
     )
     |> Ok
   }
@@ -249,7 +255,7 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
     |> cmd.exec(
       timing(input.flags),
       do(year, _, runners, allow_crash),
-      collect(year, _),
+      collect_async(year, _),
     )
     |> Ok
   }

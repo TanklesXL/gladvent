@@ -148,16 +148,24 @@ pub fn pt_2(input: String) {
 }
 "
 
-fn collect(year: Int, x: #(Day, Result(String, String))) -> String {
-  let day = int.to_string(x.0)
-  let year = int.to_string(year)
+import gleam
 
-  "initialized " <> year <> " day " <> day <> "\n" <> {
-    case x.1 {
-      Ok(ok) -> ok
+fn collect_async(year: Int, x: #(Day, Result(String, String))) -> String {
+  fn(res) {
+    case res {
+      Ok(res) -> res
       Error(err) -> err
     }
   }
+  |> pair.map_second(x, _)
+  |> collect(year, _)
+}
+
+fn collect(year: Int, x: #(Day, String)) -> String {
+  let day = int.to_string(x.0)
+  let year = int.to_string(year)
+
+  "initialized " <> year <> " day " <> day <> "\n" <> x.1
 }
 
 pub fn new_command() {
@@ -169,7 +177,7 @@ pub fn new_command() {
       days,
       cmd.Endless,
       fn(day) { do(Context(year, day)) },
-      collect(year, _),
+      collect_async(year, _),
     )
   }
   |> glint.description("Create .gleam and input files")

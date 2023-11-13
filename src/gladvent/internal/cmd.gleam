@@ -61,26 +61,23 @@ fn try_await_many(
     Endless -> {
       use tup <- list.map(tasks)
       use t <- pair.map_second(tup)
-      task.try_await_forever(t)
-      |> result.map_error(await_err_to_string)
+      Ok(task.await_forever(t))
     }
 
     Ending(timeout) -> {
       let end = now_ms() + timeout
       use tup <- list.map(tasks)
       use t <- pair.map_second(tup)
-      end - now_ms()
-      |> int.clamp(min: 0, max: timeout)
-      |> task.try_await(t, _)
-      |> result.map_error(await_err_to_string)
+      let res =
+        end - now_ms()
+        |> int.clamp(min: 0, max: timeout)
+        |> task.try_await(t, _)
+      use err <- result.map_error(res)
+      case err {
+        task.Timeout -> "task timed out"
+        task.Exit(s) -> "task exited for some reason: " <> string.inspect(s)
+      }
     }
-  }
-}
-
-fn await_err_to_string(err: task.AwaitError) -> String {
-  case err {
-    task.Timeout -> "task timed out"
-    task.Exit(s) -> "task exited for some reason: " <> string.inspect(s)
   }
 }
 
