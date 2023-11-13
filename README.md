@@ -60,10 +60,10 @@ _Note:_
 
 ## Seeing help messages
 
-- To see available subcommands: `gleam run -- --help`
-- To see help for the `run` command: `gleam run run --help`
-- To see help for the `run` command: `gleam run run all --help`
-- To see help for the `new` command: `gleam run new --help`
+- To see available subcommands: `gleam run -m gladvent -- --help`
+- To see help for the `run` command: `gleam run -m gladvent run --help`
+- To see help for the `run` command: `gleam run -m gladvent run all --help`
+- To see help for the `new` command: `gleam run -m gladvent new --help`
 
 ## General Workflow
 
