@@ -13,7 +13,8 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 
 ## Using the library
 
-This library provides 3 options to run your advent of code solvers:
+This library provides 2 options to run your advent of code solvers,
+once you've added gladvent as a dependency via `gleam add gladvent`:
 
 1. The easiest way: call it via `gleam run -m gladvent [ARGS]`, not requiring a custom `main()` function.
 1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
@@ -29,24 +30,26 @@ For convenience it defaults to the current year. Therefore, passing `--year=YEAR
 This project provides your application with 2 commands, `new` and `run`:
 
 - `new`: create `src/days/*.gleam` and `input/*.txt` files that correspond to the specified days
-  - format: `gleam run new a b c ...`
-  - used like `gleam run new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
+
+  - format: `gleam run -m gladvent new a b c ...`
+  - used like `gleam run -m gladvent new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
+
 - `run`: run the specified days
 
-  - format: `gleam run run a b c ...`
+  - format: `gleam run -m gladvent run a b c ...`
   - flags:
-    - `--timeout`: `gleam run run --timeout={timeout in ms} a b c ...`
+    - `--timeout`: `gleam run -m gladvent run --timeout={timeout in ms} a b c ...`
       - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
     - `--allow-crash`: runs days without the use of `rescue` functionality, rendering output text more verbose but also allowing for stacktraces to be printed
-      - usage example: `gleam run run 1 2 3 --allow-crash`
+      - usage example: `gleam run -m gladvent run 1 2 3 --allow-crash`
 
 - `run all`: run all registered days
-  - format: `gleam run run all`
+  - format: `gleam run -m gladvent run all`
   - flags:
-    - `--timeout`: `gleam run run all --timeout={timeout in ms}`
+    - `--timeout`: `gleam run -m gladvent run all --timeout={timeout in ms}`
       - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
     - `--allow-crash`: runs days without the use of `rescue` functionality, rendering output text more verbose but also allowing for stacktraces to be printed
-      - usage example: `gleam run run all --allow-crash`
+      - usage example: `gleam run -m gladvent run all --allow-crash`
 
 _Note:_
 
