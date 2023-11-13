@@ -1,4 +1,4 @@
-import snag.{Result}
+import snag.{type Result}
 import gleam/int
 import gleam/list
 import gleam/result

@@ -1,12 +1,12 @@
-import gleam/map.{Map}
-import gleam/erlang/atom.{Atom}
+import gleam/map.{type Map}
+import gleam/erlang/atom.{type Atom}
 import gleam/string
-import snag.{Result}
-import gladvent/internal/parse.{Day}
+import snag.{type Result}
+import gladvent/internal/parse.{type Day}
 import gleam/list
 import gleam/result
 import gleam
-import gleam/dynamic.{Dynamic}
+import gleam/dynamic.{type Dynamic}
 import gleam/int
 
 pub type PartRunner =

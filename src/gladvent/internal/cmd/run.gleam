@@ -2,20 +2,20 @@ import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-import snag.{Result, Snag}
-import gleam/erlang/file
+import snag.{type Result, type Snag}
+import simplifile
 import gleam/erlang
-import gleam/erlang/charlist.{Charlist}
+import gleam/erlang/charlist.{type Charlist}
 import gleam/erlang/atom
-import gladvent/internal/parse.{Day}
+import gladvent/internal/parse.{type Day}
 import gleam/map
 import gladvent/internal/cmd.{Ending, Endless}
 import glint
 import glint/flag
 import gleam
-import gladvent/internal/runners.{RunnerMap}
-import gleam/dynamic.{Dynamic}
-import gleam/option.{None, Option}
+import gladvent/internal/runners.{type RunnerMap}
+import gleam/dynamic.{type Dynamic}
+import gleam/option.{type Option, None}
 import gleam/pair
 
 type SolveErr {
@@ -72,7 +72,7 @@ fn do(
 
   use input <- result.then(
     input_path
-    |> file.read()
+    |> simplifile.read()
     |> result.map(string_trim(_, Both, "\n"))
     |> result.replace_error(FailedToReadInput(input_path)),
   )

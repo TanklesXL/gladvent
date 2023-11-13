@@ -1,6 +1,6 @@
 import gleam/result
-import gladvent/internal/parse.{Day}
-import gleam/otp/task.{Task}
+import gladvent/internal/parse.{type Day}
+import gleam/otp/task.{type Task}
 import gleam/erlang
 import gleam/pair
 import gleam/list

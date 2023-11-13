@@ -13,10 +13,14 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 
 ## Using the library
 
-This library provides 2 options to run your advent of code solvers:
+This library provides 3 options to run your advent of code solvers:
 
+1. The easiest way: call it via `gleam run -m gladvent [ARGS]`, not requiring a custom `main()` function.
 1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
-2. Create your own `Map(Int, #(fn(String) -> Dynamic, fn(String) -> Dynamic))` and pass it to `gladvent.execute`
+
+## Multi-year support
+
+Gladvent now comes with out-of-the-box multi-year support via the `--year` flag when running it. For convenience it defaults to the current year. Therefore, passing the `--year=YEAR`flag to either the`run`, `run all`or`new` commands will use the year specified or the current year if the flag was not provided.
 
 ## Available commands
 
@@ -44,10 +48,8 @@ This project provides your application with 2 commands, `new` and `run`:
 
 _Note:_
 
-- due to how `gladvent` works, the `pt_1` and `pt_2` functions only need to return `Dynamic` when directly building a `RunnerMap` and using `gladvent.execute`, when using `gladvent.main` they can return anything.
-- the `new` command creates source files in `src/days/` and input files in the `input/` directory.
-- the `run` command expects input files to be in the `input/` directory.
-- using `gladvent.main` expects gleam day runners to be in `src/days/`
+- the `new` command creates source files in `src/aoc_<YEAR>/` and input files in the `input/<YEAR>` directory.
+- the `run` command expects input files to be in the `input/<YEAR>` directory, and code to be in `src/aoc_<YEAR>/`
 - any triggered `assert` will be captured and printed, for example: `error: assert - Assertion pattern match failed in module days/day_1 in function pt_1 at line 2 with value 2`
 - any message in a `todo` will be captured and printed, for example: `error: todo - test in module days/day_1 in function pt_2 at line 7`
 
@@ -64,10 +66,10 @@ Where X is the day you'd like to add (when using `gladvent.main()`):
 
 _Note:_ this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
 
-1. run `gleam run new X`
-2. add your input to `input/day_X.txt`
-3. add your code to `src/days/day_X.gleam`
-4. run `gleam run run X`
+1. run `gleam run -m gladvent run new X`
+2. add your input to `input/<YEAR>/day_X.txt`
+3. add your code to `src/aoc_<YEAR>/day_X.gleam`
+4. run `gleam run -m gladvent run X`
 
 ## FAQ
 

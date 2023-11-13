@@ -3,11 +3,11 @@ import gleam/result
 import gleam/list
 import gleam/string
 import gladvent/internal/file
-import gleam/erlang/file as efile
+import simplifile as efile
 import gladvent/internal/cmd
 import glint
 import glint/flag
-import gladvent/internal/parse.{Day}
+import gladvent/internal/parse.{type Day}
 import gleam/pair
 
 type Context {
@@ -72,12 +72,12 @@ fn gleam_src_path(year: Int, day: Day) -> String {
 }
 
 fn create_dir(dir: String) -> Result(String, Err) {
-  efile.make_directory(dir)
+  efile.create_directory(dir)
   |> handle_dir_open_res(dir)
 }
 
 fn handle_dir_open_res(
-  res: Result(_, efile.Reason),
+  res: Result(_, efile.FileError),
   filename: String,
 ) -> Result(String, Err) {
   case res {
@@ -90,7 +90,7 @@ fn handle_dir_open_res(
   }
 }
 
-fn handle_file_open_failure(reason: efile.Reason, filename: String) -> Err {
+fn handle_file_open_failure(reason: efile.FileError, filename: String) -> Err {
   case reason {
     efile.Eexist -> FileAlreadyExists(filename)
     _ -> FailedToCreateFile(filename)
