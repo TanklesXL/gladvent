@@ -1,4 +1,4 @@
-import snag.{Result}
+import snag.{type Result}
 import gleam/int
 import gleam/list
 import gleam/result
@@ -13,12 +13,12 @@ pub fn int(s: String) -> Result(Int) {
 }
 
 pub fn day(s: String) -> Result(Day) {
-  try i = int(s)
+  use i <- result.then(int(s))
 
   case i > 0 && i < 26 {
     True -> Ok(i)
     False ->
-      "invalid day value " <> "'" <> s <> "'"
+      { "invalid day value " <> "'" <> s <> "'" }
       |> snag.error
       |> snag.context("day must be an integer from 1 to 25")
   }

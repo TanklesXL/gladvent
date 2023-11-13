@@ -6,8 +6,12 @@
     write/2,
     ensure_dir/1,
     function_arity_one_exists/2,
-    module_exists/1
+    module_exists/1,
+    close_iodevice/1
 ]).
+
+close_iodevice(IoDevice) ->
+    to_gleam_result(file:close(IoDevice)).
 
 find_files(Pattern, In) ->
     Results = filelib:wildcard(binary_to_list(Pattern), binary_to_list(In)),

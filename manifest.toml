@@ -2,19 +2,22 @@
 # You typically do not need to edit this file
 
 packages = [
-  { name = "gleam_erlang", version = "0.17.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_erlang", source = "hex", outer_checksum = "A3BB3D4A6AFC2E34CAB1A4960F0CBBC4AA1A052D5023477D16B848D86E69948A" },
-  { name = "gleam_otp", version = "0.5.2", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "24B88BF1D5B8DEC2525C00ECB65B96D2FD4DC66D8B2BB4D7AD4D12B2CE2A9988" },
-  { name = "gleam_stdlib", version = "0.25.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "AD0F89928E0B919C8F8EDF640484633B28DBF88630A9E6AE504617A3E3E5B9A2" },
-  { name = "gleeunit", version = "0.7.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "5F4FBED3E93CDEDB0570D30E9DECB7058C2D327996B78BB2D245C739C7136010" },
-  { name = "glint", version = "0.10.0", build_tools = ["gleam"], requirements = ["shellout", "gleam_stdlib", "snag"], otp_app = "glint", source = "hex", outer_checksum = "540D6435A0CE5C3660769B364CFF9BC98724DF3ED942FA80946A47C653B4ED02" },
-  { name = "shellout", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_erlang"], otp_app = "shellout", source = "hex", outer_checksum = "310662075CDCB6E3928B03E3FD371B1DDCD691E1C709E606AB02195E36675D4E" },
-  { name = "snag", version = "0.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "35C63E478782C58236F1050297C2FDF9806A4DD55C6FAF0B6EC5E54BC119342D" },
+  { name = "gleam_community_ansi", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "8B5A9677BC5A2738712BBAF2BA289B1D8195FDF962BBC769569976AD5E9794E1" },
+  { name = "gleam_community_colour", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_community_colour", source = "hex", outer_checksum = "036C206886AFB9F153C552700A7A0B4D2864E3BC96A20C77E5F34A013C051BE3" },
+  { name = "gleam_erlang", version = "0.23.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_erlang", source = "hex", outer_checksum = "DA7A8E5540948DE10EB01B530869F8FF2FF6CAD8CFDA87626CE6EF63EBBF87CB" },
+  { name = "gleam_otp", version = "0.8.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "18EF8242A5E54BA92F717C7222F03B3228AEE00D1F286D4C56C3E8C18AA2588E" },
+  { name = "gleam_stdlib", version = "0.32.1", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "ABF00CDCCB66FABBCE351A50060964C4ACE798F95A0D78622C8A7DC838792577" },
+  { name = "gleeunit", version = "0.11.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "1397E5C4AC4108769EE979939AC39BF7870659C5AFB714630DEEEE16B8272AD5" },
+  { name = "glint", version = "0.12.0", build_tools = ["gleam"], requirements = ["gleam_community_ansi", "gleam_community_colour", "gleam_stdlib", "snag"], otp_app = "glint", source = "hex", outer_checksum = "799D6C76990EE1265396D7BEB5771AE902C3221AD79BA0B70A4FBADAEBAC1A1A" },
+  { name = "simplifile", version = "0.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "45E2C6C7FD8D931A660CA56880EC75186BB39C84F36951B4EE284F6F95E8F65D" },
+  { name = "snag", version = "0.2.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "8FD70D8FB3728E08AC425283BB509BB0F012BE1AE218424A597CDE001B0EE589" },
 ]
 
 [requirements]
-gleam_erlang = "~> 0.7"
-gleam_otp = "~> 0.4"
-gleam_stdlib = "~> 0.19"
-gleeunit = "~> 0.6"
-glint = "~> 0.8"
-snag = "~> 0.2"
+gleam_erlang = { version = "~> 0.7" }
+gleam_otp = { version = "~> 0.4" }
+gleam_stdlib = { version = "~> 0.19" }
+gleeunit = { version = "~> 0.6" }
+glint = { version = " ~> 0.12" }
+simplifile = { version = "~> 0.3" }
+snag = { version = "~> 0.2" }
