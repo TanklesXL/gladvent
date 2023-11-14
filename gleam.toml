@@ -1,5 +1,5 @@
 name = "gladvent"
-version = "0.6.0"
+version = "0.6.1"
 repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
@@ -11,7 +11,7 @@ gleam_stdlib = "~> 0.19"
 gleam_otp = "~> 0.4"
 gleam_erlang = "~> 0.7"
 snag = "~> 0.2"
-glint = " ~> 0.12"
+glint = " ~> 0.13"
 simplifile = "~> 0.3"
 
 [dev-dependencies]
