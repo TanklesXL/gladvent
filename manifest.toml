@@ -20,6 +20,6 @@ gleam_erlang = { version = "~> 0.7" }
 gleam_otp = { version = "~> 0.4" }
 gleam_stdlib = { version = "~> 0.34 or ~> 1.0" }
 gleeunit = { version = "~> 1.0" }
-glint = { version = " ~> 0.15.0" }
+glint = { version = " ~> 0.15" }
 simplifile = { version = "~> 0.3" }
 snag = { version = "~> 0.2" }
