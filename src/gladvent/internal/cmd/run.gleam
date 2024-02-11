@@ -8,7 +8,7 @@ import gleam/erlang
 import gleam/erlang/charlist.{type Charlist}
 import gleam/erlang/atom
 import gladvent/internal/parse.{type Day}
-import gleam/map
+import gleam/dict as map
 import gladvent/internal/cmd.{Ending, Endless}
 import glint
 import glint/flag
@@ -187,9 +187,16 @@ fn collect(year: Int, x: #(Day, RunResult)) -> String {
 
   case x.1 {
     Ok(#(res_1, res_2)) ->
-      "Ran " <> int.to_string(year) <> " day " <> day <> ":\n" <> "  Part 1: " <> solve_res_to_string(
-        res_1,
-      ) <> "\n" <> "  Part 2: " <> solve_res_to_string(res_2)
+      "Ran "
+      <> int.to_string(year)
+      <> " day "
+      <> day
+      <> ":\n"
+      <> "  Part 1: "
+      <> solve_res_to_string(res_1)
+      <> "\n"
+      <> "  Part 2: "
+      <> solve_res_to_string(res_2)
 
     Error(err) ->
       err
@@ -241,6 +248,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   |> glint.flag(timeout, timeout_flag())
   |> glint.flag(allow_crash, allow_crash_flag())
   |> glint.description("Run the specified days")
+  |> glint.count_args(glint.MinArgs(1))
 }
 
 pub fn run_all_command() -> glint.Command(Result(List(String))) {

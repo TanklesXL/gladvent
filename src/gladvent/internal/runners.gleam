@@ -1,4 +1,4 @@
-import gleam/map.{type Map}
+import gleam/dict.{type Dict as Map} as map
 import gleam/erlang/atom.{type Atom}
 import gleam/string
 import snag.{type Result}
@@ -8,6 +8,7 @@ import gleam/result
 import gleam
 import gleam/dynamic.{type Dynamic}
 import gleam/int
+import gleam/function
 
 pub type PartRunner =
   fn(String) -> Dynamic
@@ -35,14 +36,14 @@ fn to_module_name(file: String) -> String {
 fn module_exists(a: Module) -> Bool
 
 @external(erlang, "gladvent_ffi", "function_arity_one_exists")
-fn do_function_exists(a: Module, b: Atom) -> gleam.Result(PartRunner, Nil)
+fn do_function_exists(a: Module, b: Atom) -> gleam.Result(fn(a) -> b, Nil)
 
 fn function_exists(
   year: Int,
   filename: String,
   mod: Atom,
   func_name: String,
-) -> Result(PartRunner) {
+) -> Result(fn(a) -> b) {
   case module_exists(mod) {
     False ->
       ["module ", filename, " not found"]
@@ -53,7 +54,14 @@ fn function_exists(
       |> atom.create_from_string
       |> do_function_exists(mod, _)
       |> result.replace_error(snag.new(
-        "module " <> "src/" <> int.to_string(year) <> "/" <> filename <> " does not export a function \"" <> func_name <> "/1\"",
+        "module "
+          <> "src/"
+          <> int.to_string(year)
+          <> "/"
+          <> filename
+          <> " does not export a function \""
+          <> func_name
+          <> "/1\"",
       ))
       |> snag.context("function missing")
   }
@@ -72,10 +80,15 @@ fn get_runner(year: Int, filename: String) -> Result(#(Day, DayRunner)) {
     |> to_module_name
     |> atom.create_from_string
 
+  let p = case function_exists(year, filename, module, "parse") {
+    Ok(p) -> p
+    Error(_) -> function.identity
+  }
+
   use pt_1 <- result.then(function_exists(year, filename, module, "pt_1"))
   use pt_2 <- result.then(function_exists(year, filename, module, "pt_2"))
 
-  Ok(#(day, #(pt_1, pt_2)))
+  Ok(#(day, #(function.compose(p, pt_1), function.compose(p, pt_2))))
 }
 
 pub fn build_from_days_dir(year: Int) -> Result(Map(Day, DayRunner)) {

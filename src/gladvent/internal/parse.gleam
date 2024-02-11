@@ -25,10 +25,6 @@ pub fn day(s: String) -> Result(Day) {
 }
 
 pub fn days(l: List(String)) -> Result(List(Day)) {
-  case l {
-    [] -> snag.error("no days selected")
-    _ ->
-      list.try_map(l, day)
-      |> snag.context("could not map day values to integers")
-  }
+  list.try_map(l, day)
+  |> snag.context("could not map day values to integers")
 }

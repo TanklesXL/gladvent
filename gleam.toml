@@ -11,8 +11,9 @@ gleam_stdlib = "~> 0.19"
 gleam_otp = "~> 0.4"
 gleam_erlang = "~> 0.7"
 snag = "~> 0.2"
-glint = " ~> 0.13"
+glint = " ~> 0.15.0-rc1"
 simplifile = "~> 0.3"
+argv = "~> 1.0"
 
 [dev-dependencies]
-gleeunit = "~> 0.6"
+gleeunit = "~> 1.0"
