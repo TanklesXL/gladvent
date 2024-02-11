@@ -8,13 +8,13 @@ import gleam/result
 import gleam
 import gleam/dynamic.{type Dynamic}
 import gleam/int
-import gleam/function
+import gleam/option.{type Option}
 
 pub type PartRunner =
-  fn(String) -> Dynamic
+  fn(Dynamic) -> Dynamic
 
 pub type DayRunner =
-  #(PartRunner, PartRunner)
+  #(PartRunner, PartRunner, Option(fn(String) -> Dynamic))
 
 pub type RunnerMap =
   Map(Day, DayRunner)
@@ -55,13 +55,13 @@ fn function_exists(
       |> do_function_exists(mod, _)
       |> result.replace_error(snag.new(
         "module "
-          <> "src/"
-          <> int.to_string(year)
-          <> "/"
-          <> filename
-          <> " does not export a function \""
-          <> func_name
-          <> "/1\"",
+        <> "src/"
+        <> int.to_string(year)
+        <> "/"
+        <> filename
+        <> " does not export a function \""
+        <> func_name
+        <> "/1\"",
       ))
       |> snag.context("function missing")
   }
@@ -80,15 +80,16 @@ fn get_runner(year: Int, filename: String) -> Result(#(Day, DayRunner)) {
     |> to_module_name
     |> atom.create_from_string
 
-  let p = case function_exists(year, filename, module, "parse") {
-    Ok(p) -> p
-    Error(_) -> function.identity
-  }
-
   use pt_1 <- result.then(function_exists(year, filename, module, "pt_1"))
   use pt_2 <- result.then(function_exists(year, filename, module, "pt_2"))
 
-  Ok(#(day, #(function.compose(p, pt_1), function.compose(p, pt_2))))
+  Ok(
+    #(day, #(
+      pt_1,
+      pt_2,
+      option.from_result(function_exists(year, filename, module, "parse")),
+    )),
+  )
 }
 
 pub fn build_from_days_dir(year: Int) -> Result(Map(Day, DayRunner)) {
