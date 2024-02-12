@@ -6,11 +6,11 @@ inputs:
   gleam-version:
     description: gleam version
     required: false
-    default: nightly
+    default: 1.0.0-rc1
   erlang-version:
     description: erlang-otp version
     required: false
-    default: 24.3.4
+    default: 26.2.2
 
 runs:
   using: composite

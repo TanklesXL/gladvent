@@ -69,7 +69,7 @@ fn try_await_many(
       use tup <- list.map(tasks)
       use t <- pair.map_second(tup)
       let res =
-        end - now_ms()
+        { end - now_ms() }
         |> int.clamp(min: 0, max: timeout)
         |> task.try_await(t, _)
       use err <- result.map_error(res)

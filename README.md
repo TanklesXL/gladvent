@@ -76,6 +76,28 @@ _Note:_ this method requires all day solutions be in `src/days/` with filenames 
 3. add your code to `src/aoc_<YEAR>/day_X.gleam`
 4. run `gleam run -m gladvent run X`
 
+## Reusable parse funtions
+
+As of `v0.7.0` gladvent supports modules with functions that provide a `pub fn parse(String)->a` where the type `a` matches with the type of the argument for the runner functions `pt_1` and `pt_2`. If this function is present, gladvent will pick it up and run it only once, providing the output to both runner functions.
+
+An example of which looks like this:
+```gleam
+pub fn parse(input: String) -> Int {
+    let assert Ok(i) = int.parse(input)
+    i
+}
+
+pub fn pt_1(input: Int) -> Int {
+    i + 1
+}
+
+pub fn pt_2(input: Int) -> Int {
+    i + 2
+}
+```
+*Note*: it is on the user to ensure that the types of these functions line up, as `gladvent` does not currently validate types.
+*Note*: `gladvent` does not currently include generating a `parse` function via the cli, it is on the user to determine when to use one and add it accordingly.
+
 ## FAQ
 
 ### Why did you make this?

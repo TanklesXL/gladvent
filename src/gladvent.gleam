@@ -1,11 +1,11 @@
 import gleam/string
 import gleam/io
-import gleam/erlang.{start_arguments as args}
 import gladvent/internal/cmd/run
 import gladvent/internal/cmd/new
 import gladvent/internal/cmd
 import glint
 import snag
+import argv
 
 /// Find all runners in the project src/days/ directory and
 /// run either the 'run' or 'new' command as specified
@@ -19,7 +19,7 @@ pub fn main() {
     |> glint.add(["run"], run.run_command())
     |> glint.add(["run", "all"], run.run_all_command())
 
-  use out <- glint.run_and_handle(commands, args())
+  use out <- glint.run_and_handle(commands, argv.load().arguments)
   case out {
     Ok(out) ->
       out

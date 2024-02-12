@@ -148,8 +148,6 @@ pub fn pt_2(input: String) {
 }
 "
 
-import gleam
-
 fn collect_async(year: Int, x: #(Day, Result(String, String))) -> String {
   fn(res) {
     case res {
@@ -181,4 +179,5 @@ pub fn new_command() {
     )
   }
   |> glint.description("Create .gleam and input files")
+  |> glint.count_args(glint.MinArgs(1))
 }

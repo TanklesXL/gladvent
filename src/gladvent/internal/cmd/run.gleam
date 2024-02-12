@@ -8,7 +8,7 @@ import gleam/erlang
 import gleam/erlang/charlist.{type Charlist}
 import gleam/erlang/atom
 import gladvent/internal/parse.{type Day}
-import gleam/map
+import gleam/dict as map
 import gladvent/internal/cmd.{Ending, Endless}
 import glint
 import glint/flag
@@ -22,6 +22,7 @@ type AsyncResult =
 
 type RunErr {
   FailedToReadInput(String)
+  FailedToParseInput(String)
   Unregistered(Day)
   Other(String)
 }
@@ -42,6 +43,7 @@ fn run_err_to_snag(err: RunErr) -> Snag {
     Unregistered(day) ->
       "day" <> " " <> int.to_string(day) <> " " <> "unregistered"
     FailedToReadInput(input_path) -> "failed to read input file: " <> input_path
+    FailedToParseInput(err) -> "failed to parse input: " <> err
     Other(s) -> s
   }
   |> snag.new
@@ -61,7 +63,7 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
 fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
 fn do(year: Int, day: Day, runners: RunnerMap, allow_crash: Bool) -> RunResult {
-  use #(pt_1, pt_2) <- result.then(
+  use #(pt_1, pt_2, parse) <- result.try(
     runners
     |> map.get(day)
     |> result.replace_error(Unregistered(day)),
@@ -70,24 +72,35 @@ fn do(year: Int, day: Day, runners: RunnerMap, allow_crash: Bool) -> RunResult {
   let input_path =
     "input/" <> int.to_string(year) <> "/" <> int.to_string(day) <> ".txt"
 
-  use input <- result.then(
+  use input <- result.try(
     input_path
     |> simplifile.read()
     |> result.map(string_trim(_, Both, "\n"))
     |> result.replace_error(FailedToReadInput(input_path)),
   )
 
+  let parse = option.unwrap(parse, dynamic.from)
+
   case allow_crash {
-    True -> Ok(#(Ok(pt_1(input)), Ok(pt_2(input))))
+    True -> {
+      let input = parse(input)
+      Ok(#(Ok(pt_1(input)), Ok(pt_2(input))))
+    }
     False -> {
+      use input <- result.try(
+        fn() { parse(input) }
+        |> erlang.rescue
+        |> result.map_error(crash_to_string)
+        |> result.map_error(FailedToParseInput),
+      )
       let pt_1 =
         fn() { pt_1(input) }
         |> erlang.rescue
-        |> result.map_error(crash_to_string)
+        |> result.map_error(crash_to_solve_err)
       let pt_2 =
         fn() { pt_2(input) }
         |> erlang.rescue
-        |> result.map_error(crash_to_string)
+        |> result.map_error(crash_to_solve_err)
       Ok(#(pt_1, pt_2))
     }
   }
@@ -142,20 +155,25 @@ fn gleam_err_to_string(g: GleamErr) -> String {
       "at line",
       int.to_string(g.line),
       g.value
-      |> option.map(fn(val) { "with value " <> string.inspect(val) })
-      |> option.unwrap(""),
+        |> option.map(fn(val) { "with value " <> string.inspect(val) })
+        |> option.unwrap(""),
     ],
     " ",
   )
 }
 
-fn crash_to_string(err: erlang.Crash) -> SolveErr {
+fn crash_to_string(err: erlang.Crash) -> String {
   crash_to_dyn(err)
   |> decode_gleam_err()
   |> result.map(gleam_err_to_string)
   |> result.lazy_unwrap(fn() {
     "run failed for some reason: " <> string.inspect(err)
   })
+}
+
+fn crash_to_solve_err(err: erlang.Crash) -> SolveErr {
+  err
+  |> crash_to_string
   |> RunFailed
 }
 
@@ -187,9 +205,16 @@ fn collect(year: Int, x: #(Day, RunResult)) -> String {
 
   case x.1 {
     Ok(#(res_1, res_2)) ->
-      "Ran " <> int.to_string(year) <> " day " <> day <> ":\n" <> "  Part 1: " <> solve_res_to_string(
-        res_1,
-      ) <> "\n" <> "  Part 2: " <> solve_res_to_string(res_2)
+      "Ran "
+      <> int.to_string(year)
+      <> " day "
+      <> day
+      <> ":\n"
+      <> "  Part 1: "
+      <> solve_res_to_string(res_1)
+      <> "\n"
+      <> "  Part 2: "
+      <> solve_res_to_string(res_2)
 
     Error(err) ->
       err
@@ -241,6 +266,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   |> glint.flag(timeout, timeout_flag())
   |> glint.flag(allow_crash, allow_crash_flag())
   |> glint.description("Run the specified days")
+  |> glint.count_args(glint.MinArgs(1))
 }
 
 pub fn run_all_command() -> glint.Command(Result(List(String))) {
