@@ -155,8 +155,8 @@ fn gleam_err_to_string(g: GleamErr) -> String {
       "at line",
       int.to_string(g.line),
       g.value
-        |> option.map(fn(val) { "with value " <> string.inspect(val) })
-        |> option.unwrap(""),
+      |> option.map(fn(val) { "with value " <> string.inspect(val) })
+      |> option.unwrap(""),
     ],
     " ",
   )
@@ -266,7 +266,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   |> glint.flag(timeout, timeout_flag())
   |> glint.flag(allow_crash, allow_crash_flag())
   |> glint.description("Run the specified days")
-  |> glint.count_args(glint.MinArgs(1))
+  |> glint.unnamed_args(glint.MinArgs(1))
 }
 
 pub fn run_all_command() -> glint.Command(Result(List(String))) {

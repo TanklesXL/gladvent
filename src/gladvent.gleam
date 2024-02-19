@@ -13,6 +13,8 @@ import argv
 pub fn main() {
   let commands =
     glint.new()
+    |> glint.with_name("gladvent")
+    |> glint.as_gleam_module
     |> glint.global_flag(cmd.year, cmd.year_flag())
     |> glint.with_pretty_help(glint.default_pretty_help())
     |> glint.add(["new"], new.new_command())

@@ -179,5 +179,5 @@ pub fn new_command() {
     )
   }
   |> glint.description("Create .gleam and input files")
-  |> glint.count_args(glint.MinArgs(1))
+  |> glint.unnamed_args(glint.MinArgs(1))
 }

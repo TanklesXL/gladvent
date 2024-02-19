@@ -11,7 +11,7 @@ gleam_stdlib = "~> 0.34 or ~> 1.0"
 gleam_otp = "~> 0.4"
 gleam_erlang = "~> 0.7"
 snag = "~> 0.2"
-glint = " ~> 0.15"
+glint = " ~> 0.16.0-rc1"
 simplifile = "~> 0.3"
 argv = "~> 1.0"
 
