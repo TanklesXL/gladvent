@@ -14,6 +14,10 @@ snag = "~> 0.2"
 glint = " ~> 0.16.0"
 simplifile = "~> 0.3"
 argv = "~> 1.0"
+shellout = "~> 1.6"
+gleam_package_interface = "~> 1.0"
+gleam_json = "~> 1.0"
+spinner = "~> 1.1"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"
