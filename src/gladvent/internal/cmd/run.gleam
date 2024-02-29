@@ -155,8 +155,8 @@ fn gleam_err_to_string(g: GleamErr) -> String {
       "at line",
       int.to_string(g.line),
       g.value
-      |> option.map(fn(val) { "with value " <> string.inspect(val) })
-      |> option.unwrap(""),
+        |> option.map(fn(val) { "with value " <> string.inspect(val) })
+        |> option.unwrap(""),
     ],
     " ",
   )
