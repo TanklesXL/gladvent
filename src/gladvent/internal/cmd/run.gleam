@@ -13,9 +13,10 @@ import gladvent/internal/cmd.{Ending, Endless}
 import glint
 import glint/flag
 import gleam
-import gladvent/internal/runners.{type RunnerMap}
+import gladvent/internal/runners
 import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None}
+import gleam/package_interface
 
 type AsyncResult =
   gleam.Result(RunResult, String)
@@ -23,6 +24,7 @@ type AsyncResult =
 type RunErr {
   FailedToReadInput(String)
   FailedToParseInput(String)
+  FailedToGetRunner(snag.Snag)
   Unregistered(Day)
   Other(String)
 }
@@ -41,12 +43,13 @@ type SolveResult =
 fn run_err_to_snag(err: RunErr) -> Snag {
   case err {
     Unregistered(day) ->
-      "day" <> " " <> int.to_string(day) <> " " <> "unregistered"
-    FailedToReadInput(input_path) -> "failed to read input file: " <> input_path
-    FailedToParseInput(err) -> "failed to parse input: " <> err
-    Other(s) -> s
+      snag.new("day" <> " " <> int.to_string(day) <> " " <> "unregistered")
+    FailedToReadInput(input_path) ->
+      snag.new("failed to read input file: " <> input_path)
+    FailedToParseInput(err) -> snag.new("failed to parse input: " <> err)
+    FailedToGetRunner(s) -> snag.layer(s, "failed to get runner")
+    Other(s) -> snag.new(s)
   }
-  |> snag.new
 }
 
 type Direction {
@@ -62,11 +65,15 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
 @external(erlang, "string", "trim")
 fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
-fn do(year: Int, day: Day, runners: RunnerMap, allow_crash: Bool) -> RunResult {
+fn do(
+  year: Int,
+  day: Day,
+  package: package_interface.Package,
+  allow_crash: Bool,
+) -> RunResult {
   use #(pt_1, pt_2, parse) <- result.try(
-    runners
-    |> map.get(day)
-    |> result.replace_error(Unregistered(day)),
+    runners.get_day(package, year, day)
+    |> result.map_error(FailedToGetRunner),
   )
 
   let input_path =
@@ -251,14 +258,18 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   {
     use input <- glint.command()
     let assert Ok(year) = flag.get_int(input.flags, cmd.year)
-    use runners <- result.then(runners.build_from_days_dir(year))
-    use allow_crash <- result.try(flag.get_bool(input.flags, allow_crash))
+    let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
+
     use days <- result.then(parse.days(input.args))
+    use package <- result.then(
+      runners.pkg_interface()
+      |> snag.context("failed to generate package interface"),
+    )
 
     days
     |> cmd.exec(
       timing(input.flags),
-      do(year, _, runners, allow_crash),
+      do(year, _, package, allow_crash),
       collect_async(year, _),
     )
     |> Ok
@@ -272,15 +283,29 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
 pub fn run_all_command() -> glint.Command(Result(List(String))) {
   {
     use input <- glint.command()
-    use allow_crash <- result.then(flag.get_bool(input.flags, allow_crash))
+    let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
     let assert Ok(year) = flag.get_int(input.flags, cmd.year)
-    use runners <- result.then(runners.build_from_days_dir(year))
 
-    runners
-    |> all_days
+    use package <- result.then(
+      runners.pkg_interface()
+      |> snag.context("failed to generate package interface"),
+    )
+
+    package.modules
+    |> map.keys
+    |> list.filter_map(fn(k) {
+      k
+      |> string.split_once("aoc_" <> int.to_string(year) <> "/day_")
+      |> result.try(fn(day) {
+        day.1
+        |> parse.day
+        |> result.replace_error(Nil)
+      })
+    })
+    |> list.sort(int.compare)
     |> cmd.exec(
       timing(input.flags),
-      do(year, _, runners, allow_crash),
+      do(year, _, package, allow_crash),
       collect_async(year, _),
     )
     |> Ok
@@ -294,10 +319,4 @@ fn timing(flags: flag.Map) {
   flag.get_int(flags, timeout)
   |> result.map(Ending)
   |> result.unwrap(Endless)
-}
-
-fn all_days(runners) {
-  runners
-  |> map.keys()
-  |> list.sort(by: int.compare)
 }
