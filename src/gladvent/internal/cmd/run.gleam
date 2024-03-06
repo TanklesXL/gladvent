@@ -259,6 +259,10 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     use input <- glint.command()
     let assert Ok(year) = flag.get_int(input.flags, cmd.year)
     let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
+    let timing =
+      flag.get_int(input.flags, timeout)
+      |> result.map(Ending)
+      |> result.unwrap(Endless)
 
     use days <- result.then(parse.days(input.args))
     use package <- result.then(
@@ -267,11 +271,10 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     )
 
     days
-    |> cmd.exec(
-      timing(input.flags),
-      do(year, _, package, allow_crash),
-      collect_async(year, _),
-    )
+    |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(
+      year,
+      _,
+    ))
     |> Ok
   }
   |> glint.flag(timeout, timeout_flag())
@@ -283,8 +286,12 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
 pub fn run_all_command() -> glint.Command(Result(List(String))) {
   {
     use input <- glint.command()
-    let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
     let assert Ok(year) = flag.get_int(input.flags, cmd.year)
+    let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
+    let timing =
+      flag.get_int(input.flags, timeout)
+      |> result.map(Ending)
+      |> result.unwrap(Endless)
 
     use package <- result.then(
       runners.pkg_interface()
@@ -294,29 +301,23 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
     package.modules
     |> map.keys
     |> list.filter_map(fn(k) {
-      k
-      |> string.split_once("aoc_" <> int.to_string(year) <> "/day_")
-      |> result.try(fn(day) {
-        day.1
-        |> parse.day
-        |> result.replace_error(Nil)
-      })
+      use day <- result.try(string.split_once(
+        k,
+        "aoc_" <> int.to_string(year) <> "/day_",
+      ))
+      day.1
+      |> parse.day
+      |> result.replace_error(Nil)
     })
     |> list.sort(int.compare)
-    |> cmd.exec(
-      timing(input.flags),
-      do(year, _, package, allow_crash),
-      collect_async(year, _),
-    )
+    |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(
+      year,
+      _,
+    ))
     |> Ok
   }
   |> glint.flag(timeout, timeout_flag())
   |> glint.flag(allow_crash, allow_crash_flag())
   |> glint.description("Run all registered days")
-}
-
-fn timing(flags: flag.Map) {
-  flag.get_int(flags, timeout)
-  |> result.map(Ending)
-  |> result.unwrap(Endless)
+  |> glint.unnamed_args(glint.EqArgs(0))
 }
