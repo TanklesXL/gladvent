@@ -5,8 +5,8 @@
     open_file_exclusive/1,
     write/2,
     ensure_dir/1,
-    function_arity_one_exists/2,
-    module_exists/1,
+    function_arity_one/2,
+    parse_function/1,
     close_iodevice/1
 ]).
 
@@ -32,18 +32,6 @@ write(IODevice, Contents) ->
 ensure_dir(Dir) ->
     to_gleam_result(filelib:ensure_dir(Dir)).
 
-module_exists(ModuleName) ->
-    case code:ensure_loaded(ModuleName) of
-        {module, _} ->
-            true;
-        {error, _} ->
-            false
-    end.
+function_arity_one(ModuleName, Fn)-> fun ModuleName:Fn/1.
 
-function_arity_one_exists(ModuleName, Fn) ->
-    case erlang:function_exported(ModuleName, Fn, 1) of
-        true ->
-            {ok, fun ModuleName:Fn/1};
-        false ->
-            {error, nil}
-    end.
+parse_function(ModuleName)-> function_arity_one(ModuleName, parse).

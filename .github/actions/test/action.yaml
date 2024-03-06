@@ -6,11 +6,15 @@ inputs:
   gleam-version:
     description: gleam version
     required: false
-    default: 1.0.0-rc2
+    default: "~> 1.0"
   erlang-version:
     description: erlang-otp version
     required: false
-    default: 26.2.2
+    default: "~> 26.2"
+  rebar3-version:
+    description: rebar3 version
+    required: false
+    default: "~> 3.18"
 
 runs:
   using: composite
@@ -19,6 +23,7 @@ runs:
       with:
         otp-version: ${{ inputs.erlang-version }}
         gleam-version: ${{ inputs.gleam-version }}
+        rebar3-version: ${{ inputs.rebar3-version }}
     - uses: actions/setup-node@v2
       with:
         node-version: ${{ inputs.node-version }}

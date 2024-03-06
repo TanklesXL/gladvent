@@ -1,10 +1,11 @@
 import simplifile.{type FileError}
 import gleam/result
+import gladvent/internal/util.{defer}
 
 pub type IODevice
 
 @external(erlang, "gladvent_ffi", "open_file_exclusive")
-pub fn open_file_exclusive(s s: String) -> Result(IODevice, FileError)
+pub fn open_file_exclusive(s: String) -> Result(IODevice, FileError)
 
 @external(erlang, "gladvent_ffi", "write")
 fn do_write(a: IODevice, b: String) -> Result(Nil, FileError)
@@ -25,10 +26,4 @@ pub fn do_with_file(
     let assert Ok(Nil) = close_iodevice(file)
   })
   f(file)
-}
-
-fn defer(do later: fn() -> _, after now: fn() -> a) -> a {
-  let res = now()
-  later()
-  res
 }
