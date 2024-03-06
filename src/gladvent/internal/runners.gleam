@@ -102,7 +102,7 @@ pub fn runner_retrieval_error_to_snag(e: RunnerRetrievalErr) -> snag.Snag {
         "function '"
         <> f
         <> "' has parameter(s) "
-        <> string.inspect(g)
+        <> type_list_to_string(g)
         <> ", but should only have one parameter and it must be of type "
         <> e
       }
@@ -126,7 +126,6 @@ pub fn get_day(
   use <- snagify_error(with: runner_retrieval_error_to_snag)
   let module_name =
     "aoc_" <> int.to_string(year) <> "/day_" <> int.to_string(day)
-  // let module_atom = atom.create_from_string(to_erlang_module_name(module_name))
 
   // get the module for the specified year + day
   use module <- result.try(
@@ -153,9 +152,8 @@ pub fn get_day(
     _,
     runner_param_type,
   )
-  // get pt_1
+
   use pt_1 <- result.try(retrieve_runner("pt_1"))
-  // get pt_2
   use pt_2 <- result.try(retrieve_runner("pt_2"))
 
   Ok(#(
@@ -185,7 +183,7 @@ fn retrieve_runner(
     },
     return: Error(IncorrectInputParameters(
       function: function_name,
-      expected: string.inspect(runner_param_type),
+      expected: type_to_string(runner_param_type),
       got: list.map(pt_1.parameters, fn(p) { p.type_ }),
     )),
   )
@@ -219,3 +217,33 @@ const string = package_interface.Named(
   package: "",
   parameters: [],
 )
+
+fn type_to_string(t: package_interface.Type) -> String {
+  case t {
+    package_interface.Tuple(elements: elements) ->
+      "#(" <> type_list_to_string(elements) <> ")"
+    package_interface.Fn(parameters: parameters, return: return) ->
+      "fn("
+      <> type_list_to_string(parameters)
+      <> ") -> "
+      <> type_to_string(return)
+    package_interface.Variable(id: id) -> int.to_string(id)
+    package_interface.Named(
+      name: name,
+      package: _,
+      module: module,
+      parameters: parameters,
+    ) ->
+      case parameters {
+        [] -> module <> "." <> name
+        _ ->
+          module <> "." <> name <> "(" <> type_list_to_string(parameters) <> ")"
+      }
+  }
+}
+
+fn type_list_to_string(lt: List(package_interface.Type)) -> String {
+  lt
+  |> list.map(type_to_string)
+  |> string.join(", ")
+}
