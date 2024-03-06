@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        erlang: ["26.2.2"]
+        erlang: ["~> 26.2"]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/test

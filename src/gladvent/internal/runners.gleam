@@ -139,8 +139,8 @@ pub fn get_day(
 
   use runner_param_type <- result.try(case parse {
     Error(Nil) -> Ok(string)
-    Ok(package_interface.Function(parameters: [param], return: return, ..)) if param.type_ == string ->
-      Ok(return)
+    Ok(package_interface.Function(parameters: [param], return: return, ..)) if param.type_
+      == string -> Ok(return)
     _ ->
       Error(ParseFunctionInvalid(
         "parse function must have 1 input parameter of type String",
@@ -162,8 +162,8 @@ pub fn get_day(
     pt_1,
     pt_2,
     parse
-    |> result.replace(parse_function(module_name))
-    |> option.from_result,
+      |> result.replace(parse_function(module_name))
+      |> option.from_result,
   ))
 }
 

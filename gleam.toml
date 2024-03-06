@@ -4,20 +4,20 @@ repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
 internal_modules = ["gladvent/internal/*"]
-gleam = "~> 0.34 or ~> 1.0"
+gleam = "~> 1.0"
 
 [dependencies]
-gleam_stdlib = "~> 0.34 or ~> 1.0"
-gleam_otp = "~> 0.4"
-gleam_erlang = "~> 0.7"
-snag = "~> 0.2"
-glint = " ~> 0.16.0"
+glint = "~> 0.17"
 simplifile = "~> 0.3"
 argv = "~> 1.0"
 shellout = "~> 1.6"
 gleam_package_interface = "~> 1.0"
 gleam_json = "~> 1.0"
 spinner = "~> 1.1"
+gleam_stdlib = "~> 0.36 or ~> 1.0"
+gleam_otp = "~> 0.4"
+gleam_erlang = "~> 0.7"
+snag = "~> 0.2"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"
