@@ -15,11 +15,17 @@ pub fn main() {
     glint.new()
     |> glint.with_name("gladvent")
     |> glint.as_gleam_module
-    |> glint.global_flag(cmd.year, cmd.year_flag())
+    |> glint.group_flag(at: [], for: cmd.year, of: cmd.year_flag())
     |> glint.with_pretty_help(glint.default_pretty_help())
-    |> glint.add(["new"], new.new_command())
-    |> glint.add(["run"], run.run_command())
-    |> glint.add(["run", "all"], run.run_all_command())
+    |> glint.add(at: ["new"], do: new.new_command())
+    |> glint.group_flag(at: ["run"], for: run.timeout, of: run.timeout_flag())
+    |> glint.group_flag(
+      at: ["run"],
+      for: run.allow_crash,
+      of: run.allow_crash_flag(),
+    )
+    |> glint.add(at: ["run"], do: run.run_command())
+    |> glint.add(at: ["run", "all"], do: run.run_all_command())
 
   use out <- glint.run_and_handle(commands, argv.load().arguments)
   case out {

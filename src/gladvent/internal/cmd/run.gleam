@@ -233,11 +233,11 @@ fn collect(year: Int, x: #(Day, RunResult)) -> String {
 
 // ----- CLI -----
 
-const timeout = "timeout"
+pub const timeout = "timeout"
 
-const allow_crash = "allow-crash"
+pub const allow_crash = "allow-crash"
 
-fn timeout_flag() {
+pub fn timeout_flag() {
   flag.int()
   |> flag.constraint(fn(i) {
     case i > 0 {
@@ -248,7 +248,7 @@ fn timeout_flag() {
   |> flag.description("Run with specified timeout")
 }
 
-fn allow_crash_flag() {
+pub fn allow_crash_flag() {
   flag.bool()
   |> flag.default(False)
   |> flag.description("Don't catch exceptions thrown by runners")
@@ -277,8 +277,6 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     ))
     |> Ok
   }
-  |> glint.flag(timeout, timeout_flag())
-  |> glint.flag(allow_crash, allow_crash_flag())
   |> glint.description("Run the specified days")
   |> glint.unnamed_args(glint.MinArgs(1))
 }
@@ -316,8 +314,6 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
     ))
     |> Ok
   }
-  |> glint.flag(timeout, timeout_flag())
-  |> glint.flag(allow_crash, allow_crash_flag())
   |> glint.description("Run all registered days")
   |> glint.unnamed_args(glint.EqArgs(0))
 }

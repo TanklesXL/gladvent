@@ -1,5 +1,5 @@
 name = "gladvent"
-version = "0.7.0"
+version = "0.7.1"
 repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
@@ -7,7 +7,7 @@ internal_modules = ["gladvent/internal/*"]
 gleam = "~> 1.0"
 
 [dependencies]
-glint = "~> 0.17.1"
+glint = "~> 0.18"
 simplifile = "~> 0.3"
 argv = "~> 1.0"
 shellout = "~> 1.6"
