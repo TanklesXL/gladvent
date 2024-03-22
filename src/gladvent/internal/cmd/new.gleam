@@ -6,12 +6,11 @@ import gladvent/internal/file
 import simplifile as efile
 import gladvent/internal/cmd
 import glint
-import glint/flag
 import gladvent/internal/parse.{type Day}
 import gleam/pair
 
 type Context {
-  Context(year: Int, day: Day)
+  Context(year: Int, day: Day, add_parse: Bool)
 }
 
 fn create_src_dir(ctx: Context) {
@@ -23,8 +22,13 @@ fn create_src_dir(ctx: Context) {
 fn create_src_file(ctx: Context) {
   let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
 
+  let file_data = case ctx.add_parse {
+    True -> parse_starter <> "\n" <> gleam_starter
+    False -> gleam_starter
+  }
+
   gleam_src_path
-  |> file.do_with_file(file.write(_, gleam_starter))
+  |> file.do_with_file(file.write(_, file_data))
   |> result.flatten
   |> result.map_error(handle_file_open_failure(_, gleam_src_path))
   |> result.replace(gleam_src_path)
@@ -148,6 +152,11 @@ pub fn pt_2(input: String) {
 }
 "
 
+const parse_starter = "pub fn parse(input: String) {
+  todo as \"parse not implemented\"
+}
+"
+
 fn collect_async(year: Int, x: #(Day, Result(String, String))) -> String {
   fn(res) {
     case res {
@@ -167,17 +176,22 @@ fn collect(year: Int, x: #(Day, String)) -> String {
 }
 
 pub fn new_command() {
-  {
-    use input <- glint.command()
-    use days <- result.map(parse.days(input.args))
-    let assert Ok(year) = flag.get_int(input.flags, cmd.year)
-    cmd.exec(
-      days,
-      cmd.Endless,
-      fn(day) { do(Context(year, day)) },
-      collect_async(year, _),
-    )
-  }
-  |> glint.description("Create .gleam and input files")
-  |> glint.unnamed_args(glint.MinArgs(1))
+  use <- glint.command_help("Create .gleam and input files")
+  use <- glint.unnamed_args(glint.MinArgs(1))
+  use parse <- glint.flag(
+    "parse",
+    glint.bool()
+    |> glint.default(False)
+    |> glint.flag_help("Generate day runners with a parse function"),
+  )
+  use _, args, flags <- glint.command()
+  use days <- result.map(parse.days(args))
+  let assert Ok(year) = glint.get_int(flags, cmd.year)
+  let assert Ok(parse) = parse(flags)
+  cmd.exec(
+    days,
+    cmd.Endless,
+    fn(day) { do(Context(year, day, parse)) },
+    collect_async(year, _),
+  )
 }

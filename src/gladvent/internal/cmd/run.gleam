@@ -11,7 +11,6 @@ import gladvent/internal/parse.{type Day}
 import gleam/dict as map
 import gladvent/internal/cmd.{Ending, Endless}
 import glint
-import glint/flag
 import gleam
 import gladvent/internal/runners
 import gleam/dynamic.{type Dynamic}
@@ -162,8 +161,8 @@ fn gleam_err_to_string(g: GleamErr) -> String {
       "at line",
       int.to_string(g.line),
       g.value
-        |> option.map(fn(val) { "with value " <> string.inspect(val) })
-        |> option.unwrap(""),
+      |> option.map(fn(val) { "with value " <> string.inspect(val) })
+      |> option.unwrap(""),
     ],
     " ",
   )
@@ -238,82 +237,71 @@ pub const timeout = "timeout"
 pub const allow_crash = "allow-crash"
 
 pub fn timeout_flag() {
-  flag.int()
-  |> flag.constraint(fn(i) {
-    case i > 0 {
-      True -> Ok(Nil)
-      False -> snag.error("timeout value must greater than zero")
-    }
-  })
-  |> flag.description("Run with specified timeout")
+  use i <- glint.constraint(
+    glint.int()
+    |> glint.flag_help("Run with specified timeout"),
+  )
+
+  case i > 0 {
+    True -> Ok(i)
+    False -> snag.error("timeout value must greater than zero")
+  }
 }
 
 pub fn allow_crash_flag() {
-  flag.bool()
-  |> flag.default(False)
-  |> flag.description("Don't catch exceptions thrown by runners")
+  glint.bool()
+  |> glint.default(False)
+  |> glint.flag_help("Don't catch exceptions thrown by runners")
 }
 
 pub fn run_command() -> glint.Command(Result(List(String))) {
-  {
-    use input <- glint.command()
-    let assert Ok(year) = flag.get_int(input.flags, cmd.year)
-    let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
-    let timing =
-      flag.get_int(input.flags, timeout)
-      |> result.map(Ending)
-      |> result.unwrap(Endless)
+  use <- glint.command_help("Run the specified days")
+  use <- glint.unnamed_args(glint.MinArgs(1))
+  use _, args, flags <- glint.command()
+  use days <- result.then(parse.days(args))
+  let assert Ok(year) = glint.get_int(flags, cmd.year)
+  let assert Ok(allow_crash) = glint.get_bool(flags, allow_crash)
+  let timing =
+    glint.get_int(flags, timeout)
+    |> result.map(Ending)
+    |> result.unwrap(Endless)
 
-    use days <- result.then(parse.days(input.args))
-    use package <- result.then(
-      runners.pkg_interface()
-      |> snag.context("failed to generate package interface"),
-    )
+  use package <- result.map(
+    runners.pkg_interface()
+    |> snag.context("failed to generate package interface"),
+  )
 
-    days
-    |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(
-      year,
-      _,
-    ))
-    |> Ok
-  }
-  |> glint.description("Run the specified days")
-  |> glint.unnamed_args(glint.MinArgs(1))
+  days
+  |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(year, _))
 }
 
 pub fn run_all_command() -> glint.Command(Result(List(String))) {
-  {
-    use input <- glint.command()
-    let assert Ok(year) = flag.get_int(input.flags, cmd.year)
-    let assert Ok(allow_crash) = flag.get_bool(input.flags, allow_crash)
-    let timing =
-      flag.get_int(input.flags, timeout)
-      |> result.map(Ending)
-      |> result.unwrap(Endless)
+  use <- glint.command_help("Run all registered days")
+  use <- glint.unnamed_args(glint.EqArgs(0))
+  use _, _, flags <- glint.command()
+  let assert Ok(year) = glint.get_int(flags, cmd.year)
+  let assert Ok(allow_crash) = glint.get_bool(flags, allow_crash)
+  let timing =
+    glint.get_int(flags, timeout)
+    |> result.map(Ending)
+    |> result.unwrap(Endless)
 
-    use package <- result.then(
-      runners.pkg_interface()
-      |> snag.context("failed to generate package interface"),
-    )
+  use package <- result.map(
+    runners.pkg_interface()
+    |> snag.context("failed to generate package interface"),
+  )
 
-    package.modules
-    |> map.keys
-    |> list.filter_map(fn(k) {
-      use day <- result.try(string.split_once(
-        k,
-        "aoc_" <> int.to_string(year) <> "/day_",
-      ))
-      day.1
-      |> parse.day
-      |> result.replace_error(Nil)
-    })
-    |> list.sort(int.compare)
-    |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(
-      year,
-      _,
+  package.modules
+  |> map.keys
+  |> list.filter_map(fn(k) {
+    use day <- result.try(string.split_once(
+      k,
+      "aoc_" <> int.to_string(year) <> "/day_",
     ))
-    |> Ok
-  }
-  |> glint.description("Run all registered days")
-  |> glint.unnamed_args(glint.EqArgs(0))
+    day.1
+    |> parse.day
+    |> result.replace_error(Nil)
+  })
+  |> list.sort(int.compare)
+  |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(year, _))
 }

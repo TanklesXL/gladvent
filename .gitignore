@@ -23,3 +23,4 @@ build
 src/days
 src/aoc_*
 input
+package-interface.json

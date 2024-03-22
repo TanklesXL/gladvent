@@ -6,8 +6,8 @@ import gleam/pair
 import gleam/list
 import gleam/int
 import gleam/string
-import glint/flag
 import snag
+import glint
 
 pub fn input_dir(year) {
   input_root <> int.to_string(year) <> "/"
@@ -91,15 +91,13 @@ fn current_year() -> Int {
 pub const year = "year"
 
 pub fn year_flag() {
-  flag.int()
-  |> flag.default(current_year())
-  |> flag.constraint(fn(year) {
-    case year < 2015 {
-      True ->
-        snag.error(
-          "advent of code did not exist prior to 2015, did you mistype?",
-        )
-      False -> Ok(Nil)
-    }
-  })
+  use year <- glint.constraint(
+    glint.int()
+    |> glint.default(current_year()),
+  )
+  case year < 2015 {
+    True ->
+      snag.error("advent of code did not exist prior to 2015, did you mistype?")
+    False -> Ok(year)
+  }
 }

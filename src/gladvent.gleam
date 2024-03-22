@@ -13,10 +13,10 @@ import argv
 pub fn main() {
   let commands =
     glint.new()
-    |> glint.with_name("gladvent")
-    |> glint.as_gleam_module
+    |> glint.name("gladvent")
+    |> glint.as_module
     |> glint.group_flag(at: [], for: cmd.year, of: cmd.year_flag())
-    |> glint.with_pretty_help(glint.default_pretty_help())
+    |> glint.pretty_help(glint.default_pretty_help())
     |> glint.add(at: ["new"], do: new.new_command())
     |> glint.group_flag(at: ["run"], for: run.timeout, of: run.timeout_flag())
     |> glint.group_flag(
