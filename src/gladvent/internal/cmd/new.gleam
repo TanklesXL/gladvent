@@ -152,7 +152,7 @@ pub fn pt_2(input: String) {
 }
 "
 
-const parse_starter = "pub fn parse(input: String) {
+const parse_starter = "pub fn parse(input: String) -> String {
   todo as \"parse not implemented\"
 }
 "
