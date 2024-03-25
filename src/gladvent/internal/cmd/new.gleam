@@ -181,8 +181,8 @@ pub fn new_command() {
   use parse <- glint.flag(
     "parse",
     glint.bool()
-    |> glint.default(False)
-    |> glint.flag_help("Generate day runners with a parse function"),
+      |> glint.default(False)
+      |> glint.flag_help("Generate day runners with a parse function"),
   )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
