@@ -24,9 +24,6 @@ runs:
         otp-version: ${{ inputs.erlang-version }}
         gleam-version: ${{ inputs.gleam-version }}
         rebar3-version: ${{ inputs.rebar3-version }}
-    - uses: actions/setup-node@v2
-      with:
-        node-version: ${{ inputs.node-version }}
     - run: gleam format --check src test
       shell: bash
     - run: gleam deps download
