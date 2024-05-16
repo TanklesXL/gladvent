@@ -1,21 +1,21 @@
-import gleam/dict as map
-import gleam/erlang/atom
-import gleam/string
-import snag.{type Result}
 import gladvent/internal/parse.{type Day}
-import gleam/list
-import gleam/result
-import gleam
-import gleam/dynamic.{type Dynamic}
-import gleam/int
-import gleam/option.{type Option}
-import shellout
-import gleam/json
-import gleam/package_interface
-import spinner
-import simplifile
-import gleam/bool
 import gladvent/internal/util.{defer}
+import gleam
+import gleam/bool
+import gleam/dict as map
+import gleam/dynamic.{type Dynamic}
+import gleam/erlang/atom
+import gleam/int
+import gleam/json
+import gleam/list
+import gleam/option.{type Option}
+import gleam/package_interface
+import gleam/result
+import gleam/string
+import shellout
+import simplifile
+import snag.{type Result}
+import spinner
 
 pub type PartRunner =
   fn(Dynamic) -> Dynamic

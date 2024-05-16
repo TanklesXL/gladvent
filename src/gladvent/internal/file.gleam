@@ -1,6 +1,6 @@
-import simplifile.{type FileError}
-import gleam/result
 import gladvent/internal/util.{defer}
+import gleam/result
+import simplifile.{type FileError}
 
 pub type IODevice
 

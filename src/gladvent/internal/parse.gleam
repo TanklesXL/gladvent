@@ -1,7 +1,7 @@
-import snag.{type Result}
 import gleam/int
 import gleam/list
 import gleam/result
+import snag.{type Result}
 
 pub type Day =
   Int
