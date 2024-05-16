@@ -1,21 +1,21 @@
+import gladvent/internal/cmd.{Ending, Endless}
+import gladvent/internal/parse.{type Day}
+import gladvent/internal/runners
+import gleam
+import gleam/dict as map
+import gleam/dynamic.{type Dynamic}
+import gleam/erlang
+import gleam/erlang/atom
+import gleam/erlang/charlist.{type Charlist}
 import gleam/int
 import gleam/list
-import gleam/result
-import gleam/string
-import snag.{type Result, type Snag}
-import simplifile
-import gleam/erlang
-import gleam/erlang/charlist.{type Charlist}
-import gleam/erlang/atom
-import gladvent/internal/parse.{type Day}
-import gleam/dict as map
-import gladvent/internal/cmd.{Ending, Endless}
-import glint
-import gleam
-import gladvent/internal/runners
-import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None}
 import gleam/package_interface
+import gleam/result
+import gleam/string
+import glint
+import simplifile
+import snag.{type Result, type Snag}
 
 type AsyncResult =
   gleam.Result(RunResult, String)
@@ -232,13 +232,9 @@ fn collect(year: Int, x: #(Day, RunResult)) -> String {
 
 // ----- CLI -----
 
-pub const timeout = "timeout"
-
-pub const allow_crash = "allow-crash"
-
 pub fn timeout_flag() {
-  use i <- glint.constraint(
-    glint.int()
+  use i <- glint.flag_constraint(
+    glint.int_flag("timeout")
     |> glint.flag_help("Run with specified timeout"),
   )
 
@@ -249,8 +245,8 @@ pub fn timeout_flag() {
 }
 
 pub fn allow_crash_flag() {
-  glint.bool()
-  |> glint.default(False)
+  glint.bool_flag("allow-crash")
+  |> glint.flag_default(False)
   |> glint.flag_help("Don't catch exceptions thrown by runners")
 }
 
@@ -259,10 +255,10 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   use <- glint.unnamed_args(glint.MinArgs(1))
   use _, args, flags <- glint.command()
   use days <- result.then(parse.days(args))
-  let assert Ok(year) = glint.get_int(flags, cmd.year)
-  let assert Ok(allow_crash) = glint.get_bool(flags, allow_crash)
+  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
+  let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
   let timing =
-    glint.get_int(flags, timeout)
+    glint.get_flag(flags, timeout_flag())
     |> result.map(Ending)
     |> result.unwrap(Endless)
 
@@ -279,10 +275,10 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   use <- glint.command_help("Run all registered days")
   use <- glint.unnamed_args(glint.EqArgs(0))
   use _, _, flags <- glint.command()
-  let assert Ok(year) = glint.get_int(flags, cmd.year)
-  let assert Ok(allow_crash) = glint.get_bool(flags, allow_crash)
+  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
+  let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
   let timing =
-    glint.get_int(flags, timeout)
+    glint.get_flag(flags, timeout_flag())
     |> result.map(Ending)
     |> result.unwrap(Endless)
 

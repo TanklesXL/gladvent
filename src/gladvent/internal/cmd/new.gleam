@@ -1,13 +1,13 @@
-import gleam/int
-import gleam/result
-import gleam/list
-import gleam/string
-import gladvent/internal/file
-import simplifile as efile
 import gladvent/internal/cmd
-import glint
+import gladvent/internal/file
 import gladvent/internal/parse.{type Day}
+import gleam/int
+import gleam/list
 import gleam/pair
+import gleam/result
+import gleam/string
+import glint
+import simplifile as efile
 
 type Context {
   Context(year: Int, day: Day, add_parse: Bool)
@@ -179,14 +179,13 @@ pub fn new_command() {
   use <- glint.command_help("Create .gleam and input files")
   use <- glint.unnamed_args(glint.MinArgs(1))
   use parse <- glint.flag(
-    "parse",
-    glint.bool()
-      |> glint.default(False)
-      |> glint.flag_help("Generate day runners with a parse function"),
+    glint.bool_flag("parse")
+    |> glint.flag_default(False)
+    |> glint.flag_help("Generate day runners with a parse function"),
   )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
-  let assert Ok(year) = glint.get_int(flags, cmd.year)
+  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(parse) = parse(flags)
   cmd.exec(
     days,
