@@ -25,6 +25,7 @@ packages = [
 
 [requirements]
 argv = { version = "~> 1.0" }
+filepath = { version = ">= 1.0.0 and < 2.0.0"}
 gleam_erlang = { version = "~> 0.7" }
 gleam_json = { version = "~> 1.0" }
 gleam_otp = { version = "~> 0.4" }

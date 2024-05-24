@@ -1,3 +1,5 @@
+import filepath
+import gladvent/internal/cmd
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util.{defer}
 import gleam
@@ -65,7 +67,7 @@ pub fn pkg_interface() -> Result(package_interface.Package) {
 
   spinner.set_text(spinner, "reading " <> package_interface_path)
   use pkg_interface_contents <- result.try(
-    simplifile.read(package_interface_path)
+    simplifile.read(filepath.join(cmd.root(), package_interface_path))
     |> result.map_error(FailedToReadPackageInterface),
   )
 

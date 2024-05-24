@@ -1,3 +1,4 @@
+import filepath
 import gladvent/internal/parse.{type Day}
 import gleam/int
 import gleam/list
@@ -6,18 +7,36 @@ import gleam/pair
 import gleam/result
 import glint
 import parallel_map
+import simplifile
 import snag
 
-pub fn input_dir(year) {
-  input_root <> int.to_string(year) <> "/"
+pub fn root() -> String {
+  find_root(".")
 }
 
-pub const input_root = "input/"
+fn find_root(path: String) -> String {
+  let toml = filepath.join(path, "gleam.toml")
 
-pub const src_root = "src/"
+  case simplifile.verify_is_file(toml) {
+    Ok(False) | Error(_) -> find_root(filepath.join("..", path))
+    Ok(True) -> path
+  }
+}
+
+pub fn input_root() {
+  filepath.join(root(), "input")
+}
+
+pub fn input_dir(year) {
+  filepath.join(input_root(), int.to_string(year))
+}
+
+pub fn src_root() {
+  filepath.join(root(), "src")
+}
 
 pub fn src_dir(year) {
-  src_root <> "aoc_" <> int.to_string(year) <> "/"
+  filepath.join(src_root(), "aoc_" <> int.to_string(year))
 }
 
 pub type Timing {

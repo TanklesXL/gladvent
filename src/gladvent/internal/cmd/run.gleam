@@ -1,3 +1,4 @@
+import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/runners
@@ -76,7 +77,7 @@ fn do(
   )
 
   let input_path =
-    "input/" <> int.to_string(year) <> "/" <> int.to_string(day) <> ".txt"
+    filepath.join(cmd.input_dir(year), int.to_string(day) <> ".txt")
 
   use input <- result.try(
     input_path

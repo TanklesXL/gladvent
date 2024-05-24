@@ -1,3 +1,4 @@
+import filepath
 import gladvent/internal/cmd
 import gladvent/internal/file
 import gladvent/internal/parse.{type Day}
@@ -35,7 +36,7 @@ fn create_src_file(ctx: Context) {
 }
 
 fn create_input_root(_ctx: Context) {
-  cmd.input_root
+  cmd.input_root()
   |> create_dir
 }
 
@@ -68,11 +69,11 @@ fn err_to_string(e: Err) -> String {
 }
 
 fn input_path(year: Int, day: Day) -> String {
-  cmd.input_dir(year) <> int.to_string(day) <> ".txt"
+  filepath.join(cmd.input_dir(year), int.to_string(day) <> ".txt")
 }
 
 fn gleam_src_path(year: Int, day: Day) -> String {
-  cmd.src_dir(year) <> "day_" <> int.to_string(day) <> ".gleam"
+  filepath.join(cmd.src_dir(year), "day_" <> int.to_string(day) <> ".gleam")
 }
 
 fn create_dir(dir: String) -> Result(String, Err) {
