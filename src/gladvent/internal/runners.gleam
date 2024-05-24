@@ -4,7 +4,7 @@ import gladvent/internal/parse.{type Day}
 import gladvent/internal/util.{defer}
 import gleam
 import gleam/bool
-import gleam/dict as map
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/atom
 import gleam/int
@@ -131,12 +131,12 @@ pub fn get_day(
 
   // get the module for the specified year + day
   use module <- result.try(
-    map.get(package.modules, module_name)
+    dict.get(package.modules, module_name)
     |> result.replace_error(ModuleNotFound(module_name)),
   )
 
   // get the optional parse function
-  let parse = map.get(module.functions, "parse")
+  let parse = dict.get(module.functions, "parse")
 
   use runner_param_type <- result.try(case parse {
     Error(Nil) -> Ok(string)
@@ -175,7 +175,7 @@ fn retrieve_runner(
 ) -> gleam.Result(fn(Dynamic) -> Dynamic, RunnerRetrievalErr) {
   use pt_1 <- result.try(
     module.functions
-    |> map.get(function_name)
+    |> dict.get(function_name)
     |> result.replace_error(FunctionNotFound(module_name, function_name)),
   )
   use <- bool.guard(
