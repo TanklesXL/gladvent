@@ -2,6 +2,7 @@ import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/runners
+import gladvent/internal/util
 import gleam
 import gleam/dict as map
 import gleam/dynamic.{type Dynamic}
@@ -17,6 +18,7 @@ import gleam/string
 import glint
 import simplifile
 import snag.{type Result, type Snag}
+import spinner
 
 type AsyncResult =
   gleam.Result(RunResult, String)
@@ -258,6 +260,18 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   use days <- result.then(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
+
+  let spinner =
+    spinner.new(
+      "running days "
+      <> string.join(args, ", ")
+      <> " in "
+      <> int.to_string(year),
+    )
+    |> spinner.start()
+
+  use <- util.defer(do: fn() { spinner.stop(spinner) })
+
   let timing =
     glint.get_flag(flags, timeout_flag())
     |> result.map(Ending)
@@ -276,8 +290,16 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   use <- glint.command_help("Run all registered days")
   use <- glint.unnamed_args(glint.EqArgs(0))
   use _, _, flags <- glint.command()
+
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
+
+  let spinner =
+    spinner.new("running all days in " <> int.to_string(year))
+    |> spinner.start()
+
+  use <- util.defer(do: fn() { spinner.stop(spinner) })
+
   let timing =
     glint.get_flag(flags, timeout_flag())
     |> result.map(Ending)

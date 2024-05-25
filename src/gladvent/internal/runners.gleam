@@ -71,35 +71,39 @@ fn package_interface_error_to_snag(e: PkgInterfaceErr) -> snag.Snag {
 pub fn pkg_interface() -> Result(package_interface.Package) {
   use <- snagify_error(with: package_interface_error_to_snag)
   let spinner =
-    spinner.new("generating " <> package_interface_path)
+    spinner.new("initializing package interface")
     |> spinner.start()
 
   use <- defer(do: fn() { spinner.stop(spinner) })
 
   let root = cmd.root()
 
+  spinner.set_text(spinner, "reading gleam.toml")
   use gleam_toml <- result.try(
     simplifile.read(filepath.join(root, "gleam.toml"))
     |> result.map_error(FailedToReadGleamToml),
   )
 
+  spinner.set_text(spinner, "decoding gleam.toml")
   use toml <- result.try(
     tom.parse(gleam_toml)
     |> result.map_error(FailedToDecodeGleamToml),
   )
 
+  spinner.set_text(spinner, "fetching project name")
   use name <- result.try(
     tom.get_string(toml, ["name"])
     |> result.map_error(FailedToGetPackageName),
   )
 
+  spinner.set_text(spinner, "clearing build cache")
   use _ <- result.try(
-    {
-      use cache <- list.try_map(["build/prod/erlang", "build/dev/erlang"])
+    ["build/prod/erlang", "build/dev/erlang"]
+    |> list.try_map(fn(cache) {
       filepath.join(root, cache)
       |> filepath.join(name)
       |> simplifile.delete
-    }
+    })
     |> result.try_recover(fn(e) {
       case e {
         simplifile.Enoent -> Ok([])
@@ -108,11 +112,13 @@ pub fn pkg_interface() -> Result(package_interface.Package) {
     }),
   )
 
+  spinner.set_text(spinner, "rebuilding project")
   use _ <- result.try(
     shellout.command("gleam", ["build"], root, [])
     |> result.map_error(fn(e) { FailedToGeneratePackageInterface(e.1) }),
   )
 
+  spinner.set_text(spinner, "generating package interface file")
   use _ <- result.try(
     shellout.command(
       "gleam",
