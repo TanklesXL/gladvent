@@ -7,7 +7,7 @@ internal_modules = ["gladvent/internal/*"]
 gleam = "~> 1.0"
 
 [dependencies]
-glint = "1.0.0-rc2"
+glint = "1.0.0-rc3"
 simplifile = "~> 1.0"
 argv = "~> 1.0"
 shellout = "~> 1.6"
