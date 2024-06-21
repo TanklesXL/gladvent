@@ -1,5 +1,4 @@
 import argv
-import gladvent/internal/cmd
 import gladvent/internal/cmd/new
 import gladvent/internal/cmd/run
 import gleam/io
@@ -15,13 +14,11 @@ pub fn main() {
     glint.new()
     |> glint.path_help(
       [],
-      "gladvent is an advent of code runner and generator for gleam.
-
-Please use either the 'run' or 'new' commands.",
+      "gladvent is an advent of code runner and generator for gleam. Please use either the 'run' or 'new' commands.",
     )
     |> glint.with_name("gladvent")
     |> glint.as_module
-    |> glint.group_flag(at: [], of: cmd.year_flag())
+    |> glint.with_min_first_column_width(10)
     |> glint.pretty_help(glint.default_pretty_help())
     |> glint.add(at: ["new"], do: new.new_command())
     |> glint.group_flag(at: ["run"], of: run.timeout_flag())
