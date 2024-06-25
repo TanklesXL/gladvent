@@ -1,4 +1,5 @@
 import argv
+import gladvent/internal/cmd
 import gladvent/internal/cmd/new
 import gladvent/internal/cmd/run
 import gleam/io
@@ -18,8 +19,8 @@ pub fn main() {
     )
     |> glint.with_name("gladvent")
     |> glint.as_module
-    |> glint.with_min_first_column_width(10)
     |> glint.pretty_help(glint.default_pretty_help())
+    |> glint.group_flag(at: [], of: cmd.year_flag())
     |> glint.add(at: ["new"], do: new.new_command())
     |> glint.group_flag(at: ["run"], of: run.timeout_flag())
     |> glint.group_flag(at: ["run"], of: run.allow_crash_flag())
