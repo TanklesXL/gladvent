@@ -1,3 +1,4 @@
+import decode
 import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/parse.{type Day}
@@ -11,7 +12,7 @@ import gleam/erlang/atom
 import gleam/erlang/charlist.{type Charlist}
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option}
 import gleam/package_interface
 import gleam/result
 import gleam/string
@@ -132,23 +133,37 @@ type GleamErr {
   )
 }
 
-fn decode_gleam_err() {
-  dynamic.decode6(
-    GleamErr,
-    dynamic.field(atom.create_from_string("gleam_error"), atom.from_dynamic),
-    dynamic.field(atom.create_from_string("module"), dynamic.string),
-    dynamic.field(atom.create_from_string("function"), dynamic.string),
-    dynamic.field(atom.create_from_string("line"), dynamic.int),
-    dynamic.field(atom.create_from_string("message"), dynamic.string),
-    dynamic.any([
-      dynamic.field(
-        atom.create_from_string("value"),
-        dynamic.optional(dynamic.dynamic),
-      ),
-      fn(_) { Ok(None) },
-    ]),
+fn decode_gleam_err(dyn: dynamic.Dynamic) {
+  decode.into({
+    use gleam_error <- decode.parameter
+    use module <- decode.parameter
+    use function <- decode.parameter
+    use line <- decode.parameter
+    use message <- decode.parameter
+    use value <- decode.parameter
+    GleamErr(gleam_error, module, function, line, message, value)
+  })
+  |> decode.field(atom.create_from_string("gleam_error"), {
+    use dyn <- decode.then(decode.dynamic)
+    case atom.from_dynamic(dyn) {
+      Ok(a) -> decode.into(a)
+      Error(e) ->
+        decode.fail("failed to decode gleam error: " <> string.inspect(e))
+    }
+  })
+  |> decode.field(atom.create_from_string("module"), decode.string)
+  |> decode.field(atom.create_from_string("function"), decode.string)
+  |> decode.field(atom.create_from_string("line"), decode.int)
+  |> decode.field(atom.create_from_string("message"), decode.string)
+  |> decode.field(
+    atom.create_from_string("value"),
+    decode.optional(decode.dynamic),
   )
+  |> decode.from(dyn)
+  |> io.debug
 }
+
+import gleam/io
 
 fn gleam_err_to_string(g: GleamErr) -> String {
   string.join(
