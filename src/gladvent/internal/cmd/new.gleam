@@ -1,14 +1,17 @@
+import file_streams/file_open_mode
+import file_streams/file_stream
+import file_streams/file_stream_error
 import filepath
 import gladvent/internal/cmd
-import gladvent/internal/file
 import gladvent/internal/parse.{type Day}
+import gladvent/internal/util
 import gleam/int
 import gleam/list
 import gleam/pair
 import gleam/result
 import gleam/string
 import glint
-import simplifile as efile
+import simplifile
 
 type Context {
   Context(year: Int, day: Day, add_parse: Bool)
@@ -29,7 +32,7 @@ fn create_src_file(ctx: Context) {
   }
 
   gleam_src_path
-  |> file.do_with_file(file.write(_, file_data))
+  |> do_exclusive(file_stream.write_chars(_, file_data))
   |> result.flatten
   |> result.map_error(handle_file_open_failure(_, gleam_src_path))
   |> result.replace(gleam_src_path)
@@ -49,7 +52,7 @@ fn create_input_dir(ctx: Context) {
 fn create_input_file(ctx: Context) {
   let input_path = input_path(ctx.year, ctx.day)
 
-  file.do_with_file(input_path, fn(_) { Nil })
+  do_exclusive(input_path, fn(_) { Nil })
   |> result.map_error(handle_file_open_failure(_, input_path))
   |> result.replace(input_path)
 }
@@ -77,17 +80,17 @@ fn gleam_src_path(year: Int, day: Day) -> String {
 }
 
 fn create_dir(dir: String) -> Result(String, Err) {
-  efile.create_directory(dir)
+  simplifile.create_directory(dir)
   |> handle_dir_open_res(dir)
 }
 
 fn handle_dir_open_res(
-  res: Result(_, efile.FileError),
+  res: Result(_, simplifile.FileError),
   filename: String,
 ) -> Result(String, Err) {
   case res {
     Ok(_) -> Ok(filename)
-    Error(efile.Eexist) -> Ok("")
+    Error(simplifile.Eexist) -> Ok("")
     _ ->
       filename
       |> FailedToCreateDir
@@ -95,9 +98,12 @@ fn handle_dir_open_res(
   }
 }
 
-fn handle_file_open_failure(reason: efile.FileError, filename: String) -> Err {
+fn handle_file_open_failure(
+  reason: file_stream_error.FileStreamError,
+  filename: String,
+) -> Err {
   case reason {
-    efile.Eexist -> FileAlreadyExists(filename)
+    file_stream_error.Eexist -> FileAlreadyExists(filename)
     _ -> FailedToCreateFile(filename)
   }
 }
@@ -194,4 +200,17 @@ pub fn new_command() {
     fn(day) { do(Context(year, day, parse)) },
     collect_async(year, _),
   )
+}
+
+fn do_exclusive(
+  filename: String,
+  f: fn(file_stream.FileStream) -> a,
+) -> Result(a, file_stream_error.FileStreamError) {
+  use file <- result.map(
+    file_stream.open(filename, [file_open_mode.Exclusive, file_open_mode.Write]),
+  )
+  use <- util.defer(do: fn() {
+    let assert Ok(Nil) = file_stream.close(file)
+  })
+  f(file)
 }
