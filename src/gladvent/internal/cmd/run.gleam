@@ -282,9 +282,9 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
   let assert Ok(use_example) = case glint.get_flag(flags, use_example_flag()) {
-    Ok(True) -> Ok(input.Puzzle)
-    Ok(False) -> Ok(input.Example)
     Error(a) -> Error(a)
+    Ok(True) -> Ok(input.Example)
+    _ -> Ok(input.Puzzle)
   }
 
   let spinner =
