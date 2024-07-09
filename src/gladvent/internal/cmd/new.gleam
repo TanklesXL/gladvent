@@ -3,6 +3,7 @@ import file_streams/file_stream
 import file_streams/file_stream_error
 import filepath
 import gladvent/internal/cmd
+import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
 import gleam/int
@@ -50,7 +51,15 @@ fn create_input_dir(ctx: Context) {
 }
 
 fn create_input_file(ctx: Context) {
-  let input_path = input_path(ctx.year, ctx.day)
+  let input_path = input.get_file_path(ctx.year, ctx.day, input.Puzzle)
+
+  do_exclusive(input_path, fn(_) { Nil })
+  |> result.map_error(handle_file_open_failure(_, input_path))
+  |> result.replace(input_path)
+}
+
+fn create_input_example_file(ctx: Context) {
+  let input_path = input.get_file_path(ctx.year, ctx.day, input.Example)
 
   do_exclusive(input_path, fn(_) { Nil })
   |> result.map_error(handle_file_open_failure(_, input_path))
@@ -69,10 +78,6 @@ fn err_to_string(e: Err) -> String {
     FailedToCreateFile(f) -> "failed to create file: " <> f
     FileAlreadyExists(f) -> "file already exists: " <> f
   }
-}
-
-fn input_path(year: Int, day: Day) -> String {
-  filepath.join(cmd.input_dir(year), int.to_string(day) <> ".txt")
 }
 
 fn gleam_src_path(year: Int, day: Day) -> String {
@@ -113,6 +118,7 @@ fn do(ctx: Context) -> String {
     create_input_root,
     create_input_dir,
     create_input_file,
+    create_input_example_file,
     create_src_dir,
     create_src_file,
   ]

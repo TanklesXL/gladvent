@@ -1,6 +1,6 @@
 import decode
-import filepath
 import gladvent/internal/cmd.{Ending, Endless}
+import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/runners
 import gladvent/internal/util
@@ -73,14 +73,14 @@ fn do(
   day: Day,
   package: package_interface.Package,
   allow_crash: Bool,
+  input_kind: input.Kind,
 ) -> RunResult {
   use #(pt_1, pt_2, parse) <- result.try(
     runners.get_day(package, year, day)
     |> result.map_error(FailedToGetRunner),
   )
 
-  let input_path =
-    filepath.join(cmd.input_dir(year), int.to_string(day) <> ".txt")
+  let input_path = input.get_file_path(year, day, input_kind)
 
   use input <- result.try(
     input_path
@@ -268,6 +268,12 @@ pub fn allow_crash_flag() {
   |> glint.flag_help("Don't catch exceptions thrown by runners")
 }
 
+pub fn use_example_flag() {
+  glint.bool_flag("use-example")
+  |> glint.flag_default(False)
+  |> glint.flag_help("Use the example as input instead of your puzzle input")
+}
+
 pub fn run_command() -> glint.Command(Result(List(String))) {
   use <- glint.command_help("Run the specified days")
   use <- glint.unnamed_args(glint.MinArgs(1))
@@ -275,6 +281,11 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   use days <- result.then(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
+  let assert Ok(use_example) = case glint.get_flag(flags, use_example_flag()) {
+    Ok(True) -> Ok(input.Puzzle)
+    Ok(False) -> Ok(input.Example)
+    Error(a) -> Error(a)
+  }
 
   let spinner =
     spinner.new(
@@ -298,7 +309,11 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   )
 
   days
-  |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(year, _))
+  |> cmd.exec(
+    timing,
+    do(year, _, package, allow_crash, use_example),
+    collect_async(year, _),
+  )
 }
 
 pub fn run_all_command() -> glint.Command(Result(List(String))) {
@@ -337,5 +352,9 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
     |> result.replace_error(Nil)
   })
   |> list.sort(int.compare)
-  |> cmd.exec(timing, do(year, _, package, allow_crash), collect_async(year, _))
+  |> cmd.exec(
+    timing,
+    do(year, _, package, allow_crash, input.Puzzle),
+    collect_async(year, _),
+  )
 }

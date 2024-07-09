@@ -24,6 +24,7 @@ pub fn main() {
     |> glint.add(at: ["new"], do: new.new_command())
     |> glint.group_flag(at: ["run"], of: run.timeout_flag())
     |> glint.group_flag(at: ["run"], of: run.allow_crash_flag())
+    |> glint.group_flag(at: ["run"], of: run.use_example_flag())
     |> glint.add(at: ["run"], do: run.run_command())
     |> glint.add(at: ["run", "all"], do: run.run_all_command())
 
