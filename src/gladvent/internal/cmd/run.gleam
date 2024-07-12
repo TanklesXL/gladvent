@@ -160,7 +160,6 @@ fn decode_gleam_err(dyn: dynamic.Dynamic) {
     decode.optional(decode.dynamic),
   )
   |> decode.from(dyn)
-  |> io.debug
 }
 
 import gleam/io
