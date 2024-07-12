@@ -221,7 +221,7 @@ fn solve_res_to_string(
         _, option.Some(expectation) ->
           "unmet expectation: value "
           <> res
-          <> " does not match expectated "
+          <> " does not match expected "
           <> expectation
       }
     }
