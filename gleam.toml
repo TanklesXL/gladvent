@@ -12,7 +12,6 @@ simplifile = "~> 2.0"
 argv = "~> 1.0"
 shellout = "~> 1.6"
 gleam_package_interface = "~> 1.0"
-gleam_json = "~> 1.0"
 spinner = "~> 1.1"
 gleam_stdlib = "~> 0.36 or ~> 1.0"
 gleam_otp = "~> 0.4"
@@ -23,10 +22,7 @@ filepath = ">= 1.0.0 and < 2.0.0"
 tom = ">= 1.0.0 and < 2.0.0"
 file_streams = ">= 0.6.3 and < 1.0.0"
 decode = ">= 0.2.0 and < 1.0.0"
+gleam_json = ">= 1.0.0 and < 3.0.0"
 
 [dev-dependencies]
-gleeunit = "~> 1.0"
-
-[gladvent.2024.1.expect]
-pt_1 = 3
-pt_2 = 4
+gleeunit = ">= 1.2.0 and < 2.0.0"
