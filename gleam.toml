@@ -26,3 +26,7 @@ decode = ">= 0.2.0 and < 1.0.0"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"
+
+[gladvent.2024.1.expect]
+pt_1 = 3
+pt_2 = 4
