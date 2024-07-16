@@ -7,6 +7,7 @@ import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
 import gleam/int
+import gleam/iterator
 import gleam/list
 import gleam/pair
 import gleam/result
@@ -15,7 +16,7 @@ import glint
 import simplifile
 
 type Context {
-  Context(year: Int, day: Day, add_parse: Bool)
+  Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool)
 }
 
 fn create_src_dir(ctx: Context) {
@@ -114,14 +115,13 @@ fn handle_file_open_failure(
 }
 
 fn do(ctx: Context) -> String {
-  let seq = [
-    create_input_root,
-    create_input_dir,
-    create_input_file,
-    create_input_example_file,
-    create_src_dir,
-    create_src_file,
-  ]
+  let seq =
+    iterator.from_list([create_input_root, create_input_dir, create_input_file])
+    |> append(case ctx.create_example_file {
+      True -> [create_input_example_file]
+      False -> []
+    })
+    |> append([create_src_dir, create_src_file])
 
   let successes = fn(good) {
     case good {
@@ -141,7 +141,7 @@ fn do(ctx: Context) -> String {
 
   let #(good, bad) =
     {
-      use acc, f <- list.fold(seq, #("", ""))
+      use acc, f <- iterator.fold(seq, #("", ""))
       case f(ctx) {
         Ok("") -> acc
         Ok(o) -> pair.map_first(acc, newline_tab(_, o))
@@ -200,11 +200,21 @@ pub fn new_command() {
   use days <- result.map(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(parse) = parse(flags)
+  let assert Ok(create_example) = glint.get_flag(flags, example_flag())
+
   cmd.exec(
     days,
     cmd.Endless,
-    fn(day) { do(Context(year, day, parse)) },
+    fn(day) { do(Context(year, day, parse, create_example)) },
     collect_async(year, _),
+  )
+}
+
+pub fn example_flag() {
+  glint.bool_flag("example")
+  |> glint.flag_default(False)
+  |> glint.flag_help(
+    "Generate example input files to run your solution against the task description's input",
   )
 }
 
@@ -219,4 +229,8 @@ fn do_exclusive(
     let assert Ok(Nil) = file_stream.close(file)
   })
   f(file)
+}
+
+fn append(to: iterator.Iterator(a), list: List(a)) {
+  iterator.append(to, iterator.from_list(list))
 }
