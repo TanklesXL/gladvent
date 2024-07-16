@@ -268,8 +268,8 @@ pub fn allow_crash_flag() {
   |> glint.flag_help("Don't catch exceptions thrown by runners")
 }
 
-pub fn use_example_flag() {
-  glint.bool_flag("use-example")
+pub fn example_flag() {
+  glint.bool_flag("example")
   |> glint.flag_default(False)
   |> glint.flag_help("Use the example as input instead of your puzzle input")
 }
