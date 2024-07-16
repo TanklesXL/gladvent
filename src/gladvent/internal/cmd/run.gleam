@@ -281,7 +281,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   use days <- result.then(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
-  let assert Ok(use_example) = case glint.get_flag(flags, use_example_flag()) {
+  let assert Ok(use_example) = case glint.get_flag(flags, example_flag()) {
     Error(a) -> Error(a)
     Ok(True) -> Ok(input.Example)
     _ -> Ok(input.Puzzle)
