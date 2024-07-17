@@ -214,7 +214,7 @@ pub fn example_flag() {
   glint.bool_flag("example")
   |> glint.flag_default(False)
   |> glint.flag_help(
-    "Generate example input files to run your solution against the task description's input",
+    "Generate example input files to run your solution against",
   )
 }
 
