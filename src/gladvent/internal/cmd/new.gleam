@@ -191,30 +191,29 @@ fn collect(year: Int, x: #(Day, String)) -> String {
 pub fn new_command() {
   use <- glint.command_help("Create .gleam and input files")
   use <- glint.unnamed_args(glint.MinArgs(1))
-  use parse <- glint.flag(
+  use parse_flag <- glint.flag(
     glint.bool_flag("parse")
     |> glint.flag_default(False)
     |> glint.flag_help("Generate day runners with a parse function"),
   )
+  use example_flag <- glint.flag(
+    glint.bool_flag("example")
+    |> glint.flag_default(False)
+    |> glint.flag_help(
+      "Generate example input files to run your solution against",
+    ),
+  )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(parse) = parse(flags)
-  let assert Ok(create_example) = glint.get_flag(flags, example_flag())
+  let assert Ok(parse) = parse_flag(flags)
+  let assert Ok(create_example) = example_flag(flags)
 
   cmd.exec(
     days,
     cmd.Endless,
     fn(day) { do(Context(year, day, parse, create_example)) },
     collect_async(year, _),
-  )
-}
-
-pub fn example_flag() {
-  glint.bool_flag("example")
-  |> glint.flag_default(False)
-  |> glint.flag_help(
-    "Generate example input files to run your solution against",
   )
 }
 
