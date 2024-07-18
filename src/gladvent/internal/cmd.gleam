@@ -23,14 +23,6 @@ fn find_root(path: String) -> String {
   }
 }
 
-pub fn input_root() {
-  filepath.join(root(), "input")
-}
-
-pub fn input_dir(year) {
-  filepath.join(input_root(), int.to_string(year))
-}
-
 pub fn src_root() {
   filepath.join(root(), "src")
 }

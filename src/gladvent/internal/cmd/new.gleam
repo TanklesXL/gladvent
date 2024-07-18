@@ -40,13 +40,13 @@ fn create_src_file(ctx: Context) {
 }
 
 fn create_input_root(_ctx: Context) {
-  cmd.input_root()
+  input.root()
   |> create_dir
 }
 
 fn create_input_dir(ctx: Context) {
   ctx.year
-  |> cmd.input_dir
+  |> input.dir
   |> create_dir
 }
 
