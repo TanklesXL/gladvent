@@ -118,7 +118,6 @@ fn do(ctx: Context) -> String {
     create_input_root,
     create_input_dir,
     create_input_file,
-    create_input_example_file,
     create_src_dir,
     create_src_file,
     ..case ctx.create_example_file {
