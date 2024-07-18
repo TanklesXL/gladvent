@@ -268,20 +268,21 @@ pub fn allow_crash_flag() {
   |> glint.flag_help("Don't catch exceptions thrown by runners")
 }
 
-pub fn example_flag() {
-  glint.bool_flag("example")
-  |> glint.flag_default(False)
-  |> glint.flag_help("Use the example as input instead of your puzzle input")
-}
-
 pub fn run_command() -> glint.Command(Result(List(String))) {
   use <- glint.command_help("Run the specified days")
   use <- glint.unnamed_args(glint.MinArgs(1))
+  use example_flag <- glint.flag(
+    glint.bool_flag("example")
+    |> glint.flag_default(False)
+    |> glint.flag_help(
+      "Generate example input files to run your solution against",
+    ),
+  )
   use _, args, flags <- glint.command()
   use days <- result.then(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
-  let assert Ok(use_example) = case glint.get_flag(flags, example_flag()) {
+  let assert Ok(use_example) = case example_flag(flags) {
     Error(a) -> Error(a)
     Ok(True) -> Ok(input.Example)
     _ -> Ok(input.Puzzle)
