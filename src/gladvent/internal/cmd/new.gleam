@@ -3,6 +3,7 @@ import file_streams/file_stream
 import file_streams/file_stream_error
 import filepath
 import gladvent/internal/cmd
+import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
 import gleam/int
@@ -14,7 +15,7 @@ import glint
 import simplifile
 
 type Context {
-  Context(year: Int, day: Day, add_parse: Bool)
+  Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool)
 }
 
 fn create_src_dir(ctx: Context) {
@@ -39,18 +40,26 @@ fn create_src_file(ctx: Context) {
 }
 
 fn create_input_root(_ctx: Context) {
-  cmd.input_root()
+  input.root()
   |> create_dir
 }
 
 fn create_input_dir(ctx: Context) {
   ctx.year
-  |> cmd.input_dir
+  |> input.dir
   |> create_dir
 }
 
 fn create_input_file(ctx: Context) {
-  let input_path = input_path(ctx.year, ctx.day)
+  let input_path = input.get_file_path(ctx.year, ctx.day, input.Puzzle)
+
+  do_exclusive(input_path, fn(_) { Nil })
+  |> result.map_error(handle_file_open_failure(_, input_path))
+  |> result.replace(input_path)
+}
+
+fn create_input_example_file(ctx: Context) {
+  let input_path = input.get_file_path(ctx.year, ctx.day, input.Example)
 
   do_exclusive(input_path, fn(_) { Nil })
   |> result.map_error(handle_file_open_failure(_, input_path))
@@ -69,10 +78,6 @@ fn err_to_string(e: Err) -> String {
     FailedToCreateFile(f) -> "failed to create file: " <> f
     FileAlreadyExists(f) -> "file already exists: " <> f
   }
-}
-
-fn input_path(year: Int, day: Day) -> String {
-  filepath.join(cmd.input_dir(year), int.to_string(day) <> ".txt")
 }
 
 fn gleam_src_path(year: Int, day: Day) -> String {
@@ -115,6 +120,10 @@ fn do(ctx: Context) -> String {
     create_input_file,
     create_src_dir,
     create_src_file,
+    ..case ctx.create_example_file {
+      True -> [create_input_example_file]
+      False -> []
+    }
   ]
 
   let successes = fn(good) {
@@ -185,19 +194,28 @@ fn collect(year: Int, x: #(Day, String)) -> String {
 pub fn new_command() {
   use <- glint.command_help("Create .gleam and input files")
   use <- glint.unnamed_args(glint.MinArgs(1))
-  use parse <- glint.flag(
+  use parse_flag <- glint.flag(
     glint.bool_flag("parse")
     |> glint.flag_default(False)
     |> glint.flag_help("Generate day runners with a parse function"),
   )
+  use example_flag <- glint.flag(
+    glint.bool_flag("example")
+    |> glint.flag_default(False)
+    |> glint.flag_help(
+      "Generate example input files to run your solution against",
+    ),
+  )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(parse) = parse(flags)
+  let assert Ok(parse) = parse_flag(flags)
+  let assert Ok(create_example) = example_flag(flags)
+
   cmd.exec(
     days,
     cmd.Endless,
-    fn(day) { do(Context(year, day, parse)) },
+    fn(day) { do(Context(year, day, parse, create_example)) },
     collect_async(year, _),
   )
 }
