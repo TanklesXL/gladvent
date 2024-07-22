@@ -235,24 +235,31 @@ fn collect_async(
   year: Int,
   x: #(Day, AsyncResult),
   expectations: Option(dict.Dict(String, tom.Toml)),
+  input_kind: input.Kind,
 ) -> String {
   let expect_pt_1 =
     expectations
     |> option.then(fn(ex) {
-      toml_get_int_or_string(ex, [int.to_string(x.0), "expect", "pt_1"])
+      toml_get_int_or_string(ex, case input_kind {
+        input.Puzzle -> [int.to_string(x.0), "pt_1"]
+        input.Example -> [int.to_string(x.0), "example", "pt_1"]
+      })
       |> option.from_result
     })
   let expect_pt_2 =
     expectations
     |> option.then(fn(ex) {
-      toml_get_int_or_string(ex, [int.to_string(x.0), "expect", "pt_2"])
+      toml_get_int_or_string(ex, case input_kind {
+        input.Puzzle -> [int.to_string(x.0), "pt_2"]
+        input.Example -> [int.to_string(x.0), "example", "pt_2"]
+      })
       |> option.from_result
     })
 
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _, expect_pt_1, expect_pt_2)
+  |> collect(year, _, expect_pt_1, expect_pt_2, input_kind)
 }
 
 fn collect(
@@ -260,6 +267,7 @@ fn collect(
   x: #(Day, RunResult),
   expect_pt_1: Option(String),
   expect_pt_2: Option(String),
+  input_kind: input.Kind,
 ) -> String {
   let day = int.to_string(x.0)
   case x.1 {
@@ -268,6 +276,10 @@ fn collect(
       <> int.to_string(year)
       <> " day "
       <> day
+      <> case input_kind {
+        input.Puzzle -> ""
+        input.Example -> " (using example input)"
+      }
       <> ":\n"
       <> "  Part 1: "
       <> solve_res_to_string(res_1, expect_pt_1)
@@ -317,7 +329,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   use days <- result.then(parse.days(args))
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
-  let assert Ok(use_example) = case example_flag(flags) {
+  let assert Ok(input_kind) = case example_flag(flags) {
     Error(a) -> Error(a)
     Ok(True) -> Ok(input.Example)
     _ -> Ok(input.Puzzle)
@@ -354,8 +366,8 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   days
   |> cmd.exec(
     timing,
-    do(year, _, package, allow_crash, use_example),
-    collect_async(year, _, expectations),
+    do(year, _, package, allow_crash, input_kind),
+    collect_async(year, _, expectations, input_kind),
   )
 }
 
@@ -405,7 +417,7 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   |> cmd.exec(
     timing,
     do(year, _, package, allow_crash, input.Puzzle),
-    collect_async(year, _, expectations),
+    collect_async(year, _, expectations, input.Puzzle),
   )
 }
 

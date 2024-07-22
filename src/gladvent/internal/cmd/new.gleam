@@ -24,46 +24,38 @@ fn create_src_dir(ctx: Context) {
   |> create_dir
 }
 
-fn create_src_file(ctx: Context) {
-  let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
+fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
+  fn() {
+    let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
 
-  let file_data = case ctx.add_parse {
-    True -> parse_starter <> "\n" <> gleam_starter
-    False -> gleam_starter
+    let file_data = case ctx.add_parse {
+      True -> parse_starter <> "\n" <> gleam_starter
+      False -> gleam_starter
+    }
+
+    gleam_src_path
+    |> do_exclusive(file_stream.write_chars(_, file_data))
+    |> result.flatten
+    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
+    |> result.replace(gleam_src_path)
   }
-
-  gleam_src_path
-  |> do_exclusive(file_stream.write_chars(_, file_data))
-  |> result.flatten
-  |> result.map_error(handle_file_open_failure(_, gleam_src_path))
-  |> result.replace(gleam_src_path)
 }
 
-fn create_input_root(_ctx: Context) {
-  input.root()
-  |> create_dir
-}
-
-fn create_input_dir(ctx: Context) {
-  ctx.year
-  |> input.dir
-  |> create_dir
-}
-
-fn create_input_file(ctx: Context) {
-  let input_path = input.get_file_path(ctx.year, ctx.day, input.Puzzle)
-
-  do_exclusive(input_path, fn(_) { Nil })
-  |> result.map_error(handle_file_open_failure(_, input_path))
-  |> result.replace(input_path)
-}
-
-fn create_input_example_file(ctx: Context) {
-  let input_path = input.get_file_path(ctx.year, ctx.day, input.Example)
-
-  do_exclusive(input_path, fn(_) { Nil })
-  |> result.map_error(handle_file_open_failure(_, input_path))
-  |> result.replace(input_path)
+fn create_input_file(
+  ctx: Context,
+  kind: input.Kind,
+) -> fn() -> Result(String, Err) {
+  fn() {
+    let input_path = input.get_file_path(ctx.year, ctx.day, kind)
+    simplifile.create_file(input_path)
+    |> result.map_error(fn(e) {
+      case e {
+        simplifile.Eexist -> FileAlreadyExists(input_path)
+        _ -> FailedToCreateFile(input_path)
+      }
+    })
+    |> result.replace(input_path)
+  }
 }
 
 type Err {
@@ -84,9 +76,11 @@ fn gleam_src_path(year: Int, day: Day) -> String {
   filepath.join(cmd.src_dir(year), "day_" <> int.to_string(day) <> ".gleam")
 }
 
-fn create_dir(dir: String) -> Result(String, Err) {
-  simplifile.create_directory(dir)
-  |> handle_dir_open_res(dir)
+fn create_dir(dir: String) -> fn() -> Result(String, Err) {
+  fn() {
+    simplifile.create_directory_all(dir)
+    |> handle_dir_open_res(dir)
+  }
 }
 
 fn handle_dir_open_res(
@@ -115,13 +109,12 @@ fn handle_file_open_failure(
 
 fn do(ctx: Context) -> String {
   let seq = [
-    create_input_root,
-    create_input_dir,
-    create_input_file,
-    create_src_dir,
-    create_src_file,
+    create_dir(input.dir(ctx.year)),
+    create_input_file(ctx, input.Puzzle),
+    create_dir(cmd.src_dir(ctx.year)),
+    create_src_file(ctx),
     ..case ctx.create_example_file {
-      True -> [create_input_example_file]
+      True -> [create_input_file(ctx, input.Example)]
       False -> []
     }
   ]
@@ -145,7 +138,7 @@ fn do(ctx: Context) -> String {
   let #(good, bad) =
     {
       use acc, f <- list.fold(seq, #("", ""))
-      case f(ctx) {
+      case f() {
         Ok("") -> acc
         Ok(o) -> pair.map_first(acc, newline_tab(_, o))
         Error(err) -> pair.map_second(acc, newline_tab(_, err_to_string(err)))
