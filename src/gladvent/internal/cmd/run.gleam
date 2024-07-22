@@ -275,7 +275,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     glint.bool_flag("example")
     |> glint.flag_default(False)
     |> glint.flag_help(
-      "Generate example input files to run your solution against",
+      "Run solutions against example inputs (found at input/<year>/<day>.example.txt)",
     ),
   )
   use _, args, flags <- glint.command()
