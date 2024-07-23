@@ -235,31 +235,24 @@ fn collect_async(
   year: Int,
   x: #(Day, AsyncResult),
   expectations: Option(dict.Dict(String, tom.Toml)),
-  input_kind: input.Kind,
 ) -> String {
   let expect_pt_1 =
     expectations
     |> option.then(fn(ex) {
-      toml_get_int_or_string(ex, case input_kind {
-        input.Puzzle -> [int.to_string(x.0), "pt_1"]
-        input.Example -> [int.to_string(x.0), "example", "pt_1"]
-      })
+      toml_get_int_or_string(ex, [int.to_string(x.0), "pt_1"])
       |> option.from_result
     })
   let expect_pt_2 =
     expectations
     |> option.then(fn(ex) {
-      toml_get_int_or_string(ex, case input_kind {
-        input.Puzzle -> [int.to_string(x.0), "pt_2"]
-        input.Example -> [int.to_string(x.0), "example", "pt_2"]
-      })
+      toml_get_int_or_string(ex, [int.to_string(x.0), "pt_2"])
       |> option.from_result
     })
 
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _, expect_pt_1, expect_pt_2, input_kind)
+  |> collect(year, _, expect_pt_1, expect_pt_2)
 }
 
 fn collect(
@@ -267,7 +260,6 @@ fn collect(
   x: #(Day, RunResult),
   expect_pt_1: Option(String),
   expect_pt_2: Option(String),
-  input_kind: input.Kind,
 ) -> String {
   let day = int.to_string(x.0)
   case x.1 {
@@ -276,10 +268,6 @@ fn collect(
       <> int.to_string(year)
       <> " day "
       <> day
-      <> case input_kind {
-        input.Puzzle -> ""
-        input.Example -> " (using example input)"
-      }
       <> ":\n"
       <> "  Part 1: "
       <> solve_res_to_string(res_1, expect_pt_1)
@@ -353,10 +341,13 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
 
   use gleam_toml <- result.try(read_gleam_toml())
 
-  let expectations =
-    option.from_result(
-      tom.get_table(gleam_toml, ["gladvent", int.to_string(year)]),
-    )
+  let expectations = case input_kind {
+    input.Puzzle ->
+      option.from_result(
+        tom.get_table(gleam_toml, ["gladvent", int.to_string(year)]),
+      )
+    input.Example -> option.None
+  }
 
   use package <- result.map(
     runners.pkg_interface()
@@ -367,7 +358,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   |> cmd.exec(
     timing,
     do(year, _, package, allow_crash, input_kind),
-    collect_async(year, _, expectations, input_kind),
+    collect_async(year, _, expectations),
   )
 }
 
@@ -417,7 +408,7 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   |> cmd.exec(
     timing,
     do(year, _, package, allow_crash, input.Puzzle),
-    collect_async(year, _, expectations, input.Puzzle),
+    collect_async(year, _, expectations),
   )
 }
 

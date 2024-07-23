@@ -18,12 +18,6 @@ type Context {
   Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool)
 }
 
-fn create_src_dir(ctx: Context) {
-  ctx.year
-  |> cmd.src_dir()
-  |> create_dir
-}
-
 fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
   fn() {
     let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
