@@ -315,6 +315,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   )
   use _, args, flags <- glint.command()
   use days <- result.then(parse.days(args))
+  let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
   let assert Ok(input_kind) = case example_flag(flags) {

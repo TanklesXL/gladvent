@@ -1,6 +1,3 @@
-import file_streams/file_open_mode
-import file_streams/file_stream
-import file_streams/file_stream_error
 import filepath
 import gladvent/internal/cmd
 import gladvent/internal/input
@@ -22,14 +19,17 @@ fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
   fn() {
     let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
 
+    use _ <- result.try(
+      simplifile.create_file(gleam_src_path)
+      |> result.map_error(handle_file_open_failure(_, gleam_src_path)),
+    )
+
     let file_data = case ctx.add_parse {
       True -> parse_starter <> "\n" <> gleam_starter
       False -> gleam_starter
     }
 
-    gleam_src_path
-    |> do_exclusive(file_stream.write_chars(_, file_data))
-    |> result.flatten
+    simplifile.write(gleam_src_path, file_data)
     |> result.map_error(handle_file_open_failure(_, gleam_src_path))
     |> result.replace(gleam_src_path)
   }
@@ -42,12 +42,7 @@ fn create_input_file(
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
     simplifile.create_file(input_path)
-    |> result.map_error(fn(e) {
-      case e {
-        simplifile.Eexist -> FileAlreadyExists(input_path)
-        _ -> FailedToCreateFile(input_path)
-      }
-    })
+    |> result.map_error(handle_file_open_failure(_, input_path))
     |> result.replace(input_path)
   }
 }
@@ -92,11 +87,11 @@ fn handle_dir_open_res(
 }
 
 fn handle_file_open_failure(
-  reason: file_stream_error.FileStreamError,
+  reason: simplifile.FileError,
   filename: String,
 ) -> Err {
   case reason {
-    file_stream_error.Eexist -> FileAlreadyExists(filename)
+    simplifile.Eexist -> FileAlreadyExists(filename)
     _ -> FailedToCreateFile(filename)
   }
 }
@@ -195,27 +190,15 @@ pub fn new_command() {
   )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
+  let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(parse) = parse_flag(flags)
-  let assert Ok(create_example) = example_flag(flags)
+  let assert Ok(add_parse) = parse_flag(flags)
+  let assert Ok(create_example_file) = example_flag(flags)
 
   cmd.exec(
     days,
     cmd.Endless,
-    fn(day) { do(Context(year, day, parse, create_example)) },
+    fn(day) { do(Context(year:, day:, add_parse:, create_example_file:)) },
     collect_async(year, _),
   )
-}
-
-fn do_exclusive(
-  filename: String,
-  f: fn(file_stream.FileStream) -> a,
-) -> Result(a, file_stream_error.FileStreamError) {
-  use file <- result.map(
-    file_stream.open(filename, [file_open_mode.Exclusive, file_open_mode.Write]),
-  )
-  use <- util.defer(do: fn() {
-    let assert Ok(Nil) = file_stream.close(file)
-  })
-  f(file)
 }
