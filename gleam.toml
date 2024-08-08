@@ -4,7 +4,7 @@ repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
 internal_modules = ["gladvent/internal/*"]
-gleam = "~> 1.0"
+gleam = "~> 1.4"
 
 [dependencies]
 glint = ">=1.0.0 and < 2.0.0"
