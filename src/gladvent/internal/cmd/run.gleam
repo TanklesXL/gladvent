@@ -83,7 +83,6 @@ fn do(
   )
 
   let input_path = input.get_file_path(year, day, input_kind)
-
   use input <- result.try(
     input_path
     |> simplifile.read()
@@ -209,21 +208,47 @@ fn solve_err_to_string(solve_err: SolveErr) -> String {
 
 fn solve_res_to_string(
   res: SolveResult,
-  expectation: option.Option(String),
+  expectation: option.Option(Expectation),
 ) -> String {
-  case res {
-    Ok(res) -> {
-      let res = string.inspect(res)
-      case res, expectation {
-        _, option.None -> res
-        _, option.Some(expectation) if res == expectation ->
-          "✅ met expected value: " <> res
-        _, option.Some(expectation) ->
-          "❌ unmet expectation: got " <> res <> ", expected " <> expectation
-      }
-    }
-    Error(err) -> solve_err_to_string(err)
-  }
+  result.unwrap_both({
+    use res <- result.map(res |> result.map_error(solve_err_to_string))
+    option.lazy_unwrap(
+      {
+        use expect <- option.map(expectation)
+        case expect {
+          ExpectInt(expect) -> {
+            case dynamic.int(res) {
+              Ok(i) if expect == i ->
+                "✅ met expected value: " <> int.to_string(i)
+              Ok(i) ->
+                "❌ unmet expectation: expected "
+                <> int.to_string(expect)
+                <> ", got "
+                <> int.to_string(i)
+              Error(_) ->
+                "❌ expected "
+                <> int.to_string(expect)
+                <> ", got non-integer value of "
+                <> string.inspect(res)
+            }
+          }
+          ExpectString(expect) -> {
+            case dynamic.string(res) {
+              Ok(s) if expect == s -> "✅ met expected value: " <> s
+              Ok(s) ->
+                "❌ unmet expectation: expected " <> expect <> ", got " <> s
+              Error(_) ->
+                "❌ expected "
+                <> expect
+                <> ", got non-string value of "
+                <> string.inspect(res)
+            }
+          }
+        }
+      },
+      or: fn() { string.inspect(res) },
+    )
+  })
 }
 
 import gleam/pair
@@ -233,30 +258,23 @@ fn collect_async(
   x: #(Day, AsyncResult),
   expectations: Option(dict.Dict(String, tom.Toml)),
 ) -> String {
-  let expect_pt_1 =
-    expectations
-    |> option.then(fn(ex) {
-      toml_get_int_or_string(ex, [int.to_string(x.0), "pt_1"])
-      |> option.from_result
-    })
-  let expect_pt_2 =
-    expectations
-    |> option.then(fn(ex) {
-      toml_get_int_or_string(ex, [int.to_string(x.0), "pt_2"])
-      |> option.from_result
-    })
+  let expect = fn(key) {
+    use ex <- option.then(expectations)
+    toml_decode_expectation(ex, [int.to_string(x.0), key])
+    |> option.from_result
+  }
 
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _, expect_pt_1, expect_pt_2)
+  |> collect(year, _, expect("pt_1"), expect("pt_2"))
 }
 
 fn collect(
   year: Int,
   x: #(Day, RunResult),
-  expect_pt_1: Option(String),
-  expect_pt_2: Option(String),
+  expect_pt_1: Option(Expectation),
+  expect_pt_2: Option(Expectation),
 ) -> String {
   let day = int.to_string(x.0)
   case x.1 {
@@ -429,8 +447,24 @@ fn read_gleam_toml() {
   })
 }
 
-fn toml_get_int_or_string(toml: dict.Dict(String, tom.Toml), path: List(String)) {
-  tom.get_int(toml, path)
-  |> result.map(int.to_string)
-  |> result.try_recover(fn(_) { tom.get_string(toml, path) })
+type Expectation {
+  ExpectInt(Int)
+  ExpectString(String)
+}
+
+fn toml_decode_expectation(
+  toml: dict.Dict(String, tom.Toml),
+  path: List(String),
+) -> gleam.Result(Expectation, tom.GetError) {
+  use data <- result.try(tom.get(toml, path))
+  case data {
+    tom.String(s) -> Ok(ExpectString(s))
+    tom.Int(i) -> Ok(ExpectInt(i))
+    _ ->
+      Error(tom.WrongType(
+        key: path,
+        expected: "Int or String",
+        got: "something else",
+      ))
+  }
 }
