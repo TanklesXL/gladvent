@@ -4,7 +4,7 @@ repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
 internal_modules = ["gladvent/internal/*"]
-gleam = "~> 1.0"
+gleam = "~> 1.4"
 
 [dependencies]
 glint = ">=1.0.0 and < 2.0.0"
@@ -12,7 +12,6 @@ simplifile = "~> 2.0"
 argv = "~> 1.0"
 shellout = "~> 1.6"
 gleam_package_interface = "~> 1.0"
-gleam_json = "~> 1.0"
 spinner = "~> 1.1"
 gleam_stdlib = "~> 0.36 or ~> 1.0"
 gleam_otp = "~> 0.4"
@@ -21,8 +20,8 @@ snag = "~> 0.2"
 parallel_map = ">= 2.0.0 and < 3.0.0"
 filepath = ">= 1.0.0 and < 2.0.0"
 tom = ">= 1.0.0 and < 2.0.0"
-file_streams = ">= 0.6.3 and < 1.0.0"
 decode = ">= 0.2.0 and < 1.0.0"
+gleam_json = ">= 1.0.0 and < 3.0.0"
 
 [dev-dependencies]
-gleeunit = "~> 1.0"
+gleeunit = ">= 1.2.0 and < 2.0.0"

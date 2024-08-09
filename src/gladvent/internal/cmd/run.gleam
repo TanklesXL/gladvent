@@ -1,11 +1,12 @@
 import decode
+import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/runners
 import gladvent/internal/util
 import gleam
-import gleam/dict as map
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang
 import gleam/erlang/atom
@@ -20,6 +21,7 @@ import glint
 import simplifile
 import snag.{type Result, type Snag}
 import spinner
+import tom
 
 type AsyncResult =
   gleam.Result(RunResult, String)
@@ -162,8 +164,6 @@ fn decode_gleam_err(dyn: dynamic.Dynamic) {
   |> decode.from(dyn)
 }
 
-import gleam/io
-
 fn gleam_err_to_string(g: GleamErr) -> String {
   string.join(
     [
@@ -207,25 +207,58 @@ fn solve_err_to_string(solve_err: SolveErr) -> String {
   }
 }
 
-fn solve_res_to_string(res: SolveResult) -> String {
+fn solve_res_to_string(
+  res: SolveResult,
+  expectation: option.Option(String),
+) -> String {
   case res {
-    Ok(res) -> string.inspect(res)
+    Ok(res) -> {
+      let res = string.inspect(res)
+      case res, expectation {
+        _, option.None -> res
+        _, option.Some(expectation) if res == expectation ->
+          "✅ met expected value: " <> res
+        _, option.Some(expectation) ->
+          "❌ unmet expectation: got " <> res <> ", expected " <> expectation
+      }
+    }
     Error(err) -> solve_err_to_string(err)
   }
 }
 
 import gleam/pair
 
-fn collect_async(year: Int, x: #(Day, AsyncResult)) -> String {
+fn collect_async(
+  year: Int,
+  x: #(Day, AsyncResult),
+  expectations: Option(dict.Dict(String, tom.Toml)),
+) -> String {
+  let expect_pt_1 =
+    expectations
+    |> option.then(fn(ex) {
+      toml_get_int_or_string(ex, [int.to_string(x.0), "pt_1"])
+      |> option.from_result
+    })
+  let expect_pt_2 =
+    expectations
+    |> option.then(fn(ex) {
+      toml_get_int_or_string(ex, [int.to_string(x.0), "pt_2"])
+      |> option.from_result
+    })
+
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _)
+  |> collect(year, _, expect_pt_1, expect_pt_2)
 }
 
-fn collect(year: Int, x: #(Day, RunResult)) -> String {
+fn collect(
+  year: Int,
+  x: #(Day, RunResult),
+  expect_pt_1: Option(String),
+  expect_pt_2: Option(String),
+) -> String {
   let day = int.to_string(x.0)
-
   case x.1 {
     Ok(#(res_1, res_2)) ->
       "Ran "
@@ -234,10 +267,10 @@ fn collect(year: Int, x: #(Day, RunResult)) -> String {
       <> day
       <> ":\n"
       <> "  Part 1: "
-      <> solve_res_to_string(res_1)
+      <> solve_res_to_string(res_1, expect_pt_1)
       <> "\n"
       <> "  Part 2: "
-      <> solve_res_to_string(res_2)
+      <> solve_res_to_string(res_2, expect_pt_2)
 
     Error(err) ->
       err
@@ -279,9 +312,10 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   )
   use _, args, flags <- glint.command()
   use days <- result.then(parse.days(args))
+  let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
-  let assert Ok(use_example) = case example_flag(flags) {
+  let assert Ok(input_kind) = case example_flag(flags) {
     Error(a) -> Error(a)
     Ok(True) -> Ok(input.Example)
     _ -> Ok(input.Puzzle)
@@ -303,6 +337,16 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     |> result.map(Ending)
     |> result.unwrap(Endless)
 
+  use gleam_toml <- result.try(read_gleam_toml())
+
+  let expectations = case input_kind {
+    input.Puzzle ->
+      option.from_result(
+        tom.get_table(gleam_toml, ["gladvent", int.to_string(year)]),
+      )
+    input.Example -> option.None
+  }
+
   use package <- result.map(
     runners.pkg_interface()
     |> snag.context("failed to generate package interface"),
@@ -311,8 +355,8 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   days
   |> cmd.exec(
     timing,
-    do(year, _, package, allow_crash, use_example),
-    collect_async(year, _),
+    do(year, _, package, allow_crash, input_kind),
+    collect_async(year, _, expectations),
   )
 }
 
@@ -335,13 +379,20 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
     |> result.map(Ending)
     |> result.unwrap(Endless)
 
+  use gleam_toml <- result.try(read_gleam_toml())
+
+  let expectations =
+    option.from_result(
+      tom.get_table(gleam_toml, ["gladvent", int.to_string(year)]),
+    )
+
   use package <- result.map(
     runners.pkg_interface()
     |> snag.context("failed to generate package interface"),
   )
 
   package.modules
-  |> map.keys
+  |> dict.keys
   |> list.filter_map(fn(k) {
     use day <- result.try(string.split_once(
       k,
@@ -355,6 +406,31 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   |> cmd.exec(
     timing,
     do(year, _, package, allow_crash, input.Puzzle),
-    collect_async(year, _),
+    collect_async(year, _, expectations),
   )
+}
+
+fn read_gleam_toml() {
+  filepath.join(cmd.root(), "gleam.toml")
+  |> simplifile.read
+  |> result.map_error(fn(e) {
+    string.inspect(e)
+    |> snag.new
+    |> snag.layer("failed to read gleam.toml")
+  })
+  |> result.try(fn(data) {
+    data
+    |> tom.parse
+    |> result.map_error(fn(e) {
+      string.inspect(e)
+      |> snag.new
+      |> snag.layer("failed to parse gleam.toml")
+    })
+  })
+}
+
+fn toml_get_int_or_string(toml: dict.Dict(String, tom.Toml), path: List(String)) {
+  tom.get_int(toml, path)
+  |> result.map(int.to_string)
+  |> result.try_recover(fn(_) { tom.get_string(toml, path) })
 }

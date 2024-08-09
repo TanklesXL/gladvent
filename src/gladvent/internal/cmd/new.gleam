@@ -1,6 +1,3 @@
-import file_streams/file_open_mode
-import file_streams/file_stream
-import file_streams/file_stream_error
 import filepath
 import gladvent/internal/cmd
 import gladvent/internal/input
@@ -18,52 +15,36 @@ type Context {
   Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool)
 }
 
-fn create_src_dir(ctx: Context) {
-  ctx.year
-  |> cmd.src_dir()
-  |> create_dir
-}
+fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
+  fn() {
+    let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
 
-fn create_src_file(ctx: Context) {
-  let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
+    use _ <- result.try(
+      simplifile.create_file(gleam_src_path)
+      |> result.map_error(handle_file_open_failure(_, gleam_src_path)),
+    )
 
-  let file_data = case ctx.add_parse {
-    True -> parse_starter <> "\n" <> gleam_starter
-    False -> gleam_starter
+    let file_data = case ctx.add_parse {
+      True -> parse_starter <> "\n" <> gleam_starter
+      False -> gleam_starter
+    }
+
+    simplifile.write(gleam_src_path, file_data)
+    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
+    |> result.replace(gleam_src_path)
   }
-
-  gleam_src_path
-  |> do_exclusive(file_stream.write_chars(_, file_data))
-  |> result.flatten
-  |> result.map_error(handle_file_open_failure(_, gleam_src_path))
-  |> result.replace(gleam_src_path)
 }
 
-fn create_input_root(_ctx: Context) {
-  input.root()
-  |> create_dir
-}
-
-fn create_input_dir(ctx: Context) {
-  ctx.year
-  |> input.dir
-  |> create_dir
-}
-
-fn create_input_file(ctx: Context) {
-  let input_path = input.get_file_path(ctx.year, ctx.day, input.Puzzle)
-
-  do_exclusive(input_path, fn(_) { Nil })
-  |> result.map_error(handle_file_open_failure(_, input_path))
-  |> result.replace(input_path)
-}
-
-fn create_input_example_file(ctx: Context) {
-  let input_path = input.get_file_path(ctx.year, ctx.day, input.Example)
-
-  do_exclusive(input_path, fn(_) { Nil })
-  |> result.map_error(handle_file_open_failure(_, input_path))
-  |> result.replace(input_path)
+fn create_input_file(
+  ctx: Context,
+  kind: input.Kind,
+) -> fn() -> Result(String, Err) {
+  fn() {
+    let input_path = input.get_file_path(ctx.year, ctx.day, kind)
+    simplifile.create_file(input_path)
+    |> result.map_error(handle_file_open_failure(_, input_path))
+    |> result.replace(input_path)
+  }
 }
 
 type Err {
@@ -84,9 +65,11 @@ fn gleam_src_path(year: Int, day: Day) -> String {
   filepath.join(cmd.src_dir(year), "day_" <> int.to_string(day) <> ".gleam")
 }
 
-fn create_dir(dir: String) -> Result(String, Err) {
-  simplifile.create_directory(dir)
-  |> handle_dir_open_res(dir)
+fn create_dir(dir: String) -> fn() -> Result(String, Err) {
+  fn() {
+    simplifile.create_directory_all(dir)
+    |> handle_dir_open_res(dir)
+  }
 }
 
 fn handle_dir_open_res(
@@ -104,24 +87,23 @@ fn handle_dir_open_res(
 }
 
 fn handle_file_open_failure(
-  reason: file_stream_error.FileStreamError,
+  reason: simplifile.FileError,
   filename: String,
 ) -> Err {
   case reason {
-    file_stream_error.Eexist -> FileAlreadyExists(filename)
+    simplifile.Eexist -> FileAlreadyExists(filename)
     _ -> FailedToCreateFile(filename)
   }
 }
 
 fn do(ctx: Context) -> String {
   let seq = [
-    create_input_root,
-    create_input_dir,
-    create_input_file,
-    create_src_dir,
-    create_src_file,
+    create_dir(input.dir(ctx.year)),
+    create_input_file(ctx, input.Puzzle),
+    create_dir(cmd.src_dir(ctx.year)),
+    create_src_file(ctx),
     ..case ctx.create_example_file {
-      True -> [create_input_example_file]
+      True -> [create_input_file(ctx, input.Example)]
       False -> []
     }
   ]
@@ -145,7 +127,7 @@ fn do(ctx: Context) -> String {
   let #(good, bad) =
     {
       use acc, f <- list.fold(seq, #("", ""))
-      case f(ctx) {
+      case f() {
         Ok("") -> acc
         Ok(o) -> pair.map_first(acc, newline_tab(_, o))
         Error(err) -> pair.map_second(acc, newline_tab(_, err_to_string(err)))
@@ -208,27 +190,15 @@ pub fn new_command() {
   )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
+  let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(parse) = parse_flag(flags)
-  let assert Ok(create_example) = example_flag(flags)
+  let assert Ok(add_parse) = parse_flag(flags)
+  let assert Ok(create_example_file) = example_flag(flags)
 
   cmd.exec(
     days,
     cmd.Endless,
-    fn(day) { do(Context(year, day, parse, create_example)) },
+    fn(day) { do(Context(year:, day:, add_parse:, create_example_file:)) },
     collect_async(year, _),
   )
-}
-
-fn do_exclusive(
-  filename: String,
-  f: fn(file_stream.FileStream) -> a,
-) -> Result(a, file_stream_error.FileStreamError) {
-  use file <- result.map(
-    file_stream.open(filename, [file_open_mode.Exclusive, file_open_mode.Write]),
-  )
-  use <- util.defer(do: fn() {
-    let assert Ok(Nil) = file_stream.close(file)
-  })
-  f(file)
 }
