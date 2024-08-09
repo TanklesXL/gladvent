@@ -14,7 +14,7 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 ## Using the library
 
 This library provides 2 options to run your advent of code solvers,
-once you've added gladvent as a dependency via `gleam add gladvent`:
+once you've added gladvent as a dependency via `gleam add gladvent --dev`:
 
 1. The easiest way: call it via `gleam run -m gladvent [ARGS]`, not requiring a custom `main()` function.
 1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
@@ -24,39 +24,6 @@ once you've added gladvent as a dependency via `gleam add gladvent`:
 Gladvent now comes with out-of-the-box multi-year support via the `--year` flag when running it.
 
 For convenience it defaults to the current year. Therefore, passing `--year=YEAR` to either the `run`, `run all` or `new` commands will use the year specified or the current year if the flag was not provided.
-
-## Available commands
-
-This project provides your application with 2 commands, `new` and `run`:
-
-- `new`: create `src/days/*.gleam` and `input/*.txt` files that correspond to the specified days
-
-  - format: `gleam run -m gladvent new a b c ...`
-  - used like `gleam run -m gladvent new 1 2` with days 1 and 2 creates `input/day_1.txt` and `input/day_2.txt` as well as `src/days/day_1.gleam` and `src/days/day_2.gleam`
-
-- `run`: run the specified days
-
-  - format: `gleam run -m gladvent run a b c ...`
-  - flags:
-    - `--timeout`: `gleam run -m gladvent run --timeout={timeout in ms} a b c ...`
-      - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
-    - `--allow-crash`: runs days without the use of `rescue` functionality, rendering output text more verbose but also allowing for stacktraces to be printed
-      - usage example: `gleam run -m gladvent run 1 2 3 --allow-crash`
-
-- `run all`: run all registered days
-  - format: `gleam run -m gladvent run all`
-  - flags:
-    - `--timeout`: `gleam run -m gladvent run all --timeout={timeout in ms}`
-      - usage example: `gleam run run --timeout=1000 1 2` with timeout 1000 milliseconds and days 1 and 2, runs and prints the output of running the `run` function of `day_1.gleam` and `day_2.gleam`
-    - `--allow-crash`: runs days without the use of `rescue` functionality, rendering output text more verbose but also allowing for stacktraces to be printed
-      - usage example: `gleam run -m gladvent run all --allow-crash`
-
-_Note:_
-
-- the `new` command creates source files in `src/aoc_<YEAR>/` and input files in the `input/<YEAR>` directory.
-- the `run` command expects input files to be in the `input/<YEAR>` directory, and code to be in `src/aoc_<YEAR>/`
-- any triggered `assert` will be captured and printed, for example: `error: assert - Assertion pattern match failed in module days/day_1 in function pt_1 at line 2 with value 2`
-- any message in a `todo` will be captured and printed, for example: `error: todo - test in module days/day_1 in function pt_2 at line 7`
 
 ## Seeing help messages
 
@@ -76,9 +43,39 @@ _Note:_ this method requires all day solutions be in `src/days/` with filenames 
 3. add your code to `src/aoc_<YEAR>/day_X.gleam`
 4. run `gleam run -m gladvent run X`
 
+### Available commands
+
+This project provides your application with 2 command groups, `new` and `run`:
+
+#### New
+
+- `new`: create `src/aoc_<year>/day_<day>.gleam` and `input/<year>/<day>.txt` files that correspond to the specified days
+  - format: `gleam run -m gladvent new a b c ...`
+
+#### Run
+
+The `run` command expects input files to be in the `input/<year>` directory, and code to be in `src/aoc_<year>/`
+(corresponding to the files created by the `new` command).
+
+- `run`: run the specified days
+  - format: `gleam run -m gladvent run a b c ...`
+
+- `run all`: run all registered days
+  - format: `gleam run -m gladvent run all`
+
+_Note:_
+
+- any triggered `assert`,`panic` or `todo` will be captured and printed, for example:
+
+```
+Part 1: error: todo - unimplemented in module aoc_2024/day_1 in function pt_1 at line 2
+```
+
+
 ## Reusable parse funtions
 
-As of `v0.7.0` gladvent supports modules with functions that provide a `pub fn parse(String)->a` where the type `a` matches with the type of the argument for the runner functions `pt_1` and `pt_2`. If this function is present, gladvent will pick it up and run it only once, providing the output to both runner functions.
+Gladvent supports modules with functions that provide a `pub fn parse(String) -> a` where the type `a` matches with the type of the argument for the runner functions `pt_1` and `pt_2`.
+If this `parse` function is present, gladvent will pick it up and run it only once, providing the output to both runner functions.
 
 An example of which looks like this:
 
@@ -99,6 +96,48 @@ pub fn pt_2(input: Int) -> Int {
 
 _Note_: `gladvent` now leverages gleam's `export package-interface` functionality to type-check your `parse` and `pt_{1|2}` functions to make sure that they are compatible with each other.
 
+## Defining expectations for easy refactoring
+
+One of the most satisfying aspects of advent of code (for me), second only to that sweet feeling of first solving a problem, is *iteration and refactoring*.
+
+Gladvent makes it easy for you to define expected outputs in your `gleam.toml` for all your solutions so that you can have the confidence to refactor your solutions as much as you want without having to constantly compare with your submissions on the advent of code website..
+
+### Expectations in `gleam.toml`
+
+Defining expectations is as simple as adding sections to your `gleam.toml` in the following format:
+
+```toml
+[gladvent.<year as int>.<day as int>]
+pt_1 = <int or string>
+pt_2 = <int or string>
+```
+
+For example, to set the expectations for Dec 1st 2024 (2024 day 1) you would add something like:
+
+```toml
+[gladvent.2024.1]
+pt_1 = 1
+pt_2 = 2
+```
+
+When running, gladvent will detect whether a specific day has it's expectations set and if so will print out the result for you.
+
+Let's say that your computed solution for 2024 day 1 is actually 1 for pt\_1 and 3 for pt\_2, the output will look like this:
+
+```
+Ran 2024 day 1:
+  Part 1: ✅ met expected value: 1
+  Part 2: ❌ unmet expectation: got 3, expected 2
+```
+
+## Example inputs
+
+Sometimes it's helpful to run advent of code solutions against example inputs to verify expectations.
+Gladvent now provides a `--example` flag in both the `new` and `run` commands to conveniently support that workflow without needing to modify your actual problem input files.
+Example input files will be generated at and run from `input/<year>/<day>.example.txt`.
+
+_Note_: gladvent will not compare your solution output against the expectations defined in `gleam.toml` when running in example mode.
+
 ## FAQ
 
 ### Why did you make this?
@@ -114,4 +153,5 @@ A few reasons:
 
 ### Why run as a command line utility and not just use unit tests?
 
-I thought a lot about that and I prefer the overall interactivity of a CLI better, as well as allowing for endless runs or runs with configurable timeouts. Having it run as part of `eunit` doesnt provide as much flexibility as I would like.
+I thought a lot about that and I just prefer the overall interactivity of a CLI better, as well as allowing for endless runs or runs with configurable timeouts.
+Having it run as part of `eunit` doesnt provide as much flexibility as I would like. Other testing frameworks have been popping up but I leave the decision to use them up to you!

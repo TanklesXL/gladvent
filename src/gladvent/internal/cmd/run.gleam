@@ -217,12 +217,9 @@ fn solve_res_to_string(
       case res, expectation {
         _, option.None -> res
         _, option.Some(expectation) if res == expectation ->
-          "✅ met expectation: " <> res
+          "✅ met expected value: " <> res
         _, option.Some(expectation) ->
-          "❌ unmet expectation: value "
-          <> res
-          <> " does not match expected "
-          <> expectation
+          "❌ unmet expectation: got " <> res <> ", expected " <> expectation
       }
     }
     Error(err) -> solve_err_to_string(err)
