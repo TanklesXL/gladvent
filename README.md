@@ -11,13 +11,15 @@ This library is intended to be imported to your gleam project and used as a comm
 
 To add this library to your project run: `gleam add gladvent` and add `import gladvent` to your main gleam file.
 
+> [!IMPORTANT]
+> This package works only on gleam's erlang target!
+
+> [!NOTE]
+> Due to changes made in gleam 1.5, users that were calling gladvent via `gleam run -m` should upgrade to v2 and add a call to `gladvent.run` in their project `main` function.
+
 ## Using the library
 
-This library provides 2 options to run your advent of code solvers,
-once you've added gladvent as a dependency via `gleam add gladvent --dev`:
-
-1. The easiest way: call it via `gleam run -m gladvent [ARGS]`, not requiring a custom `main()` function.
-1. The easy way: simply add `gladvent.main()` to the end of your project's `main` function.
+Once you've added gladvent as a dependency via `gleam add gladvent --dev`, simply add `gladvent.run()` to your project's `main` function.
 
 ## Multi-year support
 
@@ -27,21 +29,21 @@ For convenience it defaults to the current year. Therefore, passing `--year=YEAR
 
 ## Seeing help messages
 
-- To see available subcommands: `gleam run -m gladvent -- --help`
-- To see help for the `run` command: `gleam run -m gladvent run --help`
-- To see help for the `run` command: `gleam run -m gladvent run all --help`
-- To see help for the `new` command: `gleam run -m gladvent new --help`
+- To see available subcommands: `gleam run -- --help`
+- To see help for the `run` command: `gleam run run --help`
+- To see help for the `run` command: `gleam run run all --help`
+- To see help for the `new` command: `gleam run new --help`
 
 ## General Workflow
 
-Where X is the day you'd like to add (when using `gladvent.main()`):
+Where X is the day you'd like to add:
 
-_Note:_ this method requires all day solutions be in `src/days/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
+_Note:_ this method requires all day solutions be in `src/aoc_<year>/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
 
-1. run `gleam run -m gladvent run new X`
+1. run `gleam run new X`
 2. add your input to `input/<YEAR>/day_X.txt`
 3. add your code to `src/aoc_<YEAR>/day_X.gleam`
-4. run `gleam run -m gladvent run X`
+4. run `gleam run run X`
 
 ### Available commands
 
@@ -50,7 +52,7 @@ This project provides your application with 2 command groups, `new` and `run`:
 #### New
 
 - `new`: create `src/aoc_<year>/day_<day>.gleam` and `input/<year>/<day>.txt` files that correspond to the specified days
-  - format: `gleam run -m gladvent new a b c ...`
+  - format: `gleam run new a b c ...`
 
 #### Run
 
@@ -58,10 +60,10 @@ The `run` command expects input files to be in the `input/<year>` directory, and
 (corresponding to the files created by the `new` command).
 
 - `run`: run the specified days
-  - format: `gleam run -m gladvent run a b c ...`
+  - format: `gleam run run a b c ...`
 
 - `run all`: run all registered days
-  - format: `gleam run -m gladvent run all`
+  - format: `gleam run run all`
 
 _Note:_
 

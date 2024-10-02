@@ -7,10 +7,11 @@ import gleam/string
 import glint
 import snag
 
-/// Find all runners in the project src/days/ directory and
-/// run either the 'run' or 'new' command as specified
+/// Add this function to your project's `main` function in order to run the gladvent CLI.
 ///
-pub fn main() {
+/// This function gets its input from the command line arguments by using the `argv` library.
+///
+pub fn run() {
   let commands =
     glint.new()
     |> glint.path_help(
@@ -18,7 +19,6 @@ pub fn main() {
       "gladvent is an advent of code runner and generator for gleam. Please use either the 'run' or 'new' commands.",
     )
     |> glint.with_name("gladvent")
-    |> glint.as_module
     |> glint.pretty_help(glint.default_pretty_help())
     |> glint.group_flag(at: [], of: cmd.year_flag())
     |> glint.add(at: ["new"], do: new.new_command())
