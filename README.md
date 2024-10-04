@@ -19,7 +19,7 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 
 ## Using the library
 
-Once you've added gladvent as a dependency via `gleam add gladvent --dev`, simply add `gladvent.run()` to your project's `main` function.
+Once you've added gladvent as a dependency via `gleam add gladvent`, simply add `gladvent.run()` to your project's `main` function.
 
 ## Multi-year support
 
