@@ -77,7 +77,8 @@ pub fn exec(
 fn date() -> #(#(Int, Int, Int), #(Int, Int, Int))
 
 fn current_year() -> Int {
-  { date().0 }.0
+  date().
+  0.0
 }
 
 pub fn year_flag() {
