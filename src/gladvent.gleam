@@ -7,10 +7,6 @@ import gleam/string
 import glint
 import snag
 
-pub fn main() {
-  run()
-}
-
 /// Add this function to your project's `main` function in order to run the gladvent CLI.
 ///
 /// This function gets its input from the command line arguments by using the `argv` library.
