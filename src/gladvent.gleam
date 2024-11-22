@@ -7,6 +7,10 @@ import gleam/string
 import glint
 import snag
 
+pub fn main() {
+  run()
+}
+
 /// Add this function to your project's `main` function in order to run the gladvent CLI.
 ///
 /// This function gets its input from the command line arguments by using the `argv` library.
@@ -16,9 +20,12 @@ pub fn run() {
     glint.new()
     |> glint.path_help(
       [],
-      "gladvent is an advent of code runner and generator for gleam. Please use either the 'run' or 'new' commands.",
+      "gladvent is an advent of code runner and generator for gleam.
+
+
+      Please use either the 'run' or 'new' commands.
+      ",
     )
-    |> glint.with_name("gladvent")
     |> glint.pretty_help(glint.default_pretty_help())
     |> glint.group_flag(at: [], of: cmd.year_flag())
     |> glint.add(at: ["new"], do: new.new_command())
