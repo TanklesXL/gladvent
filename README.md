@@ -41,7 +41,7 @@ Where X is the day you'd like to add:
 _Note:_ this method requires all day solutions be in `src/aoc_<year>/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
 
 1. run `gleam run new X`
-2. add your input to `input/<YEAR>/day_X.txt`
+2. add your input to `input/<YEAR>/X.txt`
 3. add your code to `src/aoc_<YEAR>/day_X.gleam`
 4. run `gleam run run X`
 
