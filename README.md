@@ -41,7 +41,7 @@ Where X is the day you'd like to add:
 _Note:_ this method requires all day solutions be in `src/aoc_<year>/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
 
 1. run `gleam run new X`
-2. add your input to `input/<YEAR>/day_X.txt`
+2. add your input to `input/<YEAR>/X.txt`
 3. add your code to `src/aoc_<YEAR>/day_X.gleam`
 4. run `gleam run run X`
 
@@ -67,7 +67,7 @@ The `run` command expects input files to be in the `input/<year>` directory, and
 
 _Note:_
 
-- any triggered `assert`,`panic` or `todo` will be captured and printed, for example:
+- any triggered `assert`, `panic` or `todo` will be captured and printed, for example:
 
 ```
 Part 1: error: todo - unimplemented in module aoc_2024/day_1 in function pt_1 at line 2
@@ -102,7 +102,7 @@ _Note_: `gladvent` now leverages gleam's `export package-interface` functionalit
 
 One of the most satisfying aspects of advent of code (for me), second only to that sweet feeling of first solving a problem, is *iteration and refactoring*.
 
-Gladvent makes it easy for you to define expected outputs in your `gleam.toml` for all your solutions so that you can have the confidence to refactor your solutions as much as you want without having to constantly compare with your submissions on the advent of code website..
+Gladvent makes it easy for you to define expected outputs in your `gleam.toml` for all your solutions so that you can have the confidence to refactor your solutions as much as you want without having to constantly compare with your submissions on the advent of code website.
 
 ### Expectations in `gleam.toml`
 
