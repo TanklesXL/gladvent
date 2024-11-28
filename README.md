@@ -19,7 +19,8 @@ To add this library to your project run: `gleam add gladvent` and add `import gl
 
 ## Using the library
 
-Once you've added gladvent as a dependency via `gleam add gladvent`, simply add `gladvent.run()` to your project's `main` function.
+- Add gladvent as a dependency via `gleam add gladvent`
+- Add `gladvent.run()` to your project's `main` function.
 
 ## Multi-year support
 
@@ -88,11 +89,11 @@ pub fn parse(input: String) -> Int {
 }
 
 pub fn pt_1(input: Int) -> Int {
-    i + 1
+    input + 1
 }
 
 pub fn pt_2(input: Int) -> Int {
-    i + 2
+    input + 2
 }
 ```
 
