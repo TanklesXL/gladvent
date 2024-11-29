@@ -46,8 +46,17 @@ fn create_input_file(
 ) -> fn() -> Result(String, Err) {
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
-    simplifile.create_file(input_path)
-    |> result.map_error(handle_file_open_failure(_, input_path))
+    case kind, ctx.fetch_input {
+      input.Puzzle, True -> {
+        use content <- result.try(download_input(ctx))
+        simplifile.write(input_path, content)
+        |> result.map_error(FailedToWriteToFile(_))
+      }
+      _, _ -> {
+        simplifile.create_file(input_path)
+        |> result.map_error(handle_file_open_failure(_, input_path))
+      }
+    }
     |> result.replace(input_path)
   }
 }
@@ -114,37 +123,27 @@ fn get_cookie_value() -> Result(String, Err) {
   }
 }
 
-fn fetch_input(ctx: Context) -> fn() -> Result(String, Err) {
-  fn() {
-    use cookie <- result.try(get_cookie_value())
-    let url = "https://adventofcode.com/"<> int.to_string(ctx.year) <>"/day/" <> int.to_string(ctx.day) <> "/input"
-    let assert Ok(base_req) = request.to(url)
-    let req = request.prepend_header(base_req, "Cookie", "session="<>cookie)
-    use resp <- result.try(
-      httpc.send(req)
-      |> result.map_error(HttpError(_))
-    )
-
-    let filename = input.get_file_path(ctx.year, ctx.day, input.Puzzle)
-    simplifile.write(filename, resp.body)
-    |> result.map_error(FailedToWriteToFile(_))
-    |> result.replace(filename)
-  }
+fn download_input(ctx: Context) -> Result(String, Err) {
+  use cookie <- result.try(get_cookie_value())
+  let url = "https://adventofcode.com/"<> int.to_string(ctx.year) <>"/day/" <> int.to_string(ctx.day) <> "/input"
+  let assert Ok(base_req) = request.to(url)
+  let req = request.prepend_header(base_req, "Cookie", "session="<>cookie)
+  use resp <- result.try(
+    httpc.send(req)
+    |> result.map_error(HttpError(_))
+  )
+  Ok(resp.body)
 }
 
 fn do(ctx: Context) -> String {
-  let fetch_input_list = case ctx.fetch_input {
-    True -> [fetch_input(ctx)]
-    False -> []
-  }
   let seq = [
     create_dir(input.dir(ctx.year)),
     create_input_file(ctx, input.Puzzle),
     create_dir(cmd.src_dir(ctx.year)),
     create_src_file(ctx),
     ..case ctx.create_example_file {
-      True -> [create_input_file(ctx, input.Example), ..fetch_input_list]
-      False -> fetch_input_list
+      True -> [create_input_file(ctx, input.Example)]
+      False -> []
     }
   ]
 
