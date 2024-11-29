@@ -3,7 +3,6 @@ import gladvent/internal/cmd
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
-import gleam/erlang/os
 import gleam/http/request
 import gleam/httpc
 import gleam/int
@@ -13,6 +12,9 @@ import gleam/result
 import gleam/string
 import glint
 import simplifile
+import envoy
+
+const aoc_cookie_name = "AOC_COOKIE"
 
 type Context {
   Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool, fetch_input: Bool)
@@ -61,7 +63,7 @@ type Err {
 
 fn err_to_string(e: Err) -> String {
   case e {
-    CookieNotDefined -> "'AOC_COOKIE' environment variable not defined"
+    CookieNotDefined -> "'" <> aoc_cookie_name <> "' environment variable not defined"
     FailedToCreateDir(d) -> "failed to create dir: " <> d
     FailedToCreateFile(f) -> "failed to create file: " <> f
     FailedToWriteToFile(e) -> "failed to write to file:" <> string.inspect(e)
@@ -106,7 +108,7 @@ fn handle_file_open_failure(
 }
 
 fn get_cookie_value() -> Result(String, Err) {
-  case os.get_env("AOC_COOKIE") {
+  case envoy.get(aoc_cookie_name) {
     Ok(cookie) -> Ok(cookie)
     _ -> Error(CookieNotDefined)
   }
@@ -231,7 +233,7 @@ pub fn new_command() {
     |> glint.flag_default(False)
     |> glint.flag_help("Fetch your own input from the AoC website.
 
-    Needs to have your AoC cookie stored in the 'AOC_COOKIE' environment variable"),
+    Needs to have your AoC cookie stored in the '" <> aoc_cookie_name <> "' environment variable"),
   )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
