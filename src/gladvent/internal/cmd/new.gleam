@@ -46,13 +46,13 @@ fn create_input_file(
 ) -> fn() -> Result(String, Err) {
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
-    case kind, ctx.fetch_input {
-      input.Puzzle, True -> {
+    case kind {
+      input.Puzzle if ctx.fetch_input -> {
         use content <- result.try(download_input(ctx))
         simplifile.write(input_path, content)
         |> result.map_error(FailedToWriteToFile(_))
       }
-      _, _ -> {
+      _ -> {
         simplifile.create_file(input_path)
         |> result.map_error(handle_file_open_failure(_, input_path))
       }
