@@ -1,3 +1,4 @@
+import envoy
 import filepath
 import gladvent/internal/cmd
 import gladvent/internal/input
@@ -12,12 +13,17 @@ import gleam/result
 import gleam/string
 import glint
 import simplifile
-import envoy
 
 const aoc_cookie_name = "AOC_COOKIE"
 
 type Context {
-  Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool, fetch_input: Bool)
+  Context(
+    year: Int,
+    day: Day,
+    add_parse: Bool,
+    create_example_file: Bool,
+    fetch_input: Bool,
+  )
 }
 
 fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
@@ -72,12 +78,14 @@ type Err {
 
 fn err_to_string(e: Err) -> String {
   case e {
-    CookieNotDefined -> "'" <> aoc_cookie_name <> "' environment variable not defined"
+    CookieNotDefined ->
+      "'" <> aoc_cookie_name <> "' environment variable not defined"
     FailedToCreateDir(d) -> "failed to create dir: " <> d
     FailedToCreateFile(f) -> "failed to create file: " <> f
     FailedToWriteToFile(e) -> "failed to write to file:" <> string.inspect(e)
     FileAlreadyExists(f) -> "file already exists: " <> f
-    HttpError(e) -> "HTTP error while fetching input file: " <> string.inspect(e)
+    HttpError(e) ->
+      "HTTP error while fetching input file: " <> string.inspect(e)
   }
 }
 
@@ -125,12 +133,17 @@ fn get_cookie_value() -> Result(String, Err) {
 
 fn download_input(ctx: Context) -> Result(String, Err) {
   use cookie <- result.try(get_cookie_value())
-  let url = "https://adventofcode.com/"<> int.to_string(ctx.year) <>"/day/" <> int.to_string(ctx.day) <> "/input"
+  let url =
+    "https://adventofcode.com/"
+    <> int.to_string(ctx.year)
+    <> "/day/"
+    <> int.to_string(ctx.day)
+    <> "/input"
   let assert Ok(base_req) = request.to(url)
-  let req = request.prepend_header(base_req, "Cookie", "session="<>cookie)
+  let req = request.prepend_header(base_req, "Cookie", "session=" <> cookie)
   use resp <- result.try(
     httpc.send(req)
-    |> result.map_error(HttpError(_))
+    |> result.map_error(HttpError(_)),
   )
   Ok(resp.body)
 }
@@ -245,7 +258,9 @@ pub fn new_command() {
   cmd.exec(
     days,
     cmd.Endless,
-    fn(day) { do(Context(year:, day:, add_parse:, create_example_file:, fetch_input:)) },
+    fn(day) {
+      do(Context(year:, day:, add_parse:, create_example_file:, fetch_input:))
+    },
     collect_async(year, _),
   )
 }
