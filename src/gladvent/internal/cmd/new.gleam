@@ -5,6 +5,7 @@ import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
 import gleam/http/request
+import gleam/http/response
 import gleam/httpc
 import gleam/int
 import gleam/list
@@ -74,6 +75,7 @@ type Err {
   FailedToWriteToFile(simplifile.FileError)
   FileAlreadyExists(String)
   HttpError(httpc.HttpError)
+  UnexpectedHttpResponse(response.Response(String))
 }
 
 fn err_to_string(e: Err) -> String {
@@ -86,6 +88,11 @@ fn err_to_string(e: Err) -> String {
     FileAlreadyExists(f) -> "file already exists: " <> f
     HttpError(e) ->
       "HTTP error while fetching input file: " <> string.inspect(e)
+    UnexpectedHttpResponse(r) ->
+      "unexpected HTTP response ("
+      <> int.to_string(r.status)
+      <> ") while fetching input file: "
+      <> r.body
   }
 }
 
@@ -145,7 +152,10 @@ fn download_input(ctx: Context) -> Result(String, Err) {
     httpc.send(req)
     |> result.map_error(HttpError(_)),
   )
-  Ok(resp.body)
+  case resp.status {
+    200 -> Ok(resp.body)
+    _ -> Error(UnexpectedHttpResponse(resp))
+  }
 }
 
 fn do(ctx: Context) -> String {
