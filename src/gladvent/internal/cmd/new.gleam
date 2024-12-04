@@ -153,6 +153,7 @@ fn download_input(ctx: Context) -> Result(String, Err) {
     )
     |> request.set_scheme(http.Https)
     |> request.set_cookie("session", cookie)
+    |> request.set_header("user-agent", "github.com/TanklesXL/gladvent")
     |> httpc.send()
     |> result.map_error(HttpError(_)),
   )
