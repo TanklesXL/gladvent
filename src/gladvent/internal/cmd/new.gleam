@@ -56,9 +56,17 @@ fn create_input_file(
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
     case kind {
       input.Puzzle if ctx.fetch_input -> {
-        use content <- result.try(download_input(ctx))
-        simplifile.write(input_path, content)
-        |> result.map_error(FailedToWriteToFile(_))
+        case
+          simplifile.is_file(input_path),
+          simplifile.is_directory(input_path)
+        {
+          Ok(False), Ok(False) -> {
+            use content <- result.try(download_input(ctx))
+            simplifile.write(input_path, content)
+            |> result.map_error(FailedToWriteToFile(_))
+          }
+          _, _ -> Error(FileAlreadyExists(input_path))
+        }
       }
       _ -> {
         simplifile.create_file(input_path)
