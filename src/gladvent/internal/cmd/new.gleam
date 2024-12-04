@@ -4,6 +4,7 @@ import gladvent/internal/cmd
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
+import gleam/http
 import gleam/http/request
 import gleam/http/response
 import gleam/httpc
@@ -140,16 +141,19 @@ fn get_cookie_value() -> Result(String, Err) {
 
 fn download_input(ctx: Context) -> Result(String, Err) {
   use cookie <- result.try(get_cookie_value())
-  let url =
-    "https://adventofcode.com/"
-    <> int.to_string(ctx.year)
-    <> "/day/"
-    <> int.to_string(ctx.day)
-    <> "/input"
-  let assert Ok(base_req) = request.to(url)
-  let req = request.prepend_header(base_req, "Cookie", "session=" <> cookie)
   use resp <- result.try(
-    httpc.send(req)
+    request.new()
+    |> request.set_host("adventofcode.com")
+    |> request.set_path(
+      "/"
+      <> int.to_string(ctx.year)
+      <> "/day/"
+      <> int.to_string(ctx.day)
+      <> "/input",
+    )
+    |> request.set_scheme(http.Https)
+    |> request.set_cookie("session", cookie)
+    |> httpc.send()
     |> result.map_error(HttpError(_)),
   )
   case resp.status {
