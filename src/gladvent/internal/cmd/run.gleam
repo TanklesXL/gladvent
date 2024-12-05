@@ -67,6 +67,15 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
   do_trim(s, dir, charlist.from_string(sub))
 }
 
+fn handle_file_path(year: Int, day: Day, input_kind: input.Kind) -> String {
+  let new = input.get_file_path(year, day, input_kind)
+  let old = input.get_legacy_file_path(year, day, input_kind)
+  case simplifile.is_file(new), simplifile.is_file(old) {
+    Ok(False), Ok(True) -> old
+    _, _ -> new
+  }
+}
+
 @external(erlang, "string", "trim")
 fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
@@ -82,7 +91,7 @@ fn do(
     |> result.map_error(FailedToGetRunner),
   )
 
-  let input_path = input.get_file_path(year, day, input_kind)
+  let input_path = handle_file_path(year, day, input_kind)
   use input <- result.try(
     input_path
     |> simplifile.read()

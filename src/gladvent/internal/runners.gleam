@@ -1,6 +1,6 @@
 import filepath
 import gladvent/internal/cmd
-import gladvent/internal/parse.{type Day}
+import gladvent/internal/parse.{type Day, pad}
 import gladvent/internal/util.{defer}
 import gleam
 import gleam/bool
@@ -184,6 +184,15 @@ fn snagify_error(
   |> result.map_error(m)
 }
 
+fn handle_module_name(year: Int, day: Day, exists: fn(String) -> Bool) -> String {
+  let new = "aoc_" <> int.to_string(year) <> "/day_" <> pad(day)
+  let old = "aoc_" <> int.to_string(year) <> "/day_" <> int.to_string(day)
+  case exists(new), exists(old) {
+    False, True -> old
+    _, _ -> new
+  }
+}
+
 pub fn get_day(
   package: package_interface.Package,
   year: Int,
@@ -191,7 +200,7 @@ pub fn get_day(
 ) -> Result(DayRunner) {
   use <- snagify_error(with: runner_retrieval_error_to_snag)
   let module_name =
-    "aoc_" <> int.to_string(year) <> "/day_" <> int.to_string(day)
+    handle_module_name(year, day, dict.has_key(package.modules, _))
 
   // get the module for the specified year + day
   use module <- result.try(
