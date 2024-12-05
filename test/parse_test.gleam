@@ -1,4 +1,4 @@
-import gladvent/internal/parse.{day}
+import gladvent/internal/parse.{day, pad}
 import gleam/int
 import gleam/list
 import gleeunit/should
@@ -18,4 +18,12 @@ pub fn day_error_test() {
     |> day
     |> should.be_error
   })
+}
+
+pub fn pad_test() {
+  pad(1) |> should.equal("01")
+}
+
+pub fn padded_day_to_int_test() {
+  "01" |> int.parse() |> should.be_ok() |> should.equal(1)
 }
