@@ -8,11 +8,7 @@ pub type Kind {
 }
 
 pub fn get_file_path(year: Int, day: Int, input_kind: Kind) -> String {
-  filepath.join(dir(year), int.to_string(day))
-  <> case input_kind {
-    Example -> ".example.txt"
-    Puzzle -> ".txt"
-  }
+  filepath.join(dir(year), int.to_string(day)) <> get_extension(input_kind)
 }
 
 pub fn root() {
@@ -21,4 +17,11 @@ pub fn root() {
 
 pub fn dir(year) {
   filepath.join(root(), int.to_string(year))
+}
+
+fn get_extension(input_kind: Kind) -> String {
+  case input_kind {
+    Example -> ".example.txt"
+    Puzzle -> ".txt"
+  }
 }
