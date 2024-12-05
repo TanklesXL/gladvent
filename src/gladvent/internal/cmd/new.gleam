@@ -93,7 +93,8 @@ fn err_to_string(e: Err) -> String {
       "'" <> aoc_cookie_name <> "' environment variable not defined"
     FailedToCreateDir(d) -> "failed to create dir: " <> d
     FailedToCreateFile(f) -> "failed to create file: " <> f
-    FailedToWriteToFile(e) -> "failed to write to file:" <> string.inspect(e)
+    FailedToWriteToFile(e) ->
+      "failed to write to file:" <> simplifile.describe_error(e)
     FileAlreadyExists(f) -> "file already exists: " <> f
     HttpError(e) ->
       "HTTP error while fetching input file: " <> string.inspect(e)
