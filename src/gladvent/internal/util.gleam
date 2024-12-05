@@ -11,3 +11,6 @@ pub fn defer(do later: fn() -> _, after now: fn() -> a) -> a {
 pub fn deduplicate_sort(l: List(Int)) -> List(Int) {
   l |> set.from_list |> set.to_list |> list.sort(int.compare)
 }
+
+@external(erlang, "timer", "tc")
+pub fn timed(fun: fn() -> a) -> #(Int, a)
