@@ -1,7 +1,7 @@
 import filepath
 import gladvent/internal/cmd
 import gladvent/internal/input
-import gladvent/internal/parse.{type Day}
+import gladvent/internal/parse.{type Day, pad}
 import gladvent/internal/util
 import gleam/int
 import gleam/list
@@ -62,7 +62,7 @@ fn err_to_string(e: Err) -> String {
 }
 
 fn gleam_src_path(year: Int, day: Day) -> String {
-  filepath.join(cmd.src_dir(year), "day_" <> int.to_string(day) <> ".gleam")
+  filepath.join(cmd.src_dir(year), "day_" <> pad(day) <> ".gleam")
 }
 
 fn create_dir(dir: String) -> fn() -> Result(String, Err) {

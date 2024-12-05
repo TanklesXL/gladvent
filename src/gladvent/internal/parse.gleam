@@ -1,6 +1,7 @@
 import gleam/int
 import gleam/list
 import gleam/result
+import gleam/string
 import snag.{type Result}
 
 pub type Day =
@@ -27,4 +28,8 @@ pub fn day(s: String) -> Result(Day) {
 pub fn days(l: List(String)) -> Result(List(Day)) {
   list.try_map(l, day)
   |> snag.context("could not map day values to integers")
+}
+
+pub fn pad(day: Day) -> String {
+  int.to_string(day) |> string.pad_start(to: 2, with: "0")
 }
