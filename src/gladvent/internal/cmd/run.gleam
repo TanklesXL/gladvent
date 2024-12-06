@@ -47,7 +47,7 @@ type SolveResult =
 
 type Solution {
   Solution(value: Dynamic)
-  TimedSolution(value: Dynamic, time: Int)
+  TimedSolution(value: Dynamic, execution_time: Int)
 }
 
 fn run_err_to_snag(err: RunErr) -> Snag {
@@ -126,8 +126,8 @@ fn do(
 fn solve(solver: fn(a) -> Dynamic, input: a, timed: Bool) -> Solution {
   case timed {
     True -> {
-      let #(time, res) = util.timed(fn() { solver(input) })
-      TimedSolution(res, time)
+      let #(execution_time, res) = util.timed(fn() { solver(input) })
+      TimedSolution(res, execution_time)
     }
     False -> Solution(solver(input))
   }
@@ -272,7 +272,8 @@ fn solve_res_to_string(
 
 fn exec_time_suffix(solution: Solution) -> String {
   case solution {
-    TimedSolution(_, time) -> " (in " <> int.to_string(time) <> " µs)"
+    TimedSolution(_, execution_time) ->
+      " (in " <> int.to_string(execution_time) <> " µs)"
     _ -> ""
   }
 }
