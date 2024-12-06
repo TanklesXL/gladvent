@@ -74,6 +74,13 @@ _Note:_
 Part 1: error: todo - unimplemented in module aoc_2024/day_1 in function pt_1 at line 2
 ```
 
+## Fetching problem inputs
+
+When stubbing out a new day's solution with the `new` command, you can use the `--fetch` flag to tell gladvent to fetch your problem input from the advent of code website.
+
+Some things to note:
+- The `AOC_COOKIE` environment variable must be set with your advent of code session cookie.
+- Gladvent will only attempt to fetch your input if the input file for the day being requested does not exist. This is to prevent accidental and redundant calls to the advent of code website, there should be no reason to fetch input data for the same day more than once.
 
 ## Reusable parse funtions
 
@@ -110,17 +117,18 @@ Gladvent makes it easy for you to define expected outputs in your `gleam.toml` f
 Defining expectations is as simple as adding sections to your `gleam.toml` in the following format:
 
 ```toml
-[gladvent.<year as int>.<day as int>]
-pt_1 = <int or string>
-pt_2 = <int or string>
+[gladvent.<year as int>]
+1 = { pt_1 = <int or string>, pt_2 = <int or string> }
+2 = { pt_1 = <int or string>, pt_2 = <int or string> }
+3 = { pt_1 = <int or string>, pt_2 = <int or string> }
+...
 ```
 
 For example, to set the expectations for Dec 1st 2024 (2024 day 1) you would add something like:
 
 ```toml
-[gladvent.2024.1]
-pt_1 = 1
-pt_2 = 2
+[gladvent.2024]
+1 = { pt_1 = 1, pt_2 = 2 }
 ```
 
 When running, gladvent will detect whether a specific day has it's expectations set and if so will print out the result for you.
@@ -145,16 +153,21 @@ _Note_: gladvent will not compare your solution output against the expectations 
 
 ### Why did you make this?
 
-It seemed fun, I like small command line utilities and I wanted a way to get advent of code done in gleam without having the additional overhead of lots of copy-pasting and connecting things to get it to run
-
-### Why does this not download the input from the advent of code website?
-
-A few reasons:
-
-1. I wanted to keep this utility as simple as possible to start with
-2. I like the advent of code website and I felt like it was a shame to circumvent visiting it, especially since you should access it to read the daily challenge. On top of that, I would like to avoid spamming the `advent of code` api if possible.
+It seemed fun, I like small command line utilities and I wanted a way to get advent of code done in gleam without having the overhead of lots of copy-pasting and connecting things to get it to run.
 
 ### Why run as a command line utility and not just use unit tests?
 
 I thought a lot about that and I just prefer the overall interactivity of a CLI better, as well as allowing for endless runs or runs with configurable timeouts.
 Having it run as part of `eunit` doesnt provide as much flexibility as I would like. Other testing frameworks have been popping up but I leave the decision to use them up to you!
+
+### Why did you change your mind on fetching inputs?
+
+I started to reflect a bit after gladvent's users kept asking for the feature...
+
+While my initial rationale was twofold:
+1. To encourage people to use the advent of code website, and I felt like fetching inputs somehow took away from that.
+2. To minimise the risk that people would use a tool I made to spam the advent of code website with requests.
+
+Fetching inputs in a smart way (only ever if your input file does not already exist, so you should only need to do it once per day) still requires users to visit the advent of code website for the following (things gladvent will never do):
+- fetching the description of the daily problems
+- submitting solutions
