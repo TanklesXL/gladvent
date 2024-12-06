@@ -1,8 +1,13 @@
+import envoy
 import filepath
 import gladvent/internal/cmd
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
+import gleam/http
+import gleam/http/request
+import gleam/http/response
+import gleam/httpc
 import gleam/int
 import gleam/list
 import gleam/pair
@@ -11,8 +16,16 @@ import gleam/string
 import glint
 import simplifile
 
+const aoc_cookie_name = "AOC_COOKIE"
+
 type Context {
-  Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool)
+  Context(
+    year: Int,
+    day: Day,
+    add_parse: Bool,
+    create_example_file: Bool,
+    fetch_input: Bool,
+  )
 }
 
 fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
@@ -41,23 +54,52 @@ fn create_input_file(
 ) -> fn() -> Result(String, Err) {
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
-    simplifile.create_file(input_path)
-    |> result.map_error(handle_file_open_failure(_, input_path))
+    case kind {
+      input.Puzzle if ctx.fetch_input -> {
+        case simplifile.file_info(input_path) {
+          Error(_) -> {
+            use content <- result.try(download_input(ctx))
+            simplifile.write(input_path, content)
+            |> result.map_error(FailedToWriteToFile(_))
+          }
+          _ -> Error(FileAlreadyExists(input_path))
+        }
+      }
+      _ -> {
+        simplifile.create_file(input_path)
+        |> result.map_error(handle_file_open_failure(_, input_path))
+      }
+    }
     |> result.replace(input_path)
   }
 }
 
 type Err {
+  CookieNotDefined
   FailedToCreateDir(String)
   FailedToCreateFile(String)
+  FailedToWriteToFile(simplifile.FileError)
   FileAlreadyExists(String)
+  HttpError(httpc.HttpError)
+  UnexpectedHttpResponse(response.Response(String))
 }
 
 fn err_to_string(e: Err) -> String {
   case e {
+    CookieNotDefined ->
+      "'" <> aoc_cookie_name <> "' environment variable not defined"
     FailedToCreateDir(d) -> "failed to create dir: " <> d
     FailedToCreateFile(f) -> "failed to create file: " <> f
+    FailedToWriteToFile(e) ->
+      "failed to write to file:" <> simplifile.describe_error(e)
     FileAlreadyExists(f) -> "file already exists: " <> f
+    HttpError(e) ->
+      "HTTP error while fetching input file: " <> string.inspect(e)
+    UnexpectedHttpResponse(r) ->
+      "unexpected HTTP response ("
+      <> int.to_string(r.status)
+      <> ") while fetching input file: "
+      <> r.body
   }
 }
 
@@ -93,6 +135,37 @@ fn handle_file_open_failure(
   case reason {
     simplifile.Eexist -> FileAlreadyExists(filename)
     _ -> FailedToCreateFile(filename)
+  }
+}
+
+fn get_cookie_value() -> Result(String, Err) {
+  case envoy.get(aoc_cookie_name) {
+    Ok(cookie) -> Ok(cookie)
+    _ -> Error(CookieNotDefined)
+  }
+}
+
+fn download_input(ctx: Context) -> Result(String, Err) {
+  use cookie <- result.try(get_cookie_value())
+  use resp <- result.try(
+    request.new()
+    |> request.set_host("adventofcode.com")
+    |> request.set_path(
+      "/"
+      <> int.to_string(ctx.year)
+      <> "/day/"
+      <> int.to_string(ctx.day)
+      <> "/input",
+    )
+    |> request.set_scheme(http.Https)
+    |> request.set_cookie("session", cookie)
+    |> request.set_header("user-agent", "github.com/TanklesXL/gladvent")
+    |> httpc.send()
+    |> result.map_error(HttpError(_)),
+  )
+  case resp.status {
+    200 -> Ok(resp.body)
+    _ -> Error(UnexpectedHttpResponse(resp))
   }
 }
 
@@ -188,17 +261,27 @@ pub fn new_command() {
       "Generate example input files to run your solution against",
     ),
   )
+  use fetch_flag <- glint.flag(
+    glint.bool_flag("fetch")
+    |> glint.flag_default(False)
+    |> glint.flag_help("Fetch your own input from the AoC website.
+
+    Needs to have your AoC cookie stored in the '" <> aoc_cookie_name <> "' environment variable"),
+  )
   use _, args, flags <- glint.command()
   use days <- result.map(parse.days(args))
   let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(add_parse) = parse_flag(flags)
   let assert Ok(create_example_file) = example_flag(flags)
+  let assert Ok(fetch_input) = fetch_flag(flags)
 
   cmd.exec(
     days,
     cmd.Endless,
-    fn(day) { do(Context(year:, day:, add_parse:, create_example_file:)) },
+    fn(day) {
+      do(Context(year:, day:, add_parse:, create_example_file:, fetch_input:))
+    },
     collect_async(year, _),
   )
 }
