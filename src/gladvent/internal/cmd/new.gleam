@@ -4,6 +4,7 @@ import gladvent/internal/cmd
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/util
+import gleam/bool
 import gleam/http
 import gleam/http/request
 import gleam/http/response
@@ -34,7 +35,7 @@ fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
 
     use _ <- result.try(
       simplifile.create_file(gleam_src_path)
-      |> result.map_error(handle_file_open_failure(_, gleam_src_path)),
+      |> result.map_error(FailedToCreateFile(gleam_src_path, _)),
     )
 
     let file_data = case ctx.add_parse {
@@ -43,7 +44,7 @@ fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
     }
 
     simplifile.write(gleam_src_path, file_data)
-    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
+    |> result.map_error(FailedToWriteToFile(gleam_src_path, _))
     |> result.replace(gleam_src_path)
   }
 }
@@ -54,32 +55,26 @@ fn create_input_file(
 ) -> fn() -> Result(String, Err) {
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
-    case kind {
-      input.Puzzle if ctx.fetch_input -> {
-        case simplifile.file_info(input_path) {
-          Error(_) -> {
-            use content <- result.try(download_input(ctx))
-            simplifile.write(input_path, content)
-            |> result.map_error(FailedToWriteToFile(_))
-          }
-          _ -> Error(FileAlreadyExists(input_path))
-        }
-      }
-      _ -> {
-        simplifile.create_file(input_path)
-        |> result.map_error(handle_file_open_failure(_, input_path))
-      }
-    }
+    use Nil <- result.try(
+      simplifile.create_file(input_path)
+      |> result.map_error(FailedToCreateFile(input_path, _)),
+    )
+    use <- bool.guard(
+      when: kind == input.Example || !ctx.fetch_input,
+      return: Ok(input_path),
+    )
+    use content <- result.try(download_input(ctx))
+    simplifile.write(input_path, content)
+    |> result.map_error(FailedToWriteToFile(input_path, _))
     |> result.replace(input_path)
   }
 }
 
 type Err {
   CookieNotDefined
-  FailedToCreateDir(String)
-  FailedToCreateFile(String)
-  FailedToWriteToFile(simplifile.FileError)
-  FileAlreadyExists(String)
+  FailedToCreateDir(String, simplifile.FileError)
+  FailedToCreateFile(String, simplifile.FileError)
+  FailedToWriteToFile(String, simplifile.FileError)
   HttpError(httpc.HttpError)
   UnexpectedHttpResponse(response.Response(String))
 }
@@ -88,11 +83,12 @@ fn err_to_string(e: Err) -> String {
   case e {
     CookieNotDefined ->
       "'" <> aoc_cookie_name <> "' environment variable not defined"
-    FailedToCreateDir(d) -> "failed to create dir: " <> d
-    FailedToCreateFile(f) -> "failed to create file: " <> f
-    FailedToWriteToFile(e) ->
-      "failed to write to file:" <> simplifile.describe_error(e)
-    FileAlreadyExists(f) -> "file already exists: " <> f
+    FailedToCreateDir(d, e) ->
+      "failed to create dir '" <> d <> "': " <> simplifile.describe_error(e)
+    FailedToCreateFile(f, e) ->
+      "failed to create file '" <> f <> "': " <> simplifile.describe_error(e)
+    FailedToWriteToFile(f, e) ->
+      "failed to write to file '" <> f <> "': " <> simplifile.describe_error(e)
     HttpError(e) ->
       "HTTP error while fetching input file: " <> string.inspect(e)
     UnexpectedHttpResponse(r) ->
@@ -121,28 +117,14 @@ fn handle_dir_open_res(
   case res {
     Ok(_) -> Ok(filename)
     Error(simplifile.Eexist) -> Ok("")
-    _ ->
-      filename
-      |> FailedToCreateDir
-      |> Error
-  }
-}
-
-fn handle_file_open_failure(
-  reason: simplifile.FileError,
-  filename: String,
-) -> Err {
-  case reason {
-    simplifile.Eexist -> FileAlreadyExists(filename)
-    _ -> FailedToCreateFile(filename)
+    Error(e) -> Error(FailedToCreateDir(filename, e))
   }
 }
 
 fn get_cookie_value() -> Result(String, Err) {
-  case envoy.get(aoc_cookie_name) {
-    Ok(cookie) -> Ok(cookie)
-    _ -> Error(CookieNotDefined)
-  }
+  aoc_cookie_name
+  |> envoy.get()
+  |> result.replace_error(CookieNotDefined)
 }
 
 fn download_input(ctx: Context) -> Result(String, Err) {
@@ -161,7 +143,7 @@ fn download_input(ctx: Context) -> Result(String, Err) {
     |> request.set_cookie("session", cookie)
     |> request.set_header("user-agent", "github.com/TanklesXL/gladvent")
     |> httpc.send()
-    |> result.map_error(HttpError(_)),
+    |> result.map_error(HttpError),
   )
   case resp.status {
     200 -> Ok(resp.body)
