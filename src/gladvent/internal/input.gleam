@@ -15,6 +15,10 @@ pub fn get_file_path(year: Int, day: Int, input_kind: Kind) -> String {
   }
 }
 
+pub fn get_gitignore_path() -> String {
+  filepath.join(root(), ".gitignore")
+}
+
 pub fn root() {
   filepath.join(cmd.root(), "input")
 }

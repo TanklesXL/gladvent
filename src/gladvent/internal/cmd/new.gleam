@@ -70,6 +70,18 @@ fn create_input_file(
   }
 }
 
+fn create_input_gitignore_file() -> Result(String, Err) {
+  let gitignore_path = input.get_gitignore_path()
+  use _ <- result.try(
+    simplifile.create_file(gitignore_path)
+    |> result.map_error(FailedToCreateFile(gitignore_path, _)),
+  )
+  let content = "*.txt\n"
+  simplifile.write(gitignore_path, content)
+  |> result.map_error(FailedToWriteToFile(gitignore_path, _))
+  |> result.replace(gitignore_path)
+}
+
 type Err {
   CookieNotDefined
   FailedToCreateDir(String, simplifile.FileError)
@@ -154,6 +166,7 @@ fn download_input(ctx: Context) -> Result(String, Err) {
 fn do(ctx: Context) -> String {
   let seq = [
     create_dir(input.dir(ctx.year)),
+    create_input_gitignore_file,
     create_input_file(ctx, input.Puzzle),
     create_dir(cmd.src_dir(ctx.year)),
     create_src_file(ctx),
