@@ -46,8 +46,7 @@ type SolveResult =
   gleam.Result(Solution, SolveErr)
 
 type Solution {
-  Solution(value: Dynamic)
-  TimedSolution(value: Dynamic, execution_time: Int)
+  Solution(value: Dynamic, execution_time: Int)
 }
 
 fn run_err_to_snag(err: RunErr) -> Snag {
@@ -80,7 +79,6 @@ fn do(
   day: Day,
   package: package_interface.Package,
   allow_crash: Bool,
-  timed: Bool,
   input_kind: input.Kind,
 ) -> RunResult {
   use #(pt_1, pt_2, parse) <- result.try(
@@ -101,7 +99,7 @@ fn do(
   case allow_crash {
     True -> {
       let input = parse(input)
-      Ok(#(Ok(solve(pt_1, input, timed)), Ok(solve(pt_2, input, timed))))
+      Ok(#(Ok(solve(pt_1, input)), Ok(solve(pt_2, input))))
     }
     False -> {
       use input <- result.try(
@@ -111,11 +109,11 @@ fn do(
         |> result.map_error(FailedToParseInput),
       )
       let pt_1 =
-        fn() { solve(pt_1, input, timed) }
+        fn() { solve(pt_1, input) }
         |> erlang.rescue
         |> result.map_error(crash_to_solve_err)
       let pt_2 =
-        fn() { solve(pt_2, input, timed) }
+        fn() { solve(pt_2, input) }
         |> erlang.rescue
         |> result.map_error(crash_to_solve_err)
       Ok(#(pt_1, pt_2))
@@ -123,14 +121,9 @@ fn do(
   }
 }
 
-fn solve(solver: fn(a) -> Dynamic, input: a, timed: Bool) -> Solution {
-  case timed {
-    True -> {
-      let #(execution_time, res) = util.timed(fn() { solver(input) })
-      TimedSolution(res, execution_time)
-    }
-    False -> Solution(solver(input))
-  }
+fn solve(solver: fn(a) -> Dynamic, input: a) -> Solution {
+  let #(execution_time, value) = util.timed(fn() { solver(input) })
+  Solution(value, execution_time)
 }
 
 fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
@@ -225,6 +218,7 @@ fn solve_err_to_string(solve_err: SolveErr) -> String {
 fn solve_res_to_string(
   res: SolveResult,
   expectation: option.Option(Expectation),
+  timed: Bool,
 ) -> String {
   result.unwrap_both({
     use solution <- result.map(res |> result.map_error(solve_err_to_string))
@@ -237,7 +231,7 @@ fn solve_res_to_string(
               Ok(i) if expect == i ->
                 "✅ met expected value: "
                 <> int.to_string(i)
-                <> exec_time_suffix(solution)
+                <> exec_time_suffix(solution, timed)
               Ok(i) ->
                 "❌ unmet expectation: expected "
                 <> int.to_string(expect)
@@ -253,7 +247,9 @@ fn solve_res_to_string(
           ExpectString(expect) -> {
             case dynamic.string(solution.value) {
               Ok(s) if expect == s ->
-                "✅ met expected value: " <> s <> exec_time_suffix(solution)
+                "✅ met expected value: "
+                <> s
+                <> exec_time_suffix(solution, timed)
               Ok(s) ->
                 "❌ unmet expectation: expected " <> expect <> ", got " <> s
               Error(_) ->
@@ -265,16 +261,17 @@ fn solve_res_to_string(
           }
         }
       },
-      or: fn() { string.inspect(solution.value) <> exec_time_suffix(solution) },
+      or: fn() {
+        string.inspect(solution.value) <> exec_time_suffix(solution, timed)
+      },
     )
   })
 }
 
-fn exec_time_suffix(solution: Solution) -> String {
-  case solution {
-    TimedSolution(_, execution_time) ->
-      " (in " <> int.to_string(execution_time) <> " µs)"
-    _ -> ""
+fn exec_time_suffix(solution: Solution, timed: Bool) -> String {
+  case timed {
+    True -> " (in " <> int.to_string(solution.execution_time) <> " µs)"
+    False -> ""
   }
 }
 
@@ -284,6 +281,7 @@ fn collect_async(
   year: Int,
   x: #(Day, AsyncResult),
   expectations: Option(dict.Dict(String, tom.Toml)),
+  timed: Bool,
 ) -> String {
   let expect = fn(key) {
     use ex <- option.then(expectations)
@@ -294,7 +292,7 @@ fn collect_async(
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _, expect("pt_1"), expect("pt_2"))
+  |> collect(year, _, expect("pt_1"), expect("pt_2"), timed)
 }
 
 fn collect(
@@ -302,6 +300,7 @@ fn collect(
   x: #(Day, RunResult),
   expect_pt_1: Option(Expectation),
   expect_pt_2: Option(Expectation),
+  timed: Bool,
 ) -> String {
   let day = int.to_string(x.0)
   case x.1 {
@@ -312,10 +311,10 @@ fn collect(
       <> day
       <> ":\n"
       <> "  Part 1: "
-      <> solve_res_to_string(res_1, expect_pt_1)
+      <> solve_res_to_string(res_1, expect_pt_1, timed)
       <> "\n"
       <> "  Part 2: "
-      <> solve_res_to_string(res_2, expect_pt_2)
+      <> solve_res_to_string(res_2, expect_pt_2, timed)
 
     Error(err) ->
       err
@@ -348,7 +347,7 @@ pub fn allow_crash_flag() {
 pub fn timed_flag() {
   glint.bool_flag("timed")
   |> glint.flag_default(False)
-  |> glint.flag_help("Measure solution execution time")
+  |> glint.flag_help("Display solution execution time")
 }
 
 pub fn run_command() -> glint.Command(Result(List(String))) {
@@ -407,8 +406,8 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   days
   |> cmd.exec(
     timing,
-    do(year, _, package, allow_crash, timed, input_kind),
-    collect_async(year, _, expectations),
+    do(year, _, package, allow_crash, input_kind),
+    collect_async(year, _, expectations, timed),
   )
 }
 
@@ -458,8 +457,8 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   |> list.sort(int.compare)
   |> cmd.exec(
     timing,
-    do(year, _, package, allow_crash, timed, input.Puzzle),
-    collect_async(year, _, expectations),
+    do(year, _, package, allow_crash, input.Puzzle),
+    collect_async(year, _, expectations, timed),
   )
 }
 
