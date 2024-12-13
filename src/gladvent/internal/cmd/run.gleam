@@ -11,7 +11,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/erlang
 import gleam/erlang/atom
 import gleam/erlang/charlist.{type Charlist}
-import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
@@ -282,9 +281,7 @@ fn format_execution_time(execution_time: Int) -> String {
     t if t > 1000 -> #(1000.0, 3, " ms")
     _ -> #(1.0, 0, " µs")
   }
-  let assert Ok(exec_time) =
-    int.to_float(execution_time) |> float.divide(divisor)
-  util.format_float(exec_time, precision) <> unit
+  util.format_float(int.to_float(execution_time) /. divisor, precision) <> unit
 }
 
 import gleam/pair

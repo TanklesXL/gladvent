@@ -20,11 +20,11 @@ pub fn timed(fun: fn() -> a) -> #(Int, a)
 pub fn format_float(input: Float, precision: Int) -> String {
   case precision {
     p if p >= 1 ->
-      do_format("~." <> int.to_string(precision) <> "f", input)
+      do_format("~." <> int.to_string(precision) <> "f", [input])
       |> charlist.to_string
     _ -> float.truncate(input) |> int.to_string
   }
 }
 
 @external(erlang, "io_lib", "format")
-fn do_format(format: String, data: a) -> Charlist
+fn do_format(format: String, data: List(a)) -> Charlist
