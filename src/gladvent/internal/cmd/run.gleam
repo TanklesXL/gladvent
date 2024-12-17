@@ -43,7 +43,11 @@ type SolveErr {
 }
 
 type SolveResult =
-  gleam.Result(Dynamic, SolveErr)
+  gleam.Result(Solution, SolveErr)
+
+type Solution {
+  Solution(value: Dynamic, execution_time: Int)
+}
 
 fn run_err_to_snag(err: RunErr) -> Snag {
   case err {
@@ -104,7 +108,7 @@ fn do(
   case allow_crash {
     True -> {
       let input = parse(input)
-      Ok(#(Ok(pt_1(input)), Ok(pt_2(input))))
+      Ok(#(Ok(solve(pt_1, input)), Ok(solve(pt_2, input))))
     }
     False -> {
       use input <- result.try(
@@ -114,16 +118,21 @@ fn do(
         |> result.map_error(FailedToParseInput),
       )
       let pt_1 =
-        fn() { pt_1(input) }
+        fn() { solve(pt_1, input) }
         |> erlang.rescue
         |> result.map_error(crash_to_solve_err)
       let pt_2 =
-        fn() { pt_2(input) }
+        fn() { solve(pt_2, input) }
         |> erlang.rescue
         |> result.map_error(crash_to_solve_err)
       Ok(#(pt_1, pt_2))
     }
   }
+}
+
+fn solve(solver: fn(a) -> Dynamic, input: a) -> Solution {
+  let #(execution_time, value) = util.timed(fn() { solver(input) })
+  Solution(value, execution_time)
 }
 
 fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
@@ -218,17 +227,20 @@ fn solve_err_to_string(solve_err: SolveErr) -> String {
 fn solve_res_to_string(
   res: SolveResult,
   expectation: option.Option(Expectation),
+  timed: Bool,
 ) -> String {
   result.unwrap_both({
-    use res <- result.map(res |> result.map_error(solve_err_to_string))
+    use solution <- result.map(res |> result.map_error(solve_err_to_string))
     option.lazy_unwrap(
       {
         use expect <- option.map(expectation)
         case expect {
           ExpectInt(expect) -> {
-            case dynamic.int(res) {
+            case dynamic.int(solution.value) {
               Ok(i) if expect == i ->
-                "✅ met expected value: " <> int.to_string(i)
+                "✅ met expected value: "
+                <> int.to_string(i)
+                <> exec_time_suffix(solution, timed)
               Ok(i) ->
                 "❌ unmet expectation: expected "
                 <> int.to_string(expect)
@@ -242,8 +254,11 @@ fn solve_res_to_string(
             }
           }
           ExpectString(expect) -> {
-            case dynamic.string(res) {
-              Ok(s) if expect == s -> "✅ met expected value: " <> s
+            case dynamic.string(solution.value) {
+              Ok(s) if expect == s ->
+                "✅ met expected value: "
+                <> s
+                <> exec_time_suffix(solution, timed)
               Ok(s) ->
                 "❌ unmet expectation: expected " <> expect <> ", got " <> s
               Error(_) ->
@@ -255,9 +270,27 @@ fn solve_res_to_string(
           }
         }
       },
-      or: fn() { string.inspect(res) },
+      or: fn() {
+        string.inspect(solution.value) <> exec_time_suffix(solution, timed)
+      },
     )
   })
+}
+
+fn exec_time_suffix(solution: Solution, timed: Bool) -> String {
+  case timed {
+    True -> " (in " <> format_execution_time(solution.execution_time) <> ")"
+    False -> ""
+  }
+}
+
+fn format_execution_time(execution_time: Int) -> String {
+  let #(divisor, precision, unit) = case execution_time {
+    t if t > 1_000_000 -> #(1_000_000.0, 3, " s")
+    t if t > 1000 -> #(1000.0, 3, " ms")
+    _ -> #(1.0, 0, " µs")
+  }
+  util.format_float(int.to_float(execution_time) /. divisor, precision) <> unit
 }
 
 import gleam/pair
@@ -266,6 +299,7 @@ fn collect_async(
   year: Int,
   x: #(Day, AsyncResult),
   expectations: Option(dict.Dict(String, tom.Toml)),
+  timed: Bool,
 ) -> String {
   let expect = fn(key) {
     use ex <- option.then(expectations)
@@ -276,7 +310,7 @@ fn collect_async(
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _, expect("pt_1"), expect("pt_2"))
+  |> collect(year, _, expect("pt_1"), expect("pt_2"), timed)
 }
 
 fn collect(
@@ -284,6 +318,7 @@ fn collect(
   x: #(Day, RunResult),
   expect_pt_1: Option(Expectation),
   expect_pt_2: Option(Expectation),
+  timed: Bool,
 ) -> String {
   let day = int.to_string(x.0)
   case x.1 {
@@ -294,10 +329,10 @@ fn collect(
       <> day
       <> ":\n"
       <> "  Part 1: "
-      <> solve_res_to_string(res_1, expect_pt_1)
+      <> solve_res_to_string(res_1, expect_pt_1, timed)
       <> "\n"
       <> "  Part 2: "
-      <> solve_res_to_string(res_2, expect_pt_2)
+      <> solve_res_to_string(res_2, expect_pt_2, timed)
 
     Error(err) ->
       err
@@ -327,6 +362,12 @@ pub fn allow_crash_flag() {
   |> glint.flag_help("Don't catch exceptions thrown by runners")
 }
 
+pub fn timed_flag() {
+  glint.bool_flag("timed")
+  |> glint.flag_default(False)
+  |> glint.flag_help("Display solution execution time")
+}
+
 pub fn run_command() -> glint.Command(Result(List(String))) {
   use <- glint.command_help("Run the specified days")
   use <- glint.unnamed_args(glint.MinArgs(1))
@@ -342,6 +383,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
+  let assert Ok(timed) = glint.get_flag(flags, timed_flag())
   let assert Ok(input_kind) = case example_flag(flags) {
     Error(a) -> Error(a)
     Ok(True) -> Ok(input.Example)
@@ -383,7 +425,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
   |> cmd.exec(
     timing,
     do(year, _, package, allow_crash, input_kind),
-    collect_async(year, _, expectations),
+    collect_async(year, _, expectations, timed),
   )
 }
 
@@ -394,6 +436,7 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
 
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
+  let assert Ok(timed) = glint.get_flag(flags, timed_flag())
 
   let spinner =
     spinner.new("running all days in " <> int.to_string(year))
@@ -433,7 +476,7 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
   |> cmd.exec(
     timing,
     do(year, _, package, allow_crash, input.Puzzle),
-    collect_async(year, _, expectations),
+    collect_async(year, _, expectations, timed),
   )
 }
 
