@@ -350,13 +350,17 @@ pub fn timeout_flag() {
 pub fn allow_crash_flag() {
   glint.bool_flag("allow-crash")
   |> glint.flag_default(False)
-  |> glint.flag_help("Don't catch exceptions thrown by runners")
+  |> glint.flag_help("Don't catch exceptions thrown by runners.")
 }
 
 pub fn timed_flag() {
   glint.bool_flag("timed")
   |> glint.flag_default(False)
-  |> glint.flag_help("Display solution execution time")
+  |> glint.flag_help(
+    "Display solution execution time.
+
+The time displayed does not include any work done in a 'parse' function.",
+  )
 }
 
 pub fn run_command() -> glint.Command(Result(List(String))) {
