@@ -149,6 +149,21 @@ Example input files will be generated at and run from `input/<year>/<day>.exampl
 
 _Note_: gladvent will not compare your solution output against the expectations defined in `gleam.toml` when running in example mode.
 
+
+## Display execution time
+
+Use the `--timed` flag when running your solutions to display how long each part took to solve.
+
+For example:
+
+```
+Ran 2024 day 1:
+  Part 1: ✅ met expected value: 1579939 (in 885 µs)
+  Part 2: ✅ met expected value: 20351745 (in 605 µs)
+```
+
+Note: as the output of the `parse` function is reused for both parts, its execution time is not included in the displayed time.
+
 ## FAQ
 
 ### Why did you make this?
