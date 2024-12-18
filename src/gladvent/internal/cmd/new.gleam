@@ -29,7 +29,7 @@ type Context {
   )
 }
 
-fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
+fn create_src_file(ctx: Context) -> fn() -> Result(Success, Err) {
   fn() {
     let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
 
@@ -45,14 +45,14 @@ fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
 
     simplifile.write(gleam_src_path, file_data)
     |> result.map_error(FailedToWriteToFile(gleam_src_path, _))
-    |> result.replace(gleam_src_path)
+    |> result.replace(File(gleam_src_path))
   }
 }
 
 fn create_input_file(
   ctx: Context,
   kind: input.Kind,
-) -> fn() -> Result(String, Err) {
+) -> fn() -> Result(Success, Err) {
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
     use Nil <- result.try(
@@ -61,13 +61,18 @@ fn create_input_file(
     )
     use <- bool.guard(
       when: kind == input.Example || !ctx.fetch_input,
-      return: Ok(input_path),
+      return: Ok(File(input_path)),
     )
     use content <- result.try(download_input(ctx))
     simplifile.write(input_path, content)
     |> result.map_error(FailedToWriteToFile(input_path, _))
-    |> result.replace(input_path)
+    |> result.replace(File(input_path))
   }
+}
+
+type Success {
+  Dir(String)
+  File(String)
 }
 
 type Err {
@@ -103,10 +108,11 @@ fn gleam_src_path(year: Int, day: Day) -> String {
   filepath.join(cmd.src_dir(year), "day_" <> int.to_string(day) <> ".gleam")
 }
 
-fn create_dir(dir: String) -> fn() -> Result(String, Err) {
+fn create_dir(dir: String) -> fn() -> Result(Success, Err) {
   fn() {
     simplifile.create_directory_all(dir)
     |> handle_dir_open_res(dir)
+    |> result.map(Dir)
   }
 }
 
@@ -183,8 +189,8 @@ fn do(ctx: Context) -> String {
     {
       use acc, f <- list.fold(seq, #("", ""))
       case f() {
-        Ok("") -> acc
-        Ok(o) -> pair.map_first(acc, newline_tab(_, o))
+        Ok(Dir(_)) -> acc
+        Ok(File(o)) -> pair.map_first(acc, newline_tab(_, o))
         Error(err) -> pair.map_second(acc, newline_tab(_, err_to_string(err)))
       }
     }
