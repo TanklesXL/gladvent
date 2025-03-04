@@ -30,12 +30,8 @@ const package_interface_path = "build/.gladvent/pkg.json"
 
 type PkgInterfaceErr {
   FailedToGleamBuild(String)
-  FailedToReadGleamToml(simplifile.FileError)
-  FailedToDecodeGleamToml(tom.ParseError)
-  FailedToGetPackageName(tom.GetError)
   FailedToGeneratePackageInterface(String)
   FailedToReadPackageInterface(simplifile.FileError)
-  FailedToClearBuildCache(simplifile.FileError)
   FailedToDecodePackageInterface(json.DecodeError)
 }
 
@@ -44,18 +40,6 @@ fn package_interface_error_to_snag(e: PkgInterfaceErr) -> snag.Snag {
     FailedToGleamBuild(s) ->
       snag.new(s)
       |> snag.layer("failed to build gleam project")
-    FailedToDecodeGleamToml(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to decode gleam.toml")
-    FailedToGetPackageName(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to get package name")
-    FailedToReadGleamToml(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to read gleam.toml")
-    FailedToClearBuildCache(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to clear build cache")
     FailedToGeneratePackageInterface(s) ->
       snag.new(s)
       |> snag.layer("failed to generate " <> package_interface_path)
@@ -77,40 +61,6 @@ pub fn pkg_interface() -> Result(package_interface.Package) {
   use <- defer(do: fn() { spinner.stop(spinner) })
 
   let root = cmd.root()
-
-  spinner.set_text(spinner, "reading gleam.toml")
-  use gleam_toml <- result.try(
-    simplifile.read(filepath.join(root, "gleam.toml"))
-    |> result.map_error(FailedToReadGleamToml),
-  )
-
-  spinner.set_text(spinner, "decoding gleam.toml")
-  use toml <- result.try(
-    tom.parse(gleam_toml)
-    |> result.map_error(FailedToDecodeGleamToml),
-  )
-
-  spinner.set_text(spinner, "fetching project name")
-  use name <- result.try(
-    tom.get_string(toml, ["name"])
-    |> result.map_error(FailedToGetPackageName),
-  )
-
-  spinner.set_text(spinner, "clearing build cache")
-  use _ <- result.try(
-    ["build/prod/erlang", "build/dev/erlang"]
-    |> list.try_map(fn(cache) {
-      filepath.join(root, cache)
-      |> filepath.join(name)
-      |> simplifile.delete
-    })
-    |> result.try_recover(fn(e) {
-      case e {
-        simplifile.Enoent -> Ok([])
-        _ -> Error(FailedToClearBuildCache(e))
-      }
-    }),
-  )
 
   spinner.set_text(spinner, "rebuilding project")
   use _ <- result.try(
