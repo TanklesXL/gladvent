@@ -18,7 +18,6 @@ import shellout
 import simplifile
 import snag.{type Result}
 import spinner
-import tom
 
 pub type PartRunner =
   fn(Dynamic) -> Dynamic
@@ -215,7 +214,7 @@ fn to_erlang_module_name(name) {
   string.replace(name, "/", "@")
 }
 
-@external(erlang, "gladvent_ffi", "function_arity_one")
+@external(erlang, "runners_ffi", "function_arity_one")
 fn function_arity_one(
   module: atom.Atom,
   function: atom.Atom,
@@ -225,7 +224,7 @@ fn parse_function(module: String) -> fn(String) -> Dynamic {
   do_parse_function(atom.create_from_string(to_erlang_module_name(module)))
 }
 
-@external(erlang, "gladvent_ffi", "parse_function")
+@external(erlang, "runners_ffi", "parse_function")
 fn do_parse_function(module: atom.Atom) -> fn(String) -> Dynamic
 
 const string = package_interface.Named(
