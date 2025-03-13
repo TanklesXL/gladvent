@@ -43,7 +43,7 @@ gleam_package_interface = { version = "~> 1.0" }
 gleam_stdlib = { version = "~> 0.39 or ~> 1.0" }
 gleeunit = { version = ">= 1.2.0 and < 2.0.0" }
 glint = { version = ">=1.0.0 and < 2.0.0" }
-parallel_map = { version = ">= 2.0.0 and < 3.0.0" }
+parallel_map = { version = ">= 3.0.0 and < 4.0.0" }
 shellout = { version = "~> 1.6" }
 simplifile = { version = "~> 2.0" }
 snag = { version = "~> 1.0" }
