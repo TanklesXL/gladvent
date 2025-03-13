@@ -18,7 +18,6 @@ import shellout
 import simplifile
 import snag.{type Result}
 import spinner
-import tom
 
 pub type PartRunner =
   fn(Dynamic) -> Dynamic
@@ -30,12 +29,8 @@ const package_interface_path = "build/.gladvent/pkg.json"
 
 type PkgInterfaceErr {
   FailedToGleamBuild(String)
-  FailedToReadGleamToml(simplifile.FileError)
-  FailedToDecodeGleamToml(tom.ParseError)
-  FailedToGetPackageName(tom.GetError)
   FailedToGeneratePackageInterface(String)
   FailedToReadPackageInterface(simplifile.FileError)
-  FailedToClearBuildCache(simplifile.FileError)
   FailedToDecodePackageInterface(json.DecodeError)
 }
 
@@ -44,18 +39,6 @@ fn package_interface_error_to_snag(e: PkgInterfaceErr) -> snag.Snag {
     FailedToGleamBuild(s) ->
       snag.new(s)
       |> snag.layer("failed to build gleam project")
-    FailedToDecodeGleamToml(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to decode gleam.toml")
-    FailedToGetPackageName(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to get package name")
-    FailedToReadGleamToml(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to read gleam.toml")
-    FailedToClearBuildCache(e) ->
-      snag.new(string.inspect(e))
-      |> snag.layer("failed to clear build cache")
     FailedToGeneratePackageInterface(s) ->
       snag.new(s)
       |> snag.layer("failed to generate " <> package_interface_path)
@@ -77,40 +60,6 @@ pub fn pkg_interface() -> Result(package_interface.Package) {
   use <- defer(do: fn() { spinner.stop(spinner) })
 
   let root = cmd.root()
-
-  spinner.set_text(spinner, "reading gleam.toml")
-  use gleam_toml <- result.try(
-    simplifile.read(filepath.join(root, "gleam.toml"))
-    |> result.map_error(FailedToReadGleamToml),
-  )
-
-  spinner.set_text(spinner, "decoding gleam.toml")
-  use toml <- result.try(
-    tom.parse(gleam_toml)
-    |> result.map_error(FailedToDecodeGleamToml),
-  )
-
-  spinner.set_text(spinner, "fetching project name")
-  use name <- result.try(
-    tom.get_string(toml, ["name"])
-    |> result.map_error(FailedToGetPackageName),
-  )
-
-  spinner.set_text(spinner, "clearing build cache")
-  use _ <- result.try(
-    ["build/prod/erlang", "build/dev/erlang"]
-    |> list.try_map(fn(cache) {
-      filepath.join(root, cache)
-      |> filepath.join(name)
-      |> simplifile.delete
-    })
-    |> result.try_recover(fn(e) {
-      case e {
-        simplifile.Enoent -> Ok([])
-        _ -> Error(FailedToClearBuildCache(e))
-      }
-    }),
-  )
 
   spinner.set_text(spinner, "rebuilding project")
   use _ <- result.try(
@@ -265,7 +214,7 @@ fn to_erlang_module_name(name) {
   string.replace(name, "/", "@")
 }
 
-@external(erlang, "gladvent_ffi", "function_arity_one")
+@external(erlang, "runners_ffi", "function_arity_one")
 fn function_arity_one(
   module: atom.Atom,
   function: atom.Atom,
@@ -275,7 +224,7 @@ fn parse_function(module: String) -> fn(String) -> Dynamic {
   do_parse_function(atom.create_from_string(to_erlang_module_name(module)))
 }
 
-@external(erlang, "gladvent_ffi", "parse_function")
+@external(erlang, "runners_ffi", "parse_function")
 fn do_parse_function(module: atom.Atom) -> fn(String) -> Dynamic
 
 const string = package_interface.Named(
