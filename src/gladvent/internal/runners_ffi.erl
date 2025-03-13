@@ -1,4 +1,4 @@
--module(gladvent_ffi).
+-module(runners_ffi).
 
 -export([
     function_arity_one/2,
