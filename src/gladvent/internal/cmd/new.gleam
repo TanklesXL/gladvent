@@ -1,8 +1,14 @@
+import envoy
 import filepath
 import gladvent/internal/cmd
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day, pad}
 import gladvent/internal/util
+import gleam/bool
+import gleam/http
+import gleam/http/request
+import gleam/http/response
+import gleam/httpc
 import gleam/int
 import gleam/list
 import gleam/pair
@@ -11,17 +17,25 @@ import gleam/string
 import glint
 import simplifile
 
+const aoc_cookie_name = "AOC_COOKIE"
+
 type Context {
-  Context(year: Int, day: Day, add_parse: Bool, create_example_file: Bool)
+  Context(
+    year: Int,
+    day: Day,
+    add_parse: Bool,
+    create_example_file: Bool,
+    fetch_input: Bool,
+  )
 }
 
-fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
+fn create_src_file(ctx: Context) -> fn() -> Result(Success, Err) {
   fn() {
     let gleam_src_path = gleam_src_path(ctx.year, ctx.day)
 
     use _ <- result.try(
       simplifile.create_file(gleam_src_path)
-      |> result.map_error(handle_file_open_failure(_, gleam_src_path)),
+      |> result.map_error(FailedToCreateFile(gleam_src_path, _)),
     )
 
     let file_data = case ctx.add_parse {
@@ -30,34 +44,63 @@ fn create_src_file(ctx: Context) -> fn() -> Result(String, Err) {
     }
 
     simplifile.write(gleam_src_path, file_data)
-    |> result.map_error(handle_file_open_failure(_, gleam_src_path))
-    |> result.replace(gleam_src_path)
+    |> result.map_error(FailedToWriteToFile(gleam_src_path, _))
+    |> result.replace(File(gleam_src_path))
   }
 }
 
 fn create_input_file(
   ctx: Context,
   kind: input.Kind,
-) -> fn() -> Result(String, Err) {
+) -> fn() -> Result(Success, Err) {
   fn() {
     let input_path = input.get_file_path(ctx.year, ctx.day, kind)
-    simplifile.create_file(input_path)
-    |> result.map_error(handle_file_open_failure(_, input_path))
-    |> result.replace(input_path)
+    use Nil <- result.try(
+      simplifile.create_file(input_path)
+      |> result.map_error(FailedToCreateFile(input_path, _)),
+    )
+    use <- bool.guard(
+      when: kind == input.Example || !ctx.fetch_input,
+      return: Ok(File(input_path)),
+    )
+    use content <- result.try(download_input(ctx))
+    simplifile.write(input_path, content)
+    |> result.map_error(FailedToWriteToFile(input_path, _))
+    |> result.replace(File(input_path))
   }
 }
 
+type Success {
+  Dir(String)
+  File(String)
+}
+
 type Err {
-  FailedToCreateDir(String)
-  FailedToCreateFile(String)
-  FileAlreadyExists(String)
+  CookieNotDefined
+  FailedToCreateDir(String, simplifile.FileError)
+  FailedToCreateFile(String, simplifile.FileError)
+  FailedToWriteToFile(String, simplifile.FileError)
+  HttpError(httpc.HttpError)
+  UnexpectedHttpResponse(response.Response(String))
 }
 
 fn err_to_string(e: Err) -> String {
   case e {
-    FailedToCreateDir(d) -> "failed to create dir: " <> d
-    FailedToCreateFile(f) -> "failed to create file: " <> f
-    FileAlreadyExists(f) -> "file already exists: " <> f
+    CookieNotDefined ->
+      "'" <> aoc_cookie_name <> "' environment variable not defined"
+    FailedToCreateDir(d, e) ->
+      "failed to create dir '" <> d <> "': " <> simplifile.describe_error(e)
+    FailedToCreateFile(f, e) ->
+      "failed to create file '" <> f <> "': " <> simplifile.describe_error(e)
+    FailedToWriteToFile(f, e) ->
+      "failed to write to file '" <> f <> "': " <> simplifile.describe_error(e)
+    HttpError(e) ->
+      "HTTP error while fetching input file: " <> string.inspect(e)
+    UnexpectedHttpResponse(r) ->
+      "unexpected HTTP response ("
+      <> int.to_string(r.status)
+      <> ") while fetching input file: "
+      <> r.body
   }
 }
 
@@ -65,10 +108,11 @@ fn gleam_src_path(year: Int, day: Day) -> String {
   filepath.join(cmd.src_dir(year), "day_" <> pad(day) <> ".gleam")
 }
 
-fn create_dir(dir: String) -> fn() -> Result(String, Err) {
+fn create_dir(dir: String) -> fn() -> Result(Success, Err) {
   fn() {
     simplifile.create_directory_all(dir)
     |> handle_dir_open_res(dir)
+    |> result.map(Dir)
   }
 }
 
@@ -79,20 +123,37 @@ fn handle_dir_open_res(
   case res {
     Ok(_) -> Ok(filename)
     Error(simplifile.Eexist) -> Ok("")
-    _ ->
-      filename
-      |> FailedToCreateDir
-      |> Error
+    Error(e) -> Error(FailedToCreateDir(filename, e))
   }
 }
 
-fn handle_file_open_failure(
-  reason: simplifile.FileError,
-  filename: String,
-) -> Err {
-  case reason {
-    simplifile.Eexist -> FileAlreadyExists(filename)
-    _ -> FailedToCreateFile(filename)
+fn get_cookie_value() -> Result(String, Err) {
+  aoc_cookie_name
+  |> envoy.get()
+  |> result.replace_error(CookieNotDefined)
+}
+
+fn download_input(ctx: Context) -> Result(String, Err) {
+  use cookie <- result.try(get_cookie_value())
+  use resp <- result.try(
+    request.new()
+    |> request.set_host("adventofcode.com")
+    |> request.set_path(
+      "/"
+      <> int.to_string(ctx.year)
+      <> "/day/"
+      <> int.to_string(ctx.day)
+      <> "/input",
+    )
+    |> request.set_scheme(http.Https)
+    |> request.set_cookie("session", cookie)
+    |> request.set_header("user-agent", "github.com/TanklesXL/gladvent")
+    |> httpc.send()
+    |> result.map_error(HttpError),
+  )
+  case resp.status {
+    200 -> Ok(resp.body)
+    _ -> Error(UnexpectedHttpResponse(resp))
   }
 }
 
@@ -128,8 +189,8 @@ fn do(ctx: Context) -> String {
     {
       use acc, f <- list.fold(seq, #("", ""))
       case f() {
-        Ok("") -> acc
-        Ok(o) -> pair.map_first(acc, newline_tab(_, o))
+        Ok(Dir(_)) -> acc
+        Ok(File(o)) -> pair.map_first(acc, newline_tab(_, o))
         Error(err) -> pair.map_second(acc, newline_tab(_, err_to_string(err)))
       }
     }
@@ -173,32 +234,44 @@ fn collect(year: Int, x: #(Day, String)) -> String {
   "initialized " <> year <> " day " <> day <> "\n" <> x.1
 }
 
-pub fn new_command() {
+pub fn new_command() -> glint.Command(List(String), glint.ArgsSet) {
   use <- glint.command_help("Create .gleam and input files")
-  use <- glint.unnamed_args(glint.MinArgs(1))
+  use <- glint.min_args("days", 1, "The days to create files for.")
   use parse_flag <- glint.flag(
-    glint.bool_flag("parse")
-    |> glint.flag_default(False)
-    |> glint.flag_help("Generate day runners with a parse function"),
+    glint.bool("parse")
+    |> glint.default(False)
+    |> glint.param_help("Generate day runners with a parse function"),
   )
   use example_flag <- glint.flag(
-    glint.bool_flag("example")
-    |> glint.flag_default(False)
-    |> glint.flag_help(
+    glint.bool("example")
+    |> glint.default(False)
+    |> glint.param_help(
       "Generate example input files to run your solution against",
     ),
   )
-  use _, args, flags <- glint.command()
-  use days <- result.map(parse.days(args))
-  let days = util.deduplicate_sort(days)
-  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(add_parse) = parse_flag(flags)
-  let assert Ok(create_example_file) = example_flag(flags)
+  use fetch_flag <- glint.flag(
+    glint.bool("fetch")
+    |> glint.default(False)
+    |> glint.param_help("Fetch your own input from the AoC website.
 
-  cmd.exec(
-    days,
-    cmd.Endless,
-    fn(day) { do(Context(year:, day:, add_parse:, create_example_file:)) },
-    collect_async(year, _),
+    Needs to have your AoC cookie stored in the '" <> aoc_cookie_name <> "' environment variable"),
+  )
+  use _, args, flags <- glint.command()
+  use days <- glint.try(parse.days(args))
+  let days = util.deduplicate_sort(days)
+  use year <- glint.with_flag(flags, cmd.year_flag())
+  use add_parse <- parse_flag(flags)
+  use create_example_file <- example_flag(flags)
+  use fetch_input <- fetch_flag(flags)
+
+  glint.Success(
+    cmd.exec(
+      days,
+      cmd.Endless,
+      fn(day) {
+        do(Context(year:, day:, add_parse:, create_example_file:, fetch_input:))
+      },
+      collect_async(year, _),
+    ),
   )
 }

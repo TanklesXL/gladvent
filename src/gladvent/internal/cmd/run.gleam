@@ -1,4 +1,3 @@
-import decode
 import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/input
@@ -8,8 +7,8 @@ import gladvent/internal/util
 import gleam
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/erlang
-import gleam/erlang/atom
 import gleam/erlang/charlist.{type Charlist}
 import gleam/int
 import gleam/list
@@ -19,7 +18,7 @@ import gleam/result
 import gleam/string
 import glint
 import simplifile
-import snag.{type Result, type Snag}
+import snag.{type Snag}
 import spinner
 import tom
 
@@ -43,7 +42,11 @@ type SolveErr {
 }
 
 type SolveResult =
-  gleam.Result(Dynamic, SolveErr)
+  gleam.Result(Solution, SolveErr)
+
+type Solution {
+  Solution(value: Dynamic, execution_time: Int)
+}
 
 fn run_err_to_snag(err: RunErr) -> Snag {
   case err {
@@ -99,12 +102,12 @@ fn do(
     |> result.replace_error(FailedToReadInput(input_path)),
   )
 
-  let parse = option.unwrap(parse, dynamic.from)
+  let parse = option.unwrap(parse, dynamic.string)
 
   case allow_crash {
     True -> {
       let input = parse(input)
-      Ok(#(Ok(pt_1(input)), Ok(pt_2(input))))
+      Ok(#(Ok(solve(pt_1, input)), Ok(solve(pt_2, input))))
     }
     False -> {
       use input <- result.try(
@@ -114,16 +117,21 @@ fn do(
         |> result.map_error(FailedToParseInput),
       )
       let pt_1 =
-        fn() { pt_1(input) }
+        fn() { solve(pt_1, input) }
         |> erlang.rescue
         |> result.map_error(crash_to_solve_err)
       let pt_2 =
-        fn() { pt_2(input) }
+        fn() { solve(pt_2, input) }
         |> erlang.rescue
         |> result.map_error(crash_to_solve_err)
       Ok(#(pt_1, pt_2))
     }
   }
+}
+
+fn solve(solver: fn(a) -> Dynamic, input: a) -> Solution {
+  let #(execution_time, value) = util.timed(fn() { solver(input) })
+  Solution(value, execution_time)
 }
 
 fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
@@ -132,51 +140,17 @@ fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
   }
 }
 
-type GleamErr {
-  GleamErr(
-    gleam_error: atom.Atom,
-    module: String,
-    function: String,
-    line: Int,
-    message: String,
-    value: Option(Dynamic),
-  )
-}
+import gleeunit/internal/gleam_panic
 
 fn decode_gleam_err(dyn: dynamic.Dynamic) {
-  decode.into({
-    use gleam_error <- decode.parameter
-    use module <- decode.parameter
-    use function <- decode.parameter
-    use line <- decode.parameter
-    use message <- decode.parameter
-    use value <- decode.parameter
-    GleamErr(gleam_error, module, function, line, message, value)
-  })
-  |> decode.field(atom.create_from_string("gleam_error"), {
-    use dyn <- decode.then(decode.dynamic)
-    case atom.from_dynamic(dyn) {
-      Ok(a) -> decode.into(a)
-      Error(e) ->
-        decode.fail("failed to decode gleam error: " <> string.inspect(e))
-    }
-  })
-  |> decode.field(atom.create_from_string("module"), decode.string)
-  |> decode.field(atom.create_from_string("function"), decode.string)
-  |> decode.field(atom.create_from_string("line"), decode.int)
-  |> decode.field(atom.create_from_string("message"), decode.string)
-  |> decode.field(
-    atom.create_from_string("value"),
-    decode.optional(decode.dynamic),
-  )
-  |> decode.from(dyn)
+  gleam_panic.from_dynamic(dyn)
 }
 
-fn gleam_err_to_string(g: GleamErr) -> String {
+fn gleam_err_to_string(g: gleam_panic.GleamPanic) -> String {
   string.join(
     [
       "error:",
-      atom.to_string(g.gleam_error),
+      string.inspect(g.kind),
       "-",
       g.message,
       "in module",
@@ -185,9 +159,6 @@ fn gleam_err_to_string(g: GleamErr) -> String {
       g.function,
       "at line",
       int.to_string(g.line),
-      g.value
-        |> option.map(fn(val) { "with value " <> string.inspect(val) })
-        |> option.unwrap(""),
     ],
     " ",
   )
@@ -218,17 +189,20 @@ fn solve_err_to_string(solve_err: SolveErr) -> String {
 fn solve_res_to_string(
   res: SolveResult,
   expectation: option.Option(Expectation),
+  timed: Bool,
 ) -> String {
   result.unwrap_both({
-    use res <- result.map(res |> result.map_error(solve_err_to_string))
+    use solution <- result.map(res |> result.map_error(solve_err_to_string))
     option.lazy_unwrap(
       {
         use expect <- option.map(expectation)
         case expect {
           ExpectInt(expect) -> {
-            case dynamic.int(res) {
+            case decode.run(solution.value, decode.int) {
               Ok(i) if expect == i ->
-                "✅ met expected value: " <> int.to_string(i)
+                "✅ met expected value: "
+                <> int.to_string(i)
+                <> exec_time_suffix(solution, timed)
               Ok(i) ->
                 "❌ unmet expectation: expected "
                 <> int.to_string(expect)
@@ -242,8 +216,11 @@ fn solve_res_to_string(
             }
           }
           ExpectString(expect) -> {
-            case dynamic.string(res) {
-              Ok(s) if expect == s -> "✅ met expected value: " <> s
+            case decode.run(solution.value, decode.string) {
+              Ok(s) if expect == s ->
+                "✅ met expected value: "
+                <> s
+                <> exec_time_suffix(solution, timed)
               Ok(s) ->
                 "❌ unmet expectation: expected " <> expect <> ", got " <> s
               Error(_) ->
@@ -255,9 +232,27 @@ fn solve_res_to_string(
           }
         }
       },
-      or: fn() { string.inspect(res) },
+      or: fn() {
+        string.inspect(solution.value) <> exec_time_suffix(solution, timed)
+      },
     )
   })
+}
+
+fn exec_time_suffix(solution: Solution, timed: Bool) -> String {
+  case timed {
+    True -> " (in " <> format_execution_time(solution.execution_time) <> ")"
+    False -> ""
+  }
+}
+
+fn format_execution_time(execution_time: Int) -> String {
+  let #(divisor, precision, unit) = case execution_time {
+    t if t > 1_000_000 -> #(1_000_000.0, 3, " s")
+    t if t > 1000 -> #(1000.0, 3, " ms")
+    _ -> #(1.0, 0, " µs")
+  }
+  util.format_float(int.to_float(execution_time) /. divisor, precision) <> unit
 }
 
 import gleam/pair
@@ -266,6 +261,7 @@ fn collect_async(
   year: Int,
   x: #(Day, AsyncResult),
   expectations: Option(dict.Dict(String, tom.Toml)),
+  timed: Bool,
 ) -> String {
   let expect = fn(key) {
     use ex <- option.then(expectations)
@@ -276,7 +272,7 @@ fn collect_async(
   x
   |> pair.map_second(result.map_error(_, Other))
   |> pair.map_second(result.flatten)
-  |> collect(year, _, expect("pt_1"), expect("pt_2"))
+  |> collect(year, _, expect("pt_1"), expect("pt_2"), timed)
 }
 
 fn collect(
@@ -284,6 +280,7 @@ fn collect(
   x: #(Day, RunResult),
   expect_pt_1: Option(Expectation),
   expect_pt_2: Option(Expectation),
+  timed: Bool,
 ) -> String {
   let day = int.to_string(x.0)
   case x.1 {
@@ -294,10 +291,10 @@ fn collect(
       <> day
       <> ":\n"
       <> "  Part 1: "
-      <> solve_res_to_string(res_1, expect_pt_1)
+      <> solve_res_to_string(res_1, expect_pt_1, timed)
       <> "\n"
       <> "  Part 2: "
-      <> solve_res_to_string(res_2, expect_pt_2)
+      <> solve_res_to_string(res_2, expect_pt_2, timed)
 
     Error(err) ->
       err
@@ -310,9 +307,9 @@ fn collect(
 // ----- CLI -----
 
 pub fn timeout_flag() {
-  use i <- glint.flag_constraint(
-    glint.int_flag("timeout")
-    |> glint.flag_help("Run with specified timeout"),
+  use i <- glint.constraint(
+    glint.int("timeout")
+    |> glint.param_help("Run with specified timeout"),
   )
 
   case i > 0 {
@@ -322,30 +319,41 @@ pub fn timeout_flag() {
 }
 
 pub fn allow_crash_flag() {
-  glint.bool_flag("allow-crash")
-  |> glint.flag_default(False)
-  |> glint.flag_help("Don't catch exceptions thrown by runners")
+  glint.bool("allow-crash")
+  |> glint.default(False)
+  |> glint.param_help("Don't catch exceptions thrown by runners.")
 }
 
-pub fn run_command() -> glint.Command(Result(List(String))) {
+pub fn timed_flag() {
+  glint.bool("timed")
+  |> glint.default(False)
+  |> glint.param_help(
+    "Display solution execution time.
+
+The time displayed does not include any work done in a 'parse' function.",
+  )
+}
+
+pub fn run_command() -> glint.Command(List(String), glint.ArgsSet) {
   use <- glint.command_help("Run the specified days")
-  use <- glint.unnamed_args(glint.MinArgs(1))
+  use <- glint.min_args("days", 1, "The days to run solutions for.")
   use example_flag <- glint.flag(
-    glint.bool_flag("example")
-    |> glint.flag_default(False)
-    |> glint.flag_help(
+    glint.bool("example")
+    |> glint.default(False)
+    |> glint.param_help(
       "Run solutions against example inputs (found at input/<year>/<day>.example.txt)",
     ),
   )
   use _, args, flags <- glint.command()
-  use days <- result.then(parse.days(args))
+  use days <- glint.try(parse.days(args))
   let days = util.deduplicate_sort(days)
-  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
-  let assert Ok(input_kind) = case example_flag(flags) {
-    Error(a) -> Error(a)
-    Ok(True) -> Ok(input.Example)
-    _ -> Ok(input.Puzzle)
+  use year <- glint.with_flag(flags, cmd.year_flag())
+  use allow_crash <- glint.with_flag(flags, allow_crash_flag())
+  use timed <- glint.with_flag(flags, timed_flag())
+  use input_kind <- example_flag(flags)
+  let input_kind = case input_kind {
+    True -> input.Example
+    False -> input.Puzzle
   }
 
   let spinner =
@@ -359,12 +367,12 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
 
   use <- util.defer(do: fn() { spinner.stop(spinner) })
 
-  let timing =
-    glint.get_flag(flags, timeout_flag())
-    |> result.map(Ending)
-    |> result.unwrap(Endless)
+  let timing = case glint.get_flag(flags, timeout_flag()) {
+    Ok(timeout) -> Ending(timeout)
+    Error(_) -> Endless
+  }
 
-  use gleam_toml <- result.try(read_gleam_toml())
+  use gleam_toml <- glint.try(read_gleam_toml())
 
   let expectations = case input_kind {
     input.Puzzle ->
@@ -374,26 +382,29 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     input.Example -> option.None
   }
 
-  use package <- result.map(
+  use package <- glint.try(
     runners.pkg_interface()
     |> snag.context("failed to generate package interface"),
   )
 
-  days
-  |> cmd.exec(
-    timing,
-    do(year, _, package, allow_crash, input_kind),
-    collect_async(year, _, expectations),
+  glint.Success(
+    days
+    |> cmd.exec(
+      timing,
+      do(year, _, package, allow_crash, input_kind),
+      collect_async(year, _, expectations, timed),
+    ),
   )
 }
 
-pub fn run_all_command() -> glint.Command(Result(List(String))) {
+pub fn run_all_command() -> glint.Command(List(String), glint.ArgsSet) {
   use <- glint.command_help("Run all registered days")
-  use <- glint.unnamed_args(glint.EqArgs(0))
+  use <- glint.no_args()
   use _, _, flags <- glint.command()
 
-  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())
+  use year <- glint.with_flag(flags, cmd.year_flag())
+  use allow_crash <- glint.with_flag(flags, allow_crash_flag())
+  use timed <- glint.with_flag(flags, timed_flag())
 
   let spinner =
     spinner.new("running all days in " <> int.to_string(year))
@@ -401,39 +412,41 @@ pub fn run_all_command() -> glint.Command(Result(List(String))) {
 
   use <- util.defer(do: fn() { spinner.stop(spinner) })
 
-  let timing =
-    glint.get_flag(flags, timeout_flag())
-    |> result.map(Ending)
-    |> result.unwrap(Endless)
+  let timing = case glint.get_flag(flags, timeout_flag()) {
+    Ok(timeout) -> Ending(timeout)
+    Error(_) -> Endless
+  }
 
-  use gleam_toml <- result.try(read_gleam_toml())
+  use gleam_toml <- glint.try(read_gleam_toml())
 
   let expectations =
     option.from_result(
       tom.get_table(gleam_toml, ["gladvent", int.to_string(year)]),
     )
 
-  use package <- result.map(
+  use package <- glint.try(
     runners.pkg_interface()
     |> snag.context("failed to generate package interface"),
   )
 
-  package.modules
-  |> dict.keys
-  |> list.filter_map(fn(k) {
-    use day <- result.try(string.split_once(
-      k,
-      "aoc_" <> int.to_string(year) <> "/day_",
-    ))
-    day.1
-    |> parse.day
-    |> result.replace_error(Nil)
-  })
-  |> list.sort(int.compare)
-  |> cmd.exec(
-    timing,
-    do(year, _, package, allow_crash, input.Puzzle),
-    collect_async(year, _, expectations),
+  glint.Success(
+    package.modules
+    |> dict.keys
+    |> list.filter_map(fn(k) {
+      use day <- result.try(string.split_once(
+        k,
+        "aoc_" <> int.to_string(year) <> "/day_",
+      ))
+      day.1
+      |> parse.day
+      |> result.replace_error(Nil)
+    })
+    |> list.sort(int.compare)
+    |> cmd.exec(
+      timing,
+      do(year, _, package, allow_crash, input.Puzzle),
+      collect_async(year, _, expectations, timed),
+    ),
   )
 }
 
