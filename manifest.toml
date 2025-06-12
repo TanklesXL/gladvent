@@ -24,7 +24,7 @@ packages = [
   { name = "glearray", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glearray", source = "hex", outer_checksum = "5E272F7CB278CC05A929C58DEB58F5D5AC6DB5B879A681E71138658D0061C38A" },
   { name = "gleeunit", version = "1.5.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "D33B7736CF0766ED3065F64A1EBB351E72B2E8DE39BAFC8ADA0E35E92A6A934F" },
   { name = "glexer", version = "2.2.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glexer", source = "hex", outer_checksum = "5C235CBDF4DA5203AD5EAB1D6D8B456ED8162C5424FE2309CFFB7EF438B7C269" },
-  { name = "glint", version = "1.2.1", build_tools = ["gleam"], requirements = ["gleam_community_ansi", "gleam_community_colour", "gleam_deque", "gleam_stdlib", "lenient_parse", "snag"], source = "local", path = "../glint" },
+  { name = "glint", version = "1.2.1", build_tools = ["gleam"], requirements = ["gleam_community_ansi", "gleam_community_colour", "gleam_deque", "gleam_stdlib", "lenient_parse", "snag"], source = "git", repo = "https://github.com/tanklesxl/glint.git", commit = "33829b9aaf2db6a9f53b16c4d108f81af7adb32f" },
   { name = "lenient_parse", version = "3.0.0", build_tools = ["gleam"], requirements = ["bigi", "gleam_deque", "gleam_stdlib"], otp_app = "lenient_parse", source = "hex", outer_checksum = "E6C654A75E6EB17B559418C5216583D0B9E7D82018E0608A7FF1AFF328D9F474" },
   { name = "parallel_map", version = "3.0.1", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib", "gleam_yielder"], otp_app = "parallel_map", source = "hex", outer_checksum = "E5A38C9294831F67DF8EAC17870FEA97FF0D8F891049E0CA634B30A1AFE37A8F" },
   { name = "repeatedly", version = "2.1.2", build_tools = ["gleam"], requirements = [], otp_app = "repeatedly", source = "hex", outer_checksum = "93AE1938DDE0DC0F7034F32C1BF0D4E89ACEBA82198A1FE21F604E849DA5F589" },
@@ -48,7 +48,7 @@ gleam_otp = { version = ">= 0.16.1 and < 1.0.0" }
 gleam_package_interface = { version = ">= 3.0.1 and < 4.0.0" }
 gleam_stdlib = { version = ">= 0.60.0 and < 1.0.0" }
 gleeunit = { version = ">= 1.2.0 and < 2.0.0" }
-glint = { path = "../glint" }
+glint = { git = "https://github.com/tanklesxl/glint.git", ref = "next" }
 parallel_map = { version = ">= 3.0.1 and < 4.0.0" }
 shellout = { version = ">= 1.7.0 and < 2.0.0" }
 simplifile = { version = ">= 2.2.1 and < 3.0.0" }

@@ -7,7 +7,7 @@ internal_modules = ["gladvent/internal/*"]
 gleam = ">=1.11.0 and < 2.0.0"
 
 [dependencies]
-glint = {path="../glint"}
+glint = { git = "https://github.com/tanklesxl/glint.git", ref = "next" }
 envoy = ">= 1.0.2 and < 2.0.0"
 simplifile = ">= 2.2.1 and < 3.0.0"
 gleam_json = ">= 3.0.1 and < 4.0.0"

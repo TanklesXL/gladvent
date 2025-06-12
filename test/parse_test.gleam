@@ -18,9 +18,9 @@ pub fn day_error_test() {
 }
 
 pub fn pad_test() {
-  pad(1) |> should.equal("01")
+  assert pad(1) == "01"
 }
 
 pub fn padded_day_to_int_test() {
-  "01" |> int.parse() |> should.be_ok() |> should.equal(1)
+  assert "01" |> int.parse() == Ok(1)
 }
