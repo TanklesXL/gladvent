@@ -4,27 +4,28 @@ repository = { type = "github", user = "TanklesXL", repo = "gladvent" }
 description = "An Advent Of Code runner for gleam"
 licences = ["Apache-2.0"]
 internal_modules = ["gladvent/internal/*"]
-gleam = ">=1.9.0 and < 2.0.0"
+gleam = ">=1.11.0 and < 2.0.0"
 
 [dependencies]
-glint = ">=1.0.0 and < 2.0.0"
-simplifile = "~> 2.0"
-argv = "~> 1.0"
-shellout = "~> 1.6"
-gleam_package_interface = "~> 1.0"
-spinner = "~> 1.1"
-gleam_stdlib = "~> 0.39 or ~> 1.0"
-gleam_otp = "~> 0.4 or ~> 1.0"
-gleam_erlang = "~> 0.7 or ~> 1.0"
-snag = "~> 1.0"
-parallel_map = ">= 3.0.0 and < 4.0.0"
-filepath = ">= 1.0.0 and < 2.0.0"
-tom = ">= 1.0.0 and < 2.0.0"
-decode = ">= 0.2.0 and < 1.0.0"
-gleam_json = ">= 1.0.0 and < 3.0.0"
-gleam_httpc = ">= 4.0.0 and < 5.0.0"
-gleam_http = ">= 3.7.1 and < 4.0.0"
+glint = {path="../glint"}
 envoy = ">= 1.0.2 and < 2.0.0"
+simplifile = ">= 2.2.1 and < 3.0.0"
+gleam_json = ">= 3.0.1 and < 4.0.0"
+parallel_map = ">= 3.0.1 and < 4.0.0"
+gleam_stdlib = ">= 0.60.0 and < 1.0.0"
+gleam_otp = ">= 0.16.1 and < 1.0.0"
+gleam_erlang = ">= 0.34.0 and < 1.0.0"
+gleam_http = ">= 4.0.0 and < 5.0.0"
+gleam_httpc = ">= 4.1.1 and < 5.0.0"
+filepath = ">= 1.1.2 and < 2.0.0"
+gleam_package_interface = ">= 3.0.1 and < 4.0.0"
+shellout = ">= 1.7.0 and < 2.0.0"
+spinner = ">= 1.3.1 and < 2.0.0"
+tom = ">= 2.0.0 and < 3.0.0"
+argv = ">= 1.0.2 and < 2.0.0"
+snag = ">= 1.1.0 and < 2.0.0"
+asset = ">= 1.2.0 and < 2.0.0"
+
 
 [dev-dependencies]
 gleeunit = ">= 1.2.0 and < 2.0.0"

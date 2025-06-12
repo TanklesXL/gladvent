@@ -86,7 +86,7 @@ pub fn pkg_interface() -> Result(package_interface.Package) {
 
   spinner.set_text(spinner, "decoding package interface JSON")
   use pkg_interface_details <- result.try(
-    json.decode(from: pkg_interface_contents, using: package_interface.decoder)
+    json.parse(from: pkg_interface_contents, using: package_interface.decoder())
     |> result.map_error(FailedToDecodePackageInterface),
   )
 

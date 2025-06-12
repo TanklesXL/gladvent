@@ -82,9 +82,9 @@ fn current_year() -> Int {
 }
 
 pub fn year_flag() {
-  use year <- glint.flag_constraint(
-    glint.int_flag("year")
-    |> glint.flag_default(current_year()),
+  use year <- glint.constraint(
+    glint.int("year")
+    |> glint.default(current_year()),
   )
   case year < 2015 {
     True ->

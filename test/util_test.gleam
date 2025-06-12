@@ -1,6 +1,5 @@
 import gladvent/internal/util
 import gleam/list
-import gleeunit/should
 
 pub fn format_float_test() {
   use #(float, precision, expected) <- list.each([
@@ -12,6 +11,5 @@ pub fn format_float_test() {
     #(0.0, 0, "0"),
   ])
 
-  util.format_float(float, precision)
-  |> should.equal(expected)
+  assert util.format_float(float, precision) == expected
 }

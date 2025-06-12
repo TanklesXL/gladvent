@@ -234,42 +234,44 @@ fn collect(year: Int, x: #(Day, String)) -> String {
   "initialized " <> year <> " day " <> day <> "\n" <> x.1
 }
 
-pub fn new_command() {
+pub fn new_command() -> glint.Command(List(String), glint.ArgsSet) {
   use <- glint.command_help("Create .gleam and input files")
-  use <- glint.unnamed_args(glint.MinArgs(1))
+  use <- glint.min_args("days", 1, "The days to create files for.")
   use parse_flag <- glint.flag(
-    glint.bool_flag("parse")
-    |> glint.flag_default(False)
-    |> glint.flag_help("Generate day runners with a parse function"),
+    glint.bool("parse")
+    |> glint.default(False)
+    |> glint.param_help("Generate day runners with a parse function"),
   )
   use example_flag <- glint.flag(
-    glint.bool_flag("example")
-    |> glint.flag_default(False)
-    |> glint.flag_help(
+    glint.bool("example")
+    |> glint.default(False)
+    |> glint.param_help(
       "Generate example input files to run your solution against",
     ),
   )
   use fetch_flag <- glint.flag(
-    glint.bool_flag("fetch")
-    |> glint.flag_default(False)
-    |> glint.flag_help("Fetch your own input from the AoC website.
+    glint.bool("fetch")
+    |> glint.default(False)
+    |> glint.param_help("Fetch your own input from the AoC website.
 
     Needs to have your AoC cookie stored in the '" <> aoc_cookie_name <> "' environment variable"),
   )
   use _, args, flags <- glint.command()
-  use days <- result.map(parse.days(args))
+  use days <- glint.try(parse.days(args))
   let days = util.deduplicate_sort(days)
-  let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
-  let assert Ok(add_parse) = parse_flag(flags)
-  let assert Ok(create_example_file) = example_flag(flags)
-  let assert Ok(fetch_input) = fetch_flag(flags)
+  use year <- glint.with_flag(flags, cmd.year_flag())
+  use add_parse <- parse_flag(flags)
+  use create_example_file <- example_flag(flags)
+  use fetch_input <- fetch_flag(flags)
 
-  cmd.exec(
-    days,
-    cmd.Endless,
-    fn(day) {
-      do(Context(year:, day:, add_parse:, create_example_file:, fetch_input:))
-    },
-    collect_async(year, _),
+  glint.Success(
+    cmd.exec(
+      days,
+      cmd.Endless,
+      fn(day) {
+        do(Context(year:, day:, add_parse:, create_example_file:, fetch_input:))
+      },
+      collect_async(year, _),
+    ),
   )
 }
