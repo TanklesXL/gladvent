@@ -1,4 +1,3 @@
-import decode
 import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/input
@@ -8,7 +7,7 @@ import gladvent/internal/util
 import gleam
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/erlang
+import gleam/dynamic/decode
 import gleam/erlang/atom
 import gleam/erlang/charlist.{type Charlist}
 import gleam/int
@@ -74,6 +73,20 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
 @external(erlang, "string", "trim")
 fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
+@external(erlang, "runners_ffi", "rescue")
+fn rescue(a: fn() -> a) -> gleam.Result(a, Crash)
+
+type Crash {
+  Exited(Dynamic)
+  Thrown(Dynamic)
+  Errored(Dynamic)
+}
+
+/// Converts any Gleam data into `Dynamic` data.
+///
+@external(erlang, "runners_ffi", "identity")
+fn dynamic_from(a: anything) -> Dynamic
+
 fn do(
   year: Int,
   day: Day,
@@ -94,7 +107,7 @@ fn do(
     |> result.replace_error(FailedToReadInput(input_path)),
   )
 
-  let parse = option.unwrap(parse, dynamic.from)
+  let parse = option.unwrap(parse, dynamic_from)
 
   case allow_crash {
     True -> {
@@ -104,17 +117,17 @@ fn do(
     False -> {
       use input <- result.try(
         fn() { parse(input) }
-        |> erlang.rescue
+        |> rescue
         |> result.map_error(crash_to_string)
         |> result.map_error(FailedToParseInput),
       )
       let pt_1 =
         fn() { solve(pt_1, input) }
-        |> erlang.rescue
+        |> rescue
         |> result.map_error(crash_to_solve_err)
       let pt_2 =
         fn() { solve(pt_2, input) }
-        |> erlang.rescue
+        |> rescue
         |> result.map_error(crash_to_solve_err)
       Ok(#(pt_1, pt_2))
     }
@@ -126,9 +139,9 @@ fn solve(solver: fn(a) -> Dynamic, input: a) -> Solution {
   Solution(value, execution_time)
 }
 
-fn crash_to_dyn(err: erlang.Crash) -> dynamic.Dynamic {
+fn crash_to_dyn(err: Crash) -> dynamic.Dynamic {
   case err {
-    erlang.Errored(dyn) | erlang.Exited(dyn) | erlang.Thrown(dyn) -> dyn
+    Errored(dyn) | Exited(dyn) | Thrown(dyn) -> dyn
   }
 }
 
@@ -139,37 +152,19 @@ type GleamErr {
     function: String,
     line: Int,
     message: String,
-    value: Option(Dynamic),
   )
 }
 
 fn decode_gleam_err(dyn: dynamic.Dynamic) {
-  decode.into({
-    use gleam_error <- decode.parameter
-    use module <- decode.parameter
-    use function <- decode.parameter
-    use line <- decode.parameter
-    use message <- decode.parameter
-    use value <- decode.parameter
-    GleamErr(gleam_error, module, function, line, message, value)
+  decode.run(dyn, {
+    use gleam_error <- decode.field(atom.create("gleam_error"), atom.decoder())
+    use module <- decode.field(atom.create("module"), decode.string)
+    use function <- decode.field(atom.create("function"), decode.string)
+    use line <- decode.field(atom.create("line"), decode.int)
+    use message <- decode.field(atom.create("message"), decode.string)
+
+    decode.success(GleamErr(gleam_error, module, function, line, message))
   })
-  |> decode.field(atom.create_from_string("gleam_error"), {
-    use dyn <- decode.then(decode.dynamic)
-    case atom.from_dynamic(dyn) {
-      Ok(a) -> decode.into(a)
-      Error(e) ->
-        decode.fail("failed to decode gleam error: " <> string.inspect(e))
-    }
-  })
-  |> decode.field(atom.create_from_string("module"), decode.string)
-  |> decode.field(atom.create_from_string("function"), decode.string)
-  |> decode.field(atom.create_from_string("line"), decode.int)
-  |> decode.field(atom.create_from_string("message"), decode.string)
-  |> decode.field(
-    atom.create_from_string("value"),
-    decode.optional(decode.dynamic),
-  )
-  |> decode.from(dyn)
 }
 
 fn gleam_err_to_string(g: GleamErr) -> String {
@@ -185,15 +180,12 @@ fn gleam_err_to_string(g: GleamErr) -> String {
       g.function,
       "at line",
       int.to_string(g.line),
-      g.value
-        |> option.map(fn(val) { "with value " <> string.inspect(val) })
-        |> option.unwrap(""),
     ],
     " ",
   )
 }
 
-fn crash_to_string(err: erlang.Crash) -> String {
+fn crash_to_string(err: Crash) -> String {
   crash_to_dyn(err)
   |> decode_gleam_err()
   |> result.map(gleam_err_to_string)
@@ -202,7 +194,7 @@ fn crash_to_string(err: erlang.Crash) -> String {
   })
 }
 
-fn crash_to_solve_err(err: erlang.Crash) -> SolveErr {
+fn crash_to_solve_err(err: Crash) -> SolveErr {
   err
   |> crash_to_string
   |> RunFailed
@@ -227,7 +219,7 @@ fn solve_res_to_string(
         use expect <- option.map(expectation)
         case expect {
           ExpectInt(expect) -> {
-            case dynamic.int(solution.value) {
+            case decode.run(solution.value, decode.int) {
               Ok(i) if expect == i ->
                 "✅ met expected value: "
                 <> int.to_string(i)
@@ -245,7 +237,7 @@ fn solve_res_to_string(
             }
           }
           ExpectString(expect) -> {
-            case dynamic.string(solution.value) {
+            case decode.run(solution.value, decode.string) {
               Ok(s) if expect == s ->
                 "✅ met expected value: "
                 <> s
@@ -374,7 +366,7 @@ pub fn run_command() -> glint.Command(Result(List(String))) {
     ),
   )
   use _, args, flags <- glint.command()
-  use days <- result.then(parse.days(args))
+  use days <- result.try(parse.days(args))
   let days = util.deduplicate_sort(days)
   let assert Ok(year) = glint.get_flag(flags, cmd.year_flag())
   let assert Ok(allow_crash) = glint.get_flag(flags, allow_crash_flag())

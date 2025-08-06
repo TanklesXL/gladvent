@@ -2,8 +2,6 @@ import filepath
 import gladvent/internal/parse.{type Day}
 import gleam/int
 import gleam/list
-import gleam/otp/task
-import gleam/pair
 import gleam/result
 import glint
 import parallel_map
@@ -49,27 +47,13 @@ pub fn exec(
   collect: fn(#(Day, Result(a, String))) -> c,
 ) -> List(c) {
   case timing {
-    Endless ->
-      days
-      // spawn all tasks
-      |> list.map(fn(day) { #(day, task.async(fn() { do(day) })) })
-      // start collecting tasks
-      |> fn(tasks) {
-        use tup <- list.map(tasks)
-        use t <- pair.map_second(tup)
-        Ok(task.await_forever(t))
-      }
-    Ending(timeout) -> {
-      parallel_map.list_pmap(
-        days,
-        do,
-        parallel_map.MatchSchedulersOnline,
-        timeout,
-      )
-      |> list.map(result.replace_error(_, "failed to execute task"))
-      |> list.zip(days, _)
-    }
+    // 24 hours
+    Endless -> 86_400
+    Ending(timeout) -> timeout
   }
+  |> parallel_map.list_pmap(days, do, parallel_map.MatchSchedulersOnline, _)
+  |> list.map(result.replace_error(_, "failed to execute task"))
+  |> list.zip(days, _)
   |> list.map(collect)
 }
 

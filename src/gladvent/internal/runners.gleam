@@ -86,7 +86,7 @@ pub fn pkg_interface() -> Result(package_interface.Package) {
 
   spinner.set_text(spinner, "decoding package interface JSON")
   use pkg_interface_details <- result.try(
-    json.decode(from: pkg_interface_contents, using: package_interface.decoder)
+    json.parse(from: pkg_interface_contents, using: package_interface.decoder())
     |> result.map_error(FailedToDecodePackageInterface),
   )
 
@@ -205,8 +205,8 @@ fn retrieve_runner(
   )
 
   Ok(function_arity_one(
-    atom.create_from_string(to_erlang_module_name(module_name)),
-    atom.create_from_string(function_name),
+    atom.create(to_erlang_module_name(module_name)),
+    atom.create(function_name),
   ))
 }
 
@@ -221,7 +221,7 @@ fn function_arity_one(
 ) -> fn(Dynamic) -> Dynamic
 
 fn parse_function(module: String) -> fn(String) -> Dynamic {
-  do_parse_function(atom.create_from_string(to_erlang_module_name(module)))
+  do_parse_function(atom.create(to_erlang_module_name(module)))
 }
 
 @external(erlang, "runners_ffi", "parse_function")
