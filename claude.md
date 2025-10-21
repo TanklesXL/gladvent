@@ -92,11 +92,10 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
 **Purpose:** Upgrade projects from old non-padded file structure to new zero-padded structure.
 
 **TDD Progress:**
-- ✅ RED: First test written in `test/update_test.gleam`
-  - Test: `update_path("input/2024/1.txt")` should return `Some("input/2024/01.txt")`
-  - Test currently failing (module doesn't exist yet)
-- ⏳ GREEN: Need to implement `update_path()` function
-- ⏳ REFACTOR: Pending
+- ✅ RED: Tests written in `test/update_test.gleam`
+- ✅ GREEN: `update_path()` function implemented and passing
+- ✅ REFACTOR: Extracted helper functions, flattened with `use` syntax
+- ✅ Comprehensive test coverage with 37 test cases including edge cases
 
 **Design Decisions:**
 - **Function name:** `update_path` (not `upgrade_path`) - chosen for consistency with command name
@@ -109,10 +108,16 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
   - Start with pure business logic (path transformation) before testing glint integration
   - Follows existing pattern in codebase (`test/parse_test.gleam` contains only unit tests)
   - Easier to test, faster feedback loop, more focused tests
-- **File operation safety:** Copy files, don't move them
-  - Non-destructive approach reduces risk of data loss
-  - Users can verify new files work before manually deleting originals
-  - Better user experience for a migration tool
+- **File operation strategy:** Rename files (move, not copy)
+  - Clean migration - no duplicate files left behind
+  - Users don't need to manually clean up old files
+  - Simpler mental model - "this is the new way"
+  - Safe by default with dry-run mode
+- **Safety mechanism:** Dry-run by default
+  - `gleam run update` - Shows what would be renamed (dry-run, safe)
+  - `gleam run update --apply` - Actually performs the rename operation
+  - Users can preview changes before committing
+  - Reduces risk of accidental file operations
 - **Conflict resolution:** Skip files where both old and new versions exist
   - Don't error (too disruptive)
   - Don't overwrite (could lose data)
@@ -143,11 +148,11 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
    - Pros: Flexible, user has control
    - Cons: Slightly more complex implementation
 
-**Safety:** Non-destructive (copy, don't move)
-- Creates new zero-padded files
-- Keeps original non-padded files as backup
-- Users can manually delete old files once they verify everything works
-- Reduces risk of data loss
+**Safety:** Dry-run by default with explicit apply flag
+- Default: `gleam run update` shows what would be renamed (no changes)
+- Apply: `gleam run update --apply` performs actual rename operations
+- Users preview changes before applying
+- Clear separation between preview and action
 
 **Conflict Handling:** Skip existing files
 - If both `1.txt` and `01.txt` exist, skip that file
@@ -160,19 +165,91 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
 - Source files: `day_[1-9].gleam` only (days 1-9 need padding)
 
 **Output/Reporting:**
-- Show what was upgraded (success messages)
-- Show what was skipped (conflict messages)
-- Show summary: X files upgraded, Y files skipped
+- **Dry-run mode (default):**
+  - List files that will be renamed with old → new path
+  - Show conflicts (files that would be skipped)
+  - Summary: X files to rename, Y conflicts
+  - Instruction: "Run with --apply to perform the rename operation"
+- **Apply mode (--apply flag):**
+  - Show what was renamed (success messages)
+  - Show what was skipped (conflict messages)
+  - Summary: X files renamed, Y files skipped
 
 **Implementation Location:**
 - New file: `src/gladvent/internal/cmd/update.gleam` (following existing pattern)
 - Register command in main glint command tree
 
 **Required Helper Functions:**
-- Detect legacy input files for a given year
-- Detect legacy source files for a given year
-- Copy file from old path to new path
-- Generate upgrade report/summary
+- ✅ `update_path(path: String) -> Option(String)` - Transform path if legacy
+- ✅ `find_legacy_files(paths: List(String)) -> List(#(String, String))` - Filter to legacy only
+- ✅ `format_dry_run_report(legacy_files: List(#(String, String))) -> String` - Format dry-run output
+- ⏳ `scan_project_files()` - Scan directories to find all relevant files
+- ⏳ Detect file conflicts (both old and new exist)
+- ⏳ Rename file from old path to new path
+- ⏳ Generate apply report/summary
+
+**Directory Scanning Implementation Plan:**
+
+*Design Decisions:*
+- **Error handling:** Return Error if `src/` missing (required), return `Ok([])` if `input/` missing (optional)
+- **Recursion depth:** One level only - scan `input/<year>/*.txt` and `src/aoc_<year>/*.gleam`
+- **Filtering strategy:** Filter for `.txt`, `.example.txt`, `.gleam` while scanning
+- **Hidden files:** Skip anything starting with `.` (like `.git`, `.DS_Store`)
+
+*Pseudocode:*
+```gleam
+// Main entry point
+pub fn scan_project_files() -> Result(List(String), simplifile.FileError) {
+  // 1. Scan input files (returns Ok([]) if input/ doesn't exist)
+  // 2. Scan src files (returns Error if src/ doesn't exist)
+  // 3. Combine both lists
+  // 4. Return combined list
+}
+
+// Scan input directory
+fn scan_input_files() -> Result(List(String), Nil) {
+  // 1. Check if input/ exists, if not return Ok([])
+  // 2. Read directory to get year folders
+  // 3. Filter out hidden directories (starting with .)
+  // 4. For each year folder:
+  //    a. Read files in input/<year>/
+  //    b. Filter to only .txt and .example.txt files
+  //    c. Filter out hidden files
+  //    d. Prepend "input/<year>/" to each filename
+  // 5. Flatten all year lists into one list
+  // 6. Return Ok(list)
+}
+
+// Scan src directory
+fn scan_src_files() -> Result(List(String), simplifile.FileError) {
+  // 1. Read src/ directory (error if doesn't exist)
+  // 2. Filter to only directories starting with "aoc_"
+  // 3. Filter out hidden directories
+  // 4. For each aoc_<year> folder:
+  //    a. Read files in src/aoc_<year>/
+  //    b. Filter to only .gleam files
+  //    c. Filter out hidden files
+  //    d. Prepend "src/aoc_<year>/" to each filename
+  // 5. Flatten all lists into one list
+  // 6. Return Ok(list)
+}
+
+// Helper: Check if file should be included
+fn should_include_file(filename: String, extensions: List(String)) -> Bool {
+  // 1. Check if starts with "." (hidden) - exclude
+  // 2. Check if ends with any of the allowed extensions
+  // 3. Return true if matches extension and not hidden
+}
+```
+
+*TODO Checklist:*
+- ✅ Design decisions finalized
+- ⏳ Write test for `scan_project_files()` with fixture directory structure
+- ⏳ Implement `should_include_file()` helper with tests
+- ⏳ Implement `scan_input_files()` with tests
+- ⏳ Implement `scan_src_files()` with tests
+- ⏳ Implement `scan_project_files()` main function
+- ⏳ Integration test: Full workflow (scan → find_legacy_files → format_dry_run_report)
 
 #### 3. Documentation Updates (REQUIRED)
 
