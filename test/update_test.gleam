@@ -1,5 +1,5 @@
 import gladvent/internal/cmd/update.{
-  find_legacy_files, format_dry_run_report, update_path,
+  find_legacy_files, format_dry_run_report, should_include_file, update_path,
 }
 
 import gleam/list
@@ -128,4 +128,39 @@ pub fn format_dry_run_report_empty_test() {
 
   format_dry_run_report(legacy_files)
   |> should.equal(expected)
+}
+
+pub fn should_include_file_txt_test() {
+  should_include_file("1.txt", [".txt", ".gleam"])
+  |> should.be_true
+}
+
+pub fn should_include_file_example_txt_test() {
+  should_include_file("5.example.txt", [".txt", ".gleam"])
+  |> should.be_true
+}
+
+pub fn should_include_file_gleam_test() {
+  should_include_file("day_3.gleam", [".txt", ".gleam"])
+  |> should.be_true
+}
+
+pub fn should_include_file_wrong_extension_test() {
+  should_include_file("readme.md", [".txt", ".gleam"])
+  |> should.be_false
+}
+
+pub fn should_include_file_hidden_test() {
+  should_include_file(".gitignore", [".txt", ".gleam"])
+  |> should.be_false
+}
+
+pub fn should_include_file_hidden_txt_test() {
+  should_include_file(".hidden.txt", [".txt", ".gleam"])
+  |> should.be_false
+}
+
+pub fn should_include_file_no_extension_test() {
+  should_include_file("LICENSE", [".txt", ".gleam"])
+  |> should.be_false
 }

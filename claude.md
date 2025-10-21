@@ -244,12 +244,11 @@ fn should_include_file(filename: String, extensions: List(String)) -> Bool {
 
 *TODO Checklist:*
 - ✅ Design decisions finalized
-- ⏳ Write test for `scan_project_files()` with fixture directory structure
-- ⏳ Implement `should_include_file()` helper with tests
-- ⏳ Implement `scan_input_files()` with tests
-- ⏳ Implement `scan_src_files()` with tests
-- ⏳ Implement `scan_project_files()` main function
-- ⏳ Integration test: Full workflow (scan → find_legacy_files → format_dry_run_report)
+- ✅ Implement `should_include_file()` helper with tests (7 tests passing)
+- ⏳ Implement `scan_input_files()` - Scan input/<year>/ directories
+- ⏳ Implement `scan_src_files()` - Scan src/aoc_<year>/ directories
+- ⏳ Implement `scan_project_files()` - Main function combining both
+- ⏳ Integration test: Full workflow with temp directory structure
 
 #### 3. Documentation Updates (REQUIRED)
 
@@ -269,7 +268,9 @@ fn should_include_file(filename: String, extensions: List(String)) -> Bool {
 - `src/gladvent/internal/cmd/new.gleam` - Use `pad()` in file generation
 - `src/gladvent/internal/input.gleam` - Added `get_legacy_file_path()`, use `pad()` in new paths
 - `src/gladvent/internal/cmd/run.gleam` - Added `handle_file_path()` for backward compatibility
+- `src/gladvent/internal/cmd/update.gleam` - NEW FILE - Migration command logic
 - `test/parse_test.gleam` - Added padding tests
+- `test/update_test.gleam` - NEW FILE - Update command tests (20 tests, all passing)
 
 ## PR Checklist
 
@@ -329,18 +330,73 @@ Fixes #18
 - Need to maintain discipline on pair programming approach
 
 **Next Actions:**
-1. Implement `update_path()` to make test green
-2. Add more test cases (days 10+, example files, source files)
-3. Continue TDD cycle for remaining functionality
+1. ✅ Implement `update_path()` to make test green
+2. ✅ Add more test cases (days 10+, example files, source files)
+3. ✅ Continue TDD cycle for remaining functionality
+
+### Session 2: Building the Update Command
+
+**Date:** Current session
+
+**What We Accomplished:**
+1. ✅ Completed `update_path()` - Pure path transformation logic
+   - Implemented with pattern matching for input/src paths
+   - Comprehensive test coverage (37 test cases including edge cases)
+   - Refactored with helper functions and `use` syntax for clean code
+2. ✅ Built `find_legacy_files()` - Filter legacy from all paths
+   - Used `fold` pattern to collect legacy files
+   - Returns `List(#(old_path, new_path))` tuples
+   - Tested with mixed legacy/modern paths
+3. ✅ Created `format_dry_run_report()` - Formatted output for users
+   - Handles empty list (no files to update)
+   - Shows file count and instructions for --apply flag
+   - Tested both cases
+4. ✅ Implemented `should_include_file()` - File filtering helper
+   - Checks file extensions (.txt, .example.txt, .gleam)
+   - Filters hidden files (starting with .)
+   - 7 tests covering all edge cases
+5. ✅ Design decisions for directory scanning
+   - Error if src/ missing, Ok([]) if input/ missing
+   - One level recursion only
+   - Filter while scanning
+   - Skip hidden files/directories
+
+**Key Design Decisions:**
+- **Rename vs Copy:** Chose rename (clean migration, safe with dry-run)
+- **Dry-run by default:** `gleam run update` previews, `--apply` executes
+- **Option(String) return type:** Makes legacy detection explicit
+- **Separate concerns:** update_path (transform) → find_legacy_files (filter) → format (present)
+
+**Refactoring Wins:**
+- Extracted helper functions for cleaner main logic
+- Used `use` syntax to flatten nested case statements
+- Filter+map patterns for list operations
+- Pure functions make testing easy
+
+**Current State:**
+- 20 tests, all passing ✅
+- Core logic complete for path transformation and reporting
+- Ready to implement filesystem scanning
+
+**What's Next:**
+1. Implement `scan_input_files()` - Scan input/<year>/ directories
+2. Implement `scan_src_files()` - Scan src/aoc_<year>/ directories
+3. Implement `scan_project_files()` - Combine both scans
+4. Integration test with temp directory structure
+5. File rename operations with conflict detection
+6. Warning system in handle_file_path()
+7. Glint CLI integration
+8. Documentation updates
 
 ## Next Steps
-1. Complete `update_path()` implementation (GREEN phase)
-2. Add additional test cases and refactor
-3. Build out file detection and copying logic
-4. Implement warning system
-5. Update README.md documentation (lines 42, 45, 46)
-6. Run tests: `gleam test`
-7. Format code: `gleam format`
-8. Build: `gleam build`
-9. Create PR against main branch
-10. Link to issue #18 in PR description
+1. ⏳ Complete directory scanning (scan_input_files, scan_src_files, scan_project_files)
+2. ⏳ Integration test with temp filesystem
+3. ⏳ Implement file rename operations
+4. ⏳ Add warning system to run.gleam
+5. ⏳ Glint CLI integration for update command
+6. ⏳ Update README.md documentation (lines 42, 45, 46, new section for update command)
+7. Run tests: `gleam test` ✅ (20 passing)
+8. Format code: `gleam format`
+9. Build: `gleam build`
+10. Create PR against main branch
+11. Link to issue #18 in PR description

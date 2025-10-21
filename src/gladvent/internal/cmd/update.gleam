@@ -68,3 +68,8 @@ pub fn format_dry_run_report(paths: List(#(String, String))) -> String {
     }
   }
 }
+
+pub fn should_include_file(file: String, exts: List(String)) -> Bool {
+  !string.starts_with(file, ".")
+  && list.any(exts, fn(ext) { string.ends_with(file, ext) })
+}
