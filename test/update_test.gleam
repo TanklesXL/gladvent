@@ -1,5 +1,6 @@
 import gladvent/internal/cmd/update.{
-  find_legacy_files, format_dry_run_report, should_include_file, update_path,
+  find_legacy_files, format_dry_run_report, scan_input_files, should_include_file,
+  should_include_path, update_path,
 }
 
 import gleam/list
@@ -130,37 +131,153 @@ pub fn format_dry_run_report_empty_test() {
   |> should.equal(expected)
 }
 
-pub fn should_include_file_txt_test() {
-  should_include_file("1.txt", [".txt", ".gleam"])
+// should_include_file tests - rewriting with pattern matching approach
+pub fn should_include_file_valid_txt_test() {
+  should_include_file("1.txt")
   |> should.be_true
 }
 
-pub fn should_include_file_example_txt_test() {
-  should_include_file("5.example.txt", [".txt", ".gleam"])
+pub fn should_include_file_valid_padded_txt_test() {
+  should_include_file("01.txt")
   |> should.be_true
 }
 
-pub fn should_include_file_gleam_test() {
-  should_include_file("day_3.gleam", [".txt", ".gleam"])
+pub fn should_include_file_valid_example_txt_test() {
+  should_include_file("5.example.txt")
   |> should.be_true
 }
 
-pub fn should_include_file_wrong_extension_test() {
-  should_include_file("readme.md", [".txt", ".gleam"])
+pub fn should_include_file_valid_day_25_test() {
+  should_include_file("25.txt")
+  |> should.be_true
+}
+
+pub fn should_include_file_invalid_day_26_test() {
+  should_include_file("26.txt")
   |> should.be_false
 }
 
-pub fn should_include_file_hidden_test() {
-  should_include_file(".gitignore", [".txt", ".gleam"])
+pub fn should_include_file_invalid_day_0_test() {
+  should_include_file("0.txt")
+  |> should.be_false
+}
+
+pub fn should_include_file_hidden_file_test() {
+  should_include_file(".gitignore")
   |> should.be_false
 }
 
 pub fn should_include_file_hidden_txt_test() {
-  should_include_file(".hidden.txt", [".txt", ".gleam"])
+  should_include_file(".hidden.txt")
   |> should.be_false
 }
 
-pub fn should_include_file_no_extension_test() {
-  should_include_file("LICENSE", [".txt", ".gleam"])
+pub fn should_include_file_invalid_my_example_txt_test() {
+  should_include_file("my_example.txt")
   |> should.be_false
+}
+
+pub fn should_include_file_invalid_readme_md_test() {
+  should_include_file("readme.md")
+  |> should.be_false
+}
+
+pub fn should_include_file_invalid_no_extension_test() {
+  should_include_file("LICENSE")
+  |> should.be_false
+}
+
+pub fn should_include_file_day_gleam_test() {
+  should_include_file("day_3.gleam")
+  |> should.be_true
+}
+
+pub fn should_include_file_day_padded_gleam_test() {
+  should_include_file("day_03.gleam")
+  |> should.be_true
+}
+
+pub fn should_include_file_invalid_gleam_test() {
+  should_include_file("helper.gleam")
+  |> should.be_false
+}
+
+// should_include_path tests - rewriting with pattern matching approach
+pub fn should_include_path_with_input_txt_test() {
+  should_include_path("input/2024/1.txt")
+  |> should.be_true
+}
+
+pub fn should_include_path_with_example_txt_test() {
+  should_include_path("input/2024/5.example.txt")
+  |> should.be_true
+}
+
+pub fn should_include_path_with_src_gleam_test() {
+  should_include_path("src/aoc_2024/day_3.gleam")
+  |> should.be_true
+}
+
+pub fn should_include_path_with_deep_nesting_test() {
+  should_include_path("test/fixtures/with_input/input/2024/1.txt")
+  |> should.be_true
+}
+
+pub fn should_include_path_rejects_hidden_file_test() {
+  should_include_path("input/2024/.gitignore")
+  |> should.be_false
+}
+
+pub fn should_include_path_rejects_hidden_txt_test() {
+  should_include_path("input/2024/.hidden.txt")
+  |> should.be_false
+}
+
+pub fn should_include_path_rejects_fake_example_test() {
+  should_include_path("input/2024/my_example.txt")
+  |> should.be_false
+}
+
+pub fn should_include_path_rejects_wrong_extension_test() {
+  should_include_path("input/2024/readme.md")
+  |> should.be_false
+}
+
+pub fn should_include_path_rejects_invalid_day_test() {
+  should_include_path("input/2024/26.txt")
+  |> should.be_false
+}
+
+pub fn should_include_path_empty_path_test() {
+  should_include_path("")
+  |> should.be_false
+}
+
+// scan_input_files tests
+pub fn scan_input_files_returns_empty_list_when_input_dir_missing_test() {
+  // When input/ directory doesn't exist, should return Ok([])
+  scan_input_files("test/fixtures/no_input")
+  |> should.equal(Ok([]))
+}
+
+pub fn scan_input_files_finds_txt_files_test() {
+  // Should find .txt files in input/<year>/ directories
+  // Test structure: test/fixtures/with_input/input/2024/{1.txt, 10.txt}
+  scan_input_files("test/fixtures/with_input")
+  |> should.equal(Ok(["input/2024/1.txt", "input/2024/10.txt"]))
+}
+
+pub fn scan_input_files_ignores_non_txt_files_test() {
+  // Should only include .txt files, ignore other file types
+  // Test structure: test/fixtures/with_other_files/input/2024/{1.txt, readme.md}
+  scan_input_files("test/fixtures/with_other_files")
+  |> should.equal(Ok(["input/2024/1.txt"]))
+}
+
+pub fn scan_input_files_finds_example_txt_files_test() {
+  // Should find .example.txt files (with the dot prefix)
+  // Should reject files like "my_example.txt" (without dot prefix)
+  // Test structure: test/fixtures/with_examples/input/2024/{1.example.txt, 5.txt, my_example.txt}
+  scan_input_files("test/fixtures/with_examples")
+  |> should.equal(Ok(["input/2024/1.example.txt", "input/2024/5.txt"]))
 }

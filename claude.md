@@ -317,8 +317,6 @@ Fixes #18
 
 ### Session 2: Building the Update Command
 
-**Date:** Current session
-
 **What We Accomplished:**
 1. ✅ Completed `update_path()` - Pure path transformation logic
    - Implemented with pattern matching for input/src paths
@@ -358,15 +356,77 @@ Fixes #18
 - Core logic complete for path transformation and reporting
 - Ready to implement filesystem scanning
 
+### Session 3: File Scanning and Pattern Matching Refactor
+
+**What We Accomplished:**
+1. ✅ Implemented `scan_input_files()` - Recursively scans directories
+   - Uses `simplifile.get_files()` for recursive scanning
+   - Strips base path by taking last 3 segments (input/<year>/<file>)
+   - Filters files using `should_include_path()`
+   - Returns `Result(List(String), FileError)`
+   - Returns `Ok([])` if input/ directory doesn't exist
+2. ✅ Created `should_include_path()` - Path wrapper for file validation
+   - Extracts filename from full path using `list.last()`
+   - Delegates to `should_include_file()` for validation
+   - Handles empty/malformed paths gracefully
+3. ✅ **MAJOR REFACTOR:** Rewrote `should_include_file()` with pattern matching
+   - **Problem identified:** Extension-based filtering was too fragile
+     - `[".txt", "example.txt"]` matched unwanted files like `my_example.txt`
+     - Too permissive - couldn't distinguish valid AoC files from arbitrary txt files
+   - **Solution:** Pattern matching against known AoC file structures
+     - Input files: `<day>.txt` where day is 1-25
+     - Example files: `<day>.example.txt` where day is 1-25
+     - Source files: `day_<day>.gleam` where day is 1-25
+   - **Implementation:**
+     - Split on `.` and pattern match against known structures
+     - Validate day numbers with `is_valid_day()` helper (1-25 range)
+     - Reject hidden files (starting with `.`)
+     - Nested case for gleam files: split `day_X` prefix on `_`
+   - **No regex needed** - pure string operations and pattern matching
+4. ✅ Comprehensive test coverage - 26 tests for file validation
+   - 16 tests for `should_include_file()`
+   - 10 tests for `should_include_path()`
+   - Edge cases: hidden files, invalid days (0, 26), fake examples, wrong extensions
+
+**Key Design Decisions:**
+- **Path clipping strategy:** Take last 3 segments instead of stripping base path
+  - Robust - doesn't depend on where user's project is located
+  - Works with absolute paths from any directory depth
+  - Leverages known structure: `input/<year>/<file>`
+- **Pattern matching over extension lists:** More explicit validation
+  - Eliminates false positives (e.g., `my_example.txt`)
+  - Self-documenting - the patterns show exactly what's valid
+  - Easy to extend for new file types
+- **Boolean chain with block:** `!hidden && { case ... }` is idiomatic and readable
+  - Short-circuits on hidden files (efficient)
+  - Block makes transformation step clear
+  - One level of nesting is acceptable and localized
+
+**Challenges Overcome:**
+- **Fragile extension matching:** Discovered `".txt"` was too broad, matching all txt files
+- **Test fixture pollution:** Added `my_example.txt` to catch false positives
+- **Over-engineering temptation:** Considered const lists and complex helpers, settled on simple pattern matching
+
+**Refactoring Philosophy:**
+- Considered extracting more helper functions to reduce nesting
+- Decided current implementation is clean and readable as-is
+- One nested case (for gleam files) is acceptable - it's localized and clear
+- Don't refactor for refactoring's sake - code is already maintainable
+
+**Current State:**
+- 46 tests, all passing ✅
+- Robust file validation with pattern matching
+- `scan_input_files()` functional and tested
+- Ready to implement `scan_src_files()` and full integration
+
 **What's Next:**
-1. Implement `scan_input_files()` - Scan input/<year>/ directories
-2. Implement `scan_src_files()` - Scan src/aoc_<year>/ directories
-3. Implement `scan_project_files()` - Combine both scans
-4. Integration test with temp directory structure
-5. File rename operations with conflict detection
-6. Warning system in handle_file_path()
-7. Glint CLI integration
-8. Documentation updates
+1. Implement `scan_src_files()` - Scan src/aoc_<year>/ directories
+2. Implement `scan_project_files()` - Combine both scans
+3. Integration test with temp directory structure
+4. File rename operations with conflict detection
+5. Warning system in handle_file_path()
+6. Glint CLI integration
+7. Documentation updates
 
 ## Next Steps
 1. ⏳ Complete directory scanning (scan_input_files, scan_src_files, scan_project_files)

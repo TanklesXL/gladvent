@@ -4,6 +4,8 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 
+import simplifile.{type FileError}
+
 pub fn update_path(path: String) -> Option(String) {
   let split = string.split(path, "/")
   case split {
@@ -69,7 +71,50 @@ pub fn format_dry_run_report(paths: List(#(String, String))) -> String {
   }
 }
 
-pub fn should_include_file(file: String, exts: List(String)) -> Bool {
+pub fn should_include_file(file: String) -> Bool {
   !string.starts_with(file, ".")
-  && list.any(exts, fn(ext) { string.ends_with(file, ext) })
+  && {
+    case string.split(file, ".") {
+      [day, "txt"] -> is_valid_day(day)
+      [day, "example", "txt"] -> is_valid_day(day)
+      [prefix, "gleam"] ->
+        case string.split(prefix, "_") {
+          ["day", day] -> is_valid_day(day)
+          _ -> False
+        }
+      _ -> False
+    }
+  }
+}
+
+fn is_valid_day(day: String) -> Bool {
+  case int.parse(day) {
+    Ok(d) -> d >= 1 && d < 26
+    _ -> False
+  }
+}
+
+pub fn should_include_path(path: String) -> Bool {
+  let graphemes = string.split(path, "/")
+  case list.last(graphemes) {
+    Ok(filename) -> should_include_file(filename)
+    _ -> False
+  }
+}
+
+pub fn scan_input_files(path: String) -> Result(List(String), FileError) {
+  case simplifile.get_files(path) {
+    Ok(files) -> {
+      list.filter(files, fn(file) { should_include_path(file) })
+      |> list.map(fn(file) {
+        string.split(file, "/")
+        |> list.reverse
+        |> list.take(up_to: 3)
+        |> list.reverse
+        |> string.join("/")
+      })
+      |> Ok
+    }
+    Error(_) -> Ok([])
+  }
 }
