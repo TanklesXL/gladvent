@@ -1,3 +1,4 @@
+import gladvent/internal/parse
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -102,7 +103,7 @@ pub fn should_include_path(path: String) -> Bool {
   }
 }
 
-pub fn scan_input_files(path: String) -> Result(List(String), FileError) {
+pub fn scan_files(path: String) -> Result(List(String), FileError) {
   case simplifile.get_files(path) {
     Ok(files) -> {
       list.filter(files, fn(file) { should_include_path(file) })
@@ -115,6 +116,28 @@ pub fn scan_input_files(path: String) -> Result(List(String), FileError) {
       })
       |> Ok
     }
-    Error(_) -> Ok([])
+    Error(e) ->
+      case string.ends_with(path, "src/") || string.ends_with(path, "src") {
+        True -> Error(e)
+        False -> Ok([])
+      }
+  }
+}
+
+pub fn scan_project_files(path: String) -> Result(List(String), FileError) {
+  let src = scan_files(path <> "/src/")
+  let input = scan_files(path <> "/input/")
+  case src, input {
+    Ok(s), Ok(i) -> Ok(list.append(s, i))
+    Error(e), _ -> Error(e)
+    _, Error(_) -> Ok([])
+  }
+}
+
+pub fn rename_file(old_path: String, new_path: String) -> Result(Nil, FileError) {
+  case simplifile.is_file(new_path) {
+    Ok(True) -> Error(simplifile.Eexist)
+    Ok(False) -> simplifile.rename(old_path, new_path)
+    Error(e) -> Error(e)
   }
 }

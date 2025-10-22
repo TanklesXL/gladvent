@@ -419,22 +419,87 @@ Fixes #18
 - `scan_input_files()` functional and tested
 - Ready to implement `scan_src_files()` and full integration
 
+### Session 4: Directory Scanning and File Rename Operations
+
+**What We Accomplished:**
+1. ✅ **Refactored `scan_input_files()` → `scan_files()`** - Made generic for any directory
+   - Works for both `input/` and `src/` directories
+   - Smart error handling: errors on missing `src/`, returns `Ok([])` for missing `input/`
+   - Uses `string.ends_with()` to check path and determine required vs optional
+   - 8 additional tests for comprehensive edge case coverage (49 total tests)
+2. ✅ **Implemented `scan_project_files()`** - Combines input and src scans
+   - Calls `scan_files()` for both `input/` and `src/` subdirectories
+   - Propagates errors from `src/` (required directory)
+   - Returns `Ok([])` for missing `input/` (optional directory)
+   - Combines results with `list.append()`
+   - 4 tests covering success, src missing, and edge cases (54 total tests)
+3. ✅ **Implemented `rename_file()`** - File rename with conflict detection
+   - Checks if target path exists before renaming
+   - Returns `Error(simplifile.Eexist)` if target already exists (conflict!)
+   - Properly handles all cases with exhaustive pattern matching
+   - 2 tests: successful rename and conflict detection (56 total tests)
+
+**Key Design Decisions:**
+- **Generic `scan_files()`:** Eliminated need for separate `scan_src_files()` function
+  - Single function handles both directories with smart error handling
+  - Path-based logic: `ends_with("src/")` determines error behavior
+- **Conflict detection in `rename_file()`:** Prevent accidental overwrites
+  - Check with `simplifile.is_file()` before renaming
+  - Return specific error (`Eexist`) for conflicts
+  - Safe by default - won't destroy existing files
+- **Temp directory testing:** All rename tests use temp directories
+  - Setup → Act → Assert → Cleanup pattern
+  - No pollution of test fixtures
+  - Real filesystem operations
+
+**Challenges Overcome:**
+- **Directory confusion:** Accidentally changed working directory to `test/fixtures/`
+  - Created fixtures in wrong location (`test/fixtures/test/fixtures/`)
+  - Debugged by checking `pwd` and moving files to correct location
+  - Lesson: Always use absolute paths in bash commands
+- **Inexhaustive patterns with guards:** Compiler didn't recognize `if b == True` as exhaustive
+  - Solution: Direct pattern matching `Ok(True)` instead of guards
+- **FileError construction:** Initially unclear how to create specific errors
+  - Discovered `simplifile.Eexist` variant for "file already exists"
+
+**Testing Philosophy:**
+- Used temp directories for filesystem tests instead of mocking
+- Setup/Act/Assert/Cleanup pattern keeps tests isolated
+- Comprehensive edge cases: hidden files, invalid days, conflicts, missing directories
+
+**Current State:**
+- 56 tests, all passing ✅
+- File scanning complete and battle-tested
+- File rename with conflict detection working
+- Ready for batch operations and reporting
+
 **What's Next:**
-1. Implement `scan_src_files()` - Scan src/aoc_<year>/ directories
-2. Implement `scan_project_files()` - Combine both scans
-3. Integration test with temp directory structure
-4. File rename operations with conflict detection
-5. Warning system in handle_file_path()
-6. Glint CLI integration
-7. Documentation updates
+1. ⏳ `apply_renames()` - Takes `List(#(old, new))` from `find_legacy_files()`, calls `rename_file()` on each, returns `#(successes, failures)`
+2. ⏳ `format_apply_report(successes, failures)` - Format results after applying renames
+3. ⏳ Warning system in handle_file_path()
+4. ⏳ Glint CLI integration for update command
+5. ⏳ Documentation updates
+
+**The Complete Flow:**
+```gleam
+scan_project_files(".")           // Find all AoC files
+|> Result.unwrap([])
+|> find_legacy_files()            // Filter to legacy only (already exists!)
+|> apply_renames()                // NEW - actually rename them
+|> format_apply_report()          // NEW - format results
+```
+
+**Note:** `find_legacy_files()` already exists and does the filtering! We just need to apply the renames and report results.
 
 ## Next Steps
-1. ⏳ Complete directory scanning (scan_input_files, scan_src_files, scan_project_files)
-2. ⏳ Integration test with temp filesystem
-3. ⏳ Implement file rename operations
-4. ⏳ Add warning system to run.gleam
-5. ⏳ Glint CLI integration for update command
-6. ⏳ Update README.md documentation (lines 42, 45, 46, new section for update command)
-7. Run tests: `gleam test` ✅ (20 passing)
-8. Format code: `gleam format`
-9. Build: `gleam build`
+1. ✅ Complete directory scanning (scan_files, scan_project_files)
+2. ✅ File rename operations with conflict detection
+3. ✅ Find legacy files (already implemented!)
+4. ⏳ `apply_renames()` - Batch rename operation
+5. ⏳ `format_apply_report()` - Format results
+6. ⏳ Add warning system to run.gleam
+7. ⏳ Glint CLI integration for update command
+8. ⏳ Update README.md documentation (lines 42, 45, 46, new section for update command)
+9. Run tests: `gleam test` ✅ (56 passing)
+10. Format code: `gleam format`
+11. Build: `gleam build`
