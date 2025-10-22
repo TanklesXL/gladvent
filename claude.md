@@ -82,8 +82,7 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
 
 **Design Considerations:**
 - Should warning go to stdout or stderr?
-- Should it use ANSI colors for visibility?
-- What's the exact wording that will be helpful but not annoying?
+- Should it use ANSI colors for visibility? NO, not likely.
 
 #### 2. Update Command Implementation (IN PROGRESS)
 
@@ -108,45 +107,32 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
   - Start with pure business logic (path transformation) before testing glint integration
   - Follows existing pattern in codebase (`test/parse_test.gleam` contains only unit tests)
   - Easier to test, faster feedback loop, more focused tests
-- **File operation strategy:** Rename files (move, not copy)
+- **File operation strategy:** Rename files
   - Clean migration - no duplicate files left behind
   - Users don't need to manually clean up old files
   - Simpler mental model - "this is the new way"
   - Safe by default with dry-run mode
 - **Safety mechanism:** Dry-run by default
-  - `gleam run update` - Shows what would be renamed (dry-run, safe)
+  - `gleam run update` - Shows report of what would be renamed (dry-run, safe)
   - `gleam run update --apply` - Actually performs the rename operation
-  - Users can preview changes before committing
+  - Users can and should preview changes before committing
   - Reduces risk of accidental file operations
 - **Conflict resolution:** Skip files where both old and new versions exist
   - Don't error (too disruptive)
-  - Don't overwrite (could lose data)
-  - Skip and report to user (safest option)
+  - Skip and report to user (safest option, still unclear what could constitute a 'conflict')
   - Allows users to resolve conflicts manually
 
 **Scope:** Upgrades BOTH:
-- Input files: `input/<year>/1.txt` → `input/<year>/01.txt`
-- Source files: `src/aoc_<year>/day_1.gleam` → `src/aoc_<year>/day_01.gleam`
+- Input files: `input/<year>/1.txt` -> `input/<year>/01.txt`
+- Example Input files: `input/<year>/1.example.txt` -> `input/<year>/01.example.txt`
+- Source files: `src/aoc_<year>/day_1.gleam` -> `src/aoc_<year>/day_01.gleam`
 
-**Year Handling Options (TBD - must choose one):**
+**Year Handling Options**
 1. **Auto-detect all years**
    - Scan `input/` and `src/` directories for all year folders
    - Upgrade all detected years in a single command
    - Pros: One command fixes everything
    - Cons: May modify more than user expects
-
-2. **Current year only**
-   - Use the current calendar year (same as default for `new` and `run`)
-   - Respects existing `--year` flag behavior
-   - Pros: Predictable, matches existing command patterns
-   - Cons: Users with multiple years need to run multiple times
-
-3. **Year flag with default**
-   - Accept `--year` flag (consistent with other commands)
-   - Default to current year if not specified
-   - Could support `--year=all` for all years
-   - Pros: Flexible, user has control
-   - Cons: Slightly more complex implementation
 
 **Safety:** Dry-run by default with explicit apply flag
 - Default: `gleam run update` shows what would be renamed (no changes)
@@ -193,7 +179,7 @@ The core implementation is COMPLETE. The branch `issue_18` has the following com
 *Design Decisions:*
 - **Error handling:** Return Error if `src/` missing (required), return `Ok([])` if `input/` missing (optional)
 - **Recursion depth:** One level only - scan `input/<year>/*.txt` and `src/aoc_<year>/*.gleam`
-- **Filtering strategy:** Filter for `.txt`, `.example.txt`, `.gleam` while scanning
+- **Filtering strategy:** Filter end of path for `.txt`, `.example.txt`, `.gleam` while scanning
 - **Hidden files:** Skip anything starting with `.` (like `.git`, `.DS_Store`)
 
 *Pseudocode:*
@@ -300,12 +286,8 @@ Implements zero-padding for day filenames to ensure proper alphabetical sorting.
 - Updated README documentation to reflect new format
 - Added tests for padding functionality
 
-## Examples
-- Source files: `src/aoc_2024/day_01.gleam` (was `day_1.gleam`)
-- Input files: `input/2024/01.txt` (was `1.txt`)
-
 ## Backward Compatibility
-Existing users with non-padded filenames will continue to work. The runner checks for legacy paths and uses them if found.
+Existing users with non-padded filenames will continue to work (for at least 2 more releases). The runner checks for legacy paths and uses them if found.
 
 Fixes #18
 ```
@@ -316,9 +298,8 @@ Fixes #18
 
 **Decisions Made:**
 1. **TDD Approach:** Strict Red-Green-Refactor for all new code
-2. **Deprecation Strategy:** All update/upgrade code isolated in dedicated files (`test/update_test.gleam`, `src/gladvent/internal/cmd/update.gleam`) for easy removal in 2 releases
+2. **Deprecation Strategy:** All update code isolated in dedicated files (`test/update_test.gleam`, `src/gladvent/internal/cmd/update.gleam`) for easy removal in 2 releases
 3. **Test-First Development:** Started with unit tests before implementation
-4. **Function Design:** Chose `Option(String)` return type to make legacy detection explicit and deprecation easier
 
 **What Went Well:**
 - Clear separation of concerns: update logic is isolated
@@ -364,7 +345,6 @@ Fixes #18
 **Key Design Decisions:**
 - **Rename vs Copy:** Chose rename (clean migration, safe with dry-run)
 - **Dry-run by default:** `gleam run update` previews, `--apply` executes
-- **Option(String) return type:** Makes legacy detection explicit
 - **Separate concerns:** update_path (transform) → find_legacy_files (filter) → format (present)
 
 **Refactoring Wins:**
@@ -398,5 +378,3 @@ Fixes #18
 7. Run tests: `gleam test` ✅ (20 passing)
 8. Format code: `gleam format`
 9. Build: `gleam build`
-10. Create PR against main branch
-11. Link to issue #18 in PR description
