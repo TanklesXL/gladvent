@@ -1,40 +1,37 @@
-import gladvent/internal/cmd/update.{
-  find_legacy_files, format_dry_run_report, rename_file, scan_files,
-  scan_project_files, should_include_file, should_include_path, update_path,
-}
-
+// import gladvent/internal/cmd/update.{type RenameResult, Failure, Success} as update
+import gladvent/internal/cmd/update
 import gleam/list
 import gleam/option.{None, Some}
 import gleeunit/should
 import simplifile
 
 pub fn update_path_input_file_day_1_test() {
-  update_path("input/2024/1.txt")
+  update.update_path("input/2024/1.txt")
   |> should.equal(Some("input/2024/01.txt"))
 }
 
 pub fn update_path_input_file_day_1_example_test() {
-  update_path("input/2024/1.example.txt")
+  update.update_path("input/2024/1.example.txt")
   |> should.equal(Some("input/2024/01.example.txt"))
 }
 
 pub fn update_path_input_file_day_already_padded_test() {
-  update_path("input/2024/01.txt")
+  update.update_path("input/2024/01.txt")
   |> should.equal(None)
 }
 
 pub fn update_path_input_file_day_already_padded_example_test() {
-  update_path("input/2024/01.example.txt")
+  update.update_path("input/2024/01.example.txt")
   |> should.equal(None)
 }
 
 pub fn update_path_src_file_day_1_test() {
-  update_path("src/aoc_2024/day_1.gleam")
+  update.update_path("src/aoc_2024/day_1.gleam")
   |> should.equal(Some("src/aoc_2024/day_01.gleam"))
 }
 
 pub fn update_path_src_file_day_already_padded_test() {
-  update_path("src/aoc_2024/day_01.gleam")
+  update.update_path("src/aoc_2024/day_01.gleam")
   |> should.equal(None)
 }
 
@@ -74,7 +71,7 @@ pub fn update_path_comprehensive_test_with_edge_cases() {
 
   list.each(test_cases, fn(test_case) {
     let #(input, expected) = test_case
-    update_path(input)
+    update.update_path(input)
     |> should.equal(expected)
   })
 }
@@ -98,7 +95,7 @@ pub fn find_legacy_files_test() {
     #("src/aoc_2023/day_9.gleam", "src/aoc_2023/day_09.gleam"),
   ]
 
-  find_legacy_files(paths)
+  update.find_legacy_files(paths)
   |> should.equal(expected)
 }
 
@@ -118,7 +115,7 @@ pub fn format_dry_run_report_with_files_test() {
 3 files will be renamed
 Run 'gleam run update --apply' to perform the rename operation"
 
-  format_dry_run_report(legacy_files)
+  update.format_dry_run_report(legacy_files)
   |> should.equal(expected)
 }
 
@@ -128,150 +125,150 @@ pub fn format_dry_run_report_empty_test() {
   let expected =
     "No files need updating - all files are already using zero-padded names."
 
-  format_dry_run_report(legacy_files)
+  update.format_dry_run_report(legacy_files)
   |> should.equal(expected)
 }
 
 // should_include_file tests - rewriting with pattern matching approach
 pub fn should_include_file_valid_txt_test() {
-  should_include_file("1.txt")
+  update.should_include_file("1.txt")
   |> should.be_true
 }
 
 pub fn should_include_file_valid_padded_txt_test() {
-  should_include_file("01.txt")
+  update.should_include_file("01.txt")
   |> should.be_true
 }
 
 pub fn should_include_file_valid_example_txt_test() {
-  should_include_file("5.example.txt")
+  update.should_include_file("5.example.txt")
   |> should.be_true
 }
 
 pub fn should_include_file_valid_day_25_test() {
-  should_include_file("25.txt")
+  update.should_include_file("25.txt")
   |> should.be_true
 }
 
 pub fn should_include_file_invalid_day_26_test() {
-  should_include_file("26.txt")
+  update.should_include_file("26.txt")
   |> should.be_false
 }
 
 pub fn should_include_file_invalid_day_0_test() {
-  should_include_file("0.txt")
+  update.should_include_file("0.txt")
   |> should.be_false
 }
 
 pub fn should_include_file_hidden_file_test() {
-  should_include_file(".gitignore")
+  update.should_include_file(".gitignore")
   |> should.be_false
 }
 
 pub fn should_include_file_hidden_txt_test() {
-  should_include_file(".hidden.txt")
+  update.should_include_file(".hidden.txt")
   |> should.be_false
 }
 
 pub fn should_include_file_invalid_my_example_txt_test() {
-  should_include_file("my_example.txt")
+  update.should_include_file("my_example.txt")
   |> should.be_false
 }
 
 pub fn should_include_file_invalid_readme_md_test() {
-  should_include_file("readme.md")
+  update.should_include_file("readme.md")
   |> should.be_false
 }
 
 pub fn should_include_file_invalid_no_extension_test() {
-  should_include_file("LICENSE")
+  update.should_include_file("LICENSE")
   |> should.be_false
 }
 
 pub fn should_include_file_day_gleam_test() {
-  should_include_file("day_3.gleam")
+  update.should_include_file("day_3.gleam")
   |> should.be_true
 }
 
 pub fn should_include_file_day_padded_gleam_test() {
-  should_include_file("day_03.gleam")
+  update.should_include_file("day_03.gleam")
   |> should.be_true
 }
 
 pub fn should_include_file_invalid_gleam_test() {
-  should_include_file("helper.gleam")
+  update.should_include_file("helper.gleam")
   |> should.be_false
 }
 
 // should_include_path tests - rewriting with pattern matching approach
 pub fn should_include_path_with_input_txt_test() {
-  should_include_path("input/2024/1.txt")
+  update.should_include_path("input/2024/1.txt")
   |> should.be_true
 }
 
 pub fn should_include_path_with_example_txt_test() {
-  should_include_path("input/2024/5.example.txt")
+  update.should_include_path("input/2024/5.example.txt")
   |> should.be_true
 }
 
 pub fn should_include_path_with_src_gleam_test() {
-  should_include_path("src/aoc_2024/day_3.gleam")
+  update.should_include_path("src/aoc_2024/day_3.gleam")
   |> should.be_true
 }
 
 pub fn should_include_path_with_deep_nesting_test() {
-  should_include_path("test/fixtures/with_input/input/2024/1.txt")
+  update.should_include_path("test/fixtures/with_input/input/2024/1.txt")
   |> should.be_true
 }
 
 pub fn should_include_path_rejects_hidden_file_test() {
-  should_include_path("input/2024/.gitignore")
+  update.should_include_path("input/2024/.gitignore")
   |> should.be_false
 }
 
 pub fn should_include_path_rejects_hidden_txt_test() {
-  should_include_path("input/2024/.hidden.txt")
+  update.should_include_path("input/2024/.hidden.txt")
   |> should.be_false
 }
 
 pub fn should_include_path_rejects_fake_example_test() {
-  should_include_path("input/2024/my_example.txt")
+  update.should_include_path("input/2024/my_example.txt")
   |> should.be_false
 }
 
 pub fn should_include_path_rejects_wrong_extension_test() {
-  should_include_path("input/2024/readme.md")
+  update.should_include_path("input/2024/readme.md")
   |> should.be_false
 }
 
 pub fn should_include_path_rejects_invalid_day_test() {
-  should_include_path("input/2024/26.txt")
+  update.should_include_path("input/2024/26.txt")
   |> should.be_false
 }
 
 pub fn should_include_path_empty_path_test() {
-  should_include_path("")
+  update.should_include_path("")
   |> should.be_false
 }
 
 // scan_files tests - works with both input/ and src/ directories
 pub fn scan_files_returns_empty_list_when_dir_missing_test() {
   // When directory doesn't exist, should return Ok([])
-  scan_files("test/fixtures/no_input")
+  update.scan_files("test/fixtures/no_input")
   |> should.equal(Ok([]))
 }
 
 pub fn scan_files_finds_txt_files_test() {
   // Should find .txt files in input/<year>/ directories
   // Test structure: test/fixtures/with_input/input/2024/{1.txt, 10.txt}
-  scan_files("test/fixtures/with_input")
+  update.scan_files("test/fixtures/with_input")
   |> should.equal(Ok(["input/2024/1.txt", "input/2024/10.txt"]))
 }
 
 pub fn scan_files_ignores_non_aoc_files_test() {
   // Should only include valid AoC files, ignore other file types
   // Test structure: test/fixtures/with_other_files/input/2024/{1.txt, readme.md}
-  scan_files("test/fixtures/with_other_files")
+  update.scan_files("test/fixtures/with_other_files")
   |> should.equal(Ok(["input/2024/1.txt"]))
 }
 
@@ -279,14 +276,14 @@ pub fn scan_files_finds_example_txt_files_test() {
   // Should find .example.txt files (with the dot prefix)
   // Should reject files like "my_example.txt" (without dot prefix)
   // Test structure: test/fixtures/with_examples/input/2024/{1.example.txt, 5.txt, my_example.txt}
-  scan_files("test/fixtures/with_examples")
+  update.scan_files("test/fixtures/with_examples")
   |> should.equal(Ok(["input/2024/1.example.txt", "input/2024/5.txt"]))
 }
 
 pub fn scan_files_finds_gleam_files_test() {
   // Should find .gleam files in src/aoc_<year>/ directories
   // Test structure: test/fixtures/with_src/src/aoc_2024/{day_1.gleam, day_10.gleam}
-  let result = scan_files("test/fixtures/with_src")
+  let result = update.scan_files("test/fixtures/with_src")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(2)
@@ -300,7 +297,7 @@ pub fn scan_files_finds_gleam_files_test() {
 pub fn scan_files_ignores_non_day_gleam_files_test() {
   // Should ignore helper.gleam, only find day_X.gleam files
   // Test structure: test/fixtures/with_src_mixed/src/aoc_2024/{day_3.gleam, helper.gleam}
-  let result = scan_files("test/fixtures/with_src_mixed")
+  let result = update.scan_files("test/fixtures/with_src_mixed")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(1)
@@ -313,7 +310,7 @@ pub fn scan_files_ignores_non_day_gleam_files_test() {
 pub fn scan_files_handles_multi_year_test() {
   // Should find files across multiple years
   // Test structure: test/fixtures/multi_year/input/{2023/1.txt, 2024/2.txt}
-  let result = scan_files("test/fixtures/multi_year")
+  let result = update.scan_files("test/fixtures/multi_year")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(2)
@@ -327,7 +324,7 @@ pub fn scan_files_handles_multi_year_test() {
 pub fn scan_files_handles_both_input_and_src_test() {
   // Should find files from both input/ and src/ in same scan
   // Test structure: test/fixtures/full_project/{input/2024/1.txt, src/aoc_2024/day_2.gleam}
-  let result = scan_files("test/fixtures/full_project")
+  let result = update.scan_files("test/fixtures/full_project")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(2)
@@ -341,7 +338,7 @@ pub fn scan_files_handles_both_input_and_src_test() {
 pub fn scan_files_ignores_hidden_directories_test() {
   // Should skip hidden directories like .git
   // Test structure: test/fixtures/with_hidden_dirs/{input/2024/1.txt, .git/something.txt}
-  let result = scan_files("test/fixtures/with_hidden_dirs")
+  let result = update.scan_files("test/fixtures/with_hidden_dirs")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(1)
@@ -356,7 +353,7 @@ pub fn scan_files_handles_deep_nesting_test() {
   // Should work even with extra directory depth (like our test fixtures)
   // The last 3 segments should still be correct
   // Test structure: test/fixtures/deep/nested/path/input/2024/5.txt
-  let result = scan_files("test/fixtures/deep/nested/path")
+  let result = update.scan_files("test/fixtures/deep/nested/path")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(1)
@@ -369,7 +366,7 @@ pub fn scan_files_handles_deep_nesting_test() {
 pub fn scan_files_ignores_invalid_day_numbers_test() {
   // Should reject day 0 and day 26+
   // Test structure: test/fixtures/invalid_days/input/2024/{0.txt, 1.txt, 26.txt}
-  let result = scan_files("test/fixtures/invalid_days")
+  let result = update.scan_files("test/fixtures/invalid_days")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(1)
@@ -382,7 +379,7 @@ pub fn scan_files_ignores_invalid_day_numbers_test() {
 pub fn scan_files_handles_padded_and_unpadded_mix_test() {
   // Should handle both padded and unpadded filenames
   // Test structure: test/fixtures/mixed_padding/input/2024/{1.txt, 02.txt, 15.txt}
-  let result = scan_files("test/fixtures/mixed_padding")
+  let result = update.scan_files("test/fixtures/mixed_padding")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(3)
@@ -398,7 +395,7 @@ pub fn scan_files_handles_padded_and_unpadded_mix_test() {
 pub fn scan_project_files_combines_input_and_src_test() {
   // Should scan both input/ and src/ directories and combine results
   // Test structure: test/fixtures/full_project/{input/2024/1.txt, src/aoc_2024/day_2.gleam}
-  let result = scan_project_files("test/fixtures/full_project")
+  let result = update.scan_project_files("test/fixtures/full_project")
   case result {
     Ok(files) -> {
       list.length(files) |> should.equal(2)
@@ -412,19 +409,19 @@ pub fn scan_project_files_combines_input_and_src_test() {
 pub fn scan_project_files_errors_when_src_missing_test() {
   // Should propagate FileError if src/ directory doesn't exist (invalid project)
   // Test structure: test/fixtures/with_input/{input/2024/1.txt} (no src/)
-  scan_project_files("test/fixtures/with_input")
+  update.scan_project_files("test/fixtures/with_input")
   |> should.be_error()
 }
 
 pub fn scan_files_returns_ok_for_missing_input_test() {
   // Should return Ok([]) when input/ doesn't exist (optional directory)
-  scan_files("test/fixtures/with_src/input/")
+  update.scan_files("test/fixtures/with_src/input/")
   |> should.equal(Ok([]))
 }
 
 pub fn scan_files_errors_for_missing_src_test() {
   // Should error when src/ doesn't exist (required directory)
-  scan_files("test/fixtures/with_input/src/")
+  update.scan_files("test/fixtures/with_input/src/")
   |> should.be_error()
 }
 
@@ -432,7 +429,7 @@ pub fn scan_files_does_not_error_for_src_in_middle_of_path_test() {
   // Should NOT error for paths with "src" in middle (like "my_src_project/input/")
   // This tests that we check ends_with, not contains
   // Test structure: test/fixtures/my_src_project/input/2024/1.txt
-  let result = scan_files("test/fixtures/my_src_project/input/")
+  let result = update.scan_files("test/fixtures/my_src_project/input/")
   case result {
     Ok(files) -> {
       // Should succeed and find the file (not error just because "src" is in parent path)
@@ -456,7 +453,7 @@ pub fn rename_file_renames_successfully_test() {
   let assert Ok(_) = simplifile.write(old_path, "test content")
 
   // Act: Rename the file
-  let result = rename_file(old_path, new_path)
+  let result = update.rename_file(old_path, new_path)
 
   // Assert: Rename succeeded
   result |> should.be_ok()
@@ -482,7 +479,7 @@ pub fn rename_file_skips_when_target_exists_test() {
   let assert Ok(_) = simplifile.write(new_path, "new content")
 
   // Act: Try to rename (should skip/error due to conflict)
-  let result = rename_file(old_path, new_path)
+  let result = update.rename_file(old_path, new_path)
 
   // Assert: Should return error (or we could return Ok but skip)
   result |> should.be_error()
@@ -499,3 +496,28 @@ pub fn rename_file_skips_when_target_exists_test() {
   let assert Ok(_) = simplifile.delete(new_path)
   let assert Ok(_) = simplifile.delete(temp_dir)
 }
+// apply_renames tests
+// pub fn apply_renames_single_file_success_test() {
+//   // Should rename a single file and return Success result
+//   let temp_dir = "test/temp/apply_renames_single"
+//   let old_path = temp_dir <> "/1.txt"
+//   let new_path = temp_dir <> "/01.txt"
+
+//   // Setup: Create temp directory and file
+//   let assert Ok(_) = simplifile.create_directory_all(temp_dir)
+//   let assert Ok(_) = simplifile.write(old_path, "test content")
+
+//   // Act: Apply renames
+//   let results = update.apply_renames([#(old_path, new_path)])
+
+//   // Assert: Got one Success result
+//   results |> should.equal([Success(from: old_path, to: new_path)])
+
+//   // Assert: File was actually renamed
+//   simplifile.is_file(old_path) |> should.be_ok() |> should.be_false()
+//   simplifile.is_file(new_path) |> should.be_ok() |> should.be_true()
+
+//   // Cleanup
+//   let assert Ok(_) = simplifile.delete(new_path)
+//   let assert Ok(_) = simplifile.delete(temp_dir)
+// }

@@ -22,5 +22,5 @@ rebar3.crashdump
 build
 src/days
 src/aoc_*
-input
+/input
 package-interface.json

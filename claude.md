@@ -25,6 +25,19 @@ Claude Code will act as a **pair partner / interactive rubber duck** in this pro
 
 This approach ensures you maintain ownership of the code and deeply understand every change.
 
+**Gleam Code Style**
+
+When writing Gleam code, always follow these conventions:
+
+- **Use qualified imports** - Import the module itself and prefix function calls with the module name
+  - Example: `import gladvent/internal/cmd/update` then `update.apply_renames()`
+  - This makes code origin clear and prevents namespace confusion
+- **Import types and constructors explicitly** - Types and their constructors must be imported to use directly
+  - Example: `import gladvent/internal/cmd/update.{type RenameResult, Success, Failure}`
+  - These can be combined with the module import using `as`: `import gladvent/internal/cmd/update.{type RenameResult, Success, Failure} as update`
+- **Exception for common stdlib operators** - It's acceptable to unqualified import operators like `None`, `Some` from `gleam/option`
+  - Example: `import gleam/option.{None, Some}`
+
 ## Issue Summary
 Add zero-padding to day filenames (e.g., `01.txt` instead of `1.txt`) to ensure proper alphabetical sorting in file explorers. Days 1-9 should be padded with a leading zero.
 

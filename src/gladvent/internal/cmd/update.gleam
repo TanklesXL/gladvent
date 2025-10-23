@@ -1,4 +1,3 @@
-import gladvent/internal/parse
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -114,6 +113,7 @@ pub fn scan_files(path: String) -> Result(List(String), FileError) {
         |> list.reverse
         |> string.join("/")
       })
+      |> list.sort(string.compare)
       |> Ok
     }
     Error(e) ->
