@@ -6,6 +6,11 @@ import gleam/string
 
 import simplifile.{type FileError}
 
+pub type RenameResult {
+  Success(from: String, to: String)
+  Failure(from: String, to: String, reason: FileError)
+}
+
 pub fn update_path(path: String) -> Option(String) {
   let split = string.split(path, "/")
   case split {
@@ -139,5 +144,63 @@ pub fn rename_file(old_path: String, new_path: String) -> Result(Nil, FileError)
     Ok(True) -> Error(simplifile.Eexist)
     Ok(False) -> simplifile.rename(old_path, new_path)
     Error(e) -> Error(e)
+  }
+}
+
+pub fn apply_renames(renames: List(#(String, String))) -> List(RenameResult) {
+  list.map(renames, fn(rename) {
+    let #(old, new) = rename
+    case rename_file(old, new) {
+      Ok(_) -> Success(from: old, to: new)
+      Error(e) -> Failure(from: old, to: new, reason: e)
+    }
+  })
+}
+
+pub fn format_apply_report(results: List(RenameResult)) -> String {
+  let #(successes, failures) =
+    list.partition(results, fn(result) {
+      case result {
+        Success(_, _) -> True
+        Failure(_, _, _) -> False
+      }
+    })
+
+  // Format successes
+  let success_section =
+    list.fold(successes, "Successfully renamed:\n", fn(acc, success) {
+      acc <> "  " <> success.from <> " -> " <> success.to <> "\n"
+    })
+
+  // Format failures
+  let failure_section =
+    list.fold(failures, "\nFailed to rename:\n", fn(acc, failure) {
+      case failure {
+        Failure(from, to, reason) -> {
+          let reason_text = format_error_reason(reason)
+          acc <> "  " <> from <> " -> " <> to <> " (" <> reason_text <> ")\n"
+        }
+        Success(_, _) -> acc
+      }
+    })
+
+  // Build summary
+  let summary =
+    "\nChanged: "
+    <> int.to_string(list.length(successes))
+    <> "\nSkipped: "
+    <> int.to_string(list.length(failures))
+
+  success_section <> failure_section <> summary
+}
+
+fn format_error_reason(error: FileError) -> String {
+  case error {
+    simplifile.Eexist -> "file already exists"
+    simplifile.Eacces -> "permission denied"
+    simplifile.Enoent -> "file not found"
+    simplifile.Enotdir -> "not a directory"
+    simplifile.Eisdir -> "is a directory"
+    _ -> "unknown error"
   }
 }

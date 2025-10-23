@@ -1,5 +1,5 @@
 // import gladvent/internal/cmd/update.{type RenameResult, Failure, Success} as update
-import gladvent/internal/cmd/update
+import gladvent/internal/cmd/update.{Failure, Success}
 import gleam/list
 import gleam/option.{None, Some}
 import gleeunit/should
@@ -496,28 +496,147 @@ pub fn rename_file_skips_when_target_exists_test() {
   let assert Ok(_) = simplifile.delete(new_path)
   let assert Ok(_) = simplifile.delete(temp_dir)
 }
+
 // apply_renames tests
-// pub fn apply_renames_single_file_success_test() {
-//   // Should rename a single file and return Success result
-//   let temp_dir = "test/temp/apply_renames_single"
-//   let old_path = temp_dir <> "/1.txt"
-//   let new_path = temp_dir <> "/01.txt"
+pub fn apply_renames_single_file_success_test() {
+  // Should rename a single file and return Success result
+  let temp_dir = "test/temp/apply_renames_single"
+  let old_path = temp_dir <> "/1.txt"
+  let new_path = temp_dir <> "/01.txt"
 
-//   // Setup: Create temp directory and file
-//   let assert Ok(_) = simplifile.create_directory_all(temp_dir)
-//   let assert Ok(_) = simplifile.write(old_path, "test content")
+  // Setup: Create temp directory and file
+  let assert Ok(_) = simplifile.create_directory_all(temp_dir)
+  let assert Ok(_) = simplifile.write(old_path, "test content")
 
-//   // Act: Apply renames
-//   let results = update.apply_renames([#(old_path, new_path)])
+  // Act: Apply renames
+  let results = update.apply_renames([#(old_path, new_path)])
 
-//   // Assert: Got one Success result
-//   results |> should.equal([Success(from: old_path, to: new_path)])
+  // Assert: Got one Success result
+  results |> should.equal([Success(from: old_path, to: new_path)])
 
-//   // Assert: File was actually renamed
-//   simplifile.is_file(old_path) |> should.be_ok() |> should.be_false()
-//   simplifile.is_file(new_path) |> should.be_ok() |> should.be_true()
+  // Assert: File was actually renamed
+  simplifile.is_file(old_path) |> should.be_ok() |> should.be_false()
+  simplifile.is_file(new_path) |> should.be_ok() |> should.be_true()
 
-//   // Cleanup
-//   let assert Ok(_) = simplifile.delete(new_path)
-//   let assert Ok(_) = simplifile.delete(temp_dir)
-// }
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(new_path)
+  let assert Ok(_) = simplifile.delete(temp_dir)
+}
+
+pub fn apply_renames_single_file_conflict_test() {
+  // Should return Failure when target file already exists (conflict)
+  let temp_dir = "test/temp/apply_renames_conflict"
+  let old_path = temp_dir <> "/1.txt"
+  let new_path = temp_dir <> "/01.txt"
+
+  // Setup: Create temp directory and BOTH files (conflict scenario)
+  let assert Ok(_) = simplifile.create_directory_all(temp_dir)
+  let assert Ok(_) = simplifile.write(old_path, "old content")
+  let assert Ok(_) = simplifile.write(new_path, "new content")
+
+  // Act: Try to apply rename (should fail due to conflict)
+  let results = update.apply_renames([#(old_path, new_path)])
+
+  // Assert: Got one Failure result with Eexist error
+  results
+  |> should.equal([
+    Failure(from: old_path, to: new_path, reason: simplifile.Eexist),
+  ])
+
+  // Assert: Both files still exist (no overwrite happened)
+  simplifile.is_file(old_path) |> should.be_ok() |> should.be_true()
+  simplifile.is_file(new_path) |> should.be_ok() |> should.be_true()
+
+  // Assert: New file content unchanged (wasn't overwritten)
+  simplifile.read(new_path) |> should.equal(Ok("new content"))
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(old_path)
+  let assert Ok(_) = simplifile.delete(new_path)
+  let assert Ok(_) = simplifile.delete(temp_dir)
+}
+
+pub fn apply_renames_batch_mixed_results_test() {
+  // Should handle multiple files with mix of successes and failures
+  let temp_dir = "test/temp/apply_renames_batch"
+  let file1_old = temp_dir <> "/1.txt"
+  let file1_new = temp_dir <> "/01.txt"
+  let file2_old = temp_dir <> "/2.txt"
+  let file2_new = temp_dir <> "/02.txt"
+  let file3_old = temp_dir <> "/3.txt"
+  let file3_new = temp_dir <> "/03.txt"
+
+  // Setup: Create temp directory
+  let assert Ok(_) = simplifile.create_directory_all(temp_dir)
+  // File 1: Will succeed (only old exists)
+  let assert Ok(_) = simplifile.write(file1_old, "content 1")
+  // File 2: Will fail (both exist - conflict)
+  let assert Ok(_) = simplifile.write(file2_old, "old content 2")
+  let assert Ok(_) = simplifile.write(file2_new, "new content 2")
+  // File 3: Will succeed (only old exists)
+  let assert Ok(_) = simplifile.write(file3_old, "content 3")
+
+  // Act: Apply renames to all three files
+  let results =
+    update.apply_renames([
+      #(file1_old, file1_new),
+      #(file2_old, file2_new),
+      #(file3_old, file3_new),
+    ])
+
+  // Assert: Got correct results in order (success, failure, success)
+  results
+  |> should.equal([
+    Success(from: file1_old, to: file1_new),
+    Failure(from: file2_old, to: file2_new, reason: simplifile.Eexist),
+    Success(from: file3_old, to: file3_new),
+  ])
+
+  // Assert: File 1 renamed successfully
+  simplifile.is_file(file1_old) |> should.be_ok() |> should.be_false()
+  simplifile.is_file(file1_new) |> should.be_ok() |> should.be_true()
+
+  // Assert: File 2 kept both (conflict - no changes)
+  simplifile.is_file(file2_old) |> should.be_ok() |> should.be_true()
+  simplifile.is_file(file2_new) |> should.be_ok() |> should.be_true()
+  simplifile.read(file2_new) |> should.equal(Ok("new content 2"))
+
+  // Assert: File 3 renamed successfully
+  simplifile.is_file(file3_old) |> should.be_ok() |> should.be_false()
+  simplifile.is_file(file3_new) |> should.be_ok() |> should.be_true()
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(file1_new)
+  let assert Ok(_) = simplifile.delete(file2_old)
+  let assert Ok(_) = simplifile.delete(file2_new)
+  let assert Ok(_) = simplifile.delete(file3_new)
+  let assert Ok(_) = simplifile.delete(temp_dir)
+}
+
+// format_apply_report tests
+pub fn format_apply_report_with_successes_and_failures_test() {
+  // Should format a report showing both successful and failed renames
+  let results = [
+    Success(from: "input/2024/1.txt", to: "input/2024/01.txt"),
+    Failure(
+      from: "input/2024/2.txt",
+      to: "input/2024/02.txt",
+      reason: simplifile.Eexist,
+    ),
+    Success(from: "src/aoc_2024/day_3.gleam", to: "src/aoc_2024/day_03.gleam"),
+  ]
+
+  let expected =
+    "Successfully renamed:
+  input/2024/1.txt -> input/2024/01.txt
+  src/aoc_2024/day_3.gleam -> src/aoc_2024/day_03.gleam
+
+Failed to rename:
+  input/2024/2.txt -> input/2024/02.txt (file already exists)
+
+Changed: 2
+Skipped: 1"
+
+  update.format_apply_report(results)
+  |> should.equal(expected)
+}

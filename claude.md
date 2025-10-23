@@ -504,15 +504,78 @@ scan_project_files(".")           // Find all AoC files
 
 **Note:** `find_legacy_files()` already exists and does the filtering! We just need to apply the renames and report results.
 
+### Session 5: Apply Renames Implementation and Code Quality
+
+**What We Accomplished:**
+1. ✅ **Refactored to qualified imports** - Updated test file to follow idiomatic Gleam
+   - Changed from unqualified imports to `import gladvent/internal/cmd/update`
+   - Functions called with `update.function_name()` for clarity
+   - Types/constructors still explicitly imported: `type RenameResult, Success, Failure`
+   - Added Gleam style guide to claude.md for future reference
+2. ✅ **Fixed missing test fixtures** - Discovered and resolved test fixture issues
+   - Found 11 failing tests due to missing `.txt` files in `test/fixtures/`
+   - Root cause: `.gitignore` had `input` which ignored all `input/` directories
+   - Fixed: Changed to `/input` to only ignore root-level input directory
+   - Created all fixture files with content so git tracks them
+3. ✅ **Sorted scan_files() output** - Added sorting for predictable, consistent results
+   - Fixes test ordering issues
+   - Makes reports cleaner and easier to read
+4. ✅ **Implemented RenameResult custom type** - Clean alternative to complex tuples
+   - `Success(from: String, to: String)` for successful renames
+   - `Failure(from: String, to: String, reason: FileError)` for failures
+   - Much more readable than `#(List(#(String, String)), List(#(String, String, FileError)))`
+5. ✅ **Implemented apply_renames() function** - Batch rename with result tracking
+   - Takes `List(#(String, String))` from `find_legacy_files()`
+   - Calls `rename_file()` for each pair
+   - Returns `List(RenameResult)` with success/failure per file
+   - Used `list.map()` for clean 1-to-1 transformation (not fold!)
+   - Tests: single success, single conflict, batch mixed results
+6. ✅ **Implemented format_apply_report() function** - Human-readable output
+   - Groups results by outcome using `list.partition()`
+   - Formats successes: "Successfully renamed:" section
+   - Formats failures: "Failed to rename:" section with reasons
+   - Maps `FileError` to human messages (e.g., `Eexist` → "file already exists")
+   - Summary: "Changed: N\nSkipped: N" (avoids pluralization complexity)
+
+**Key Design Decisions:**
+- **Custom type over tuples:** `RenameResult` is self-documenting and easier to work with
+- **Grouping by outcome:** Report shows all successes together, then all failures
+  - More actionable - users can quickly see what needs attention
+  - Matches common CLI tool patterns (git, npm, etc.)
+- **Simple summary format:** "Changed: N / Skipped: N" avoids pluralization edge cases
+- **Error message mapping:** Convert technical errors to user-friendly messages
+
+**Refactoring Wins:**
+- Qualified imports make code origin clear
+- `list.map()` over `list.fold()` when transforming 1-to-1
+- `list.partition()` cleanly splits successes from failures
+
+**Current State:**
+- 60 tests, all passing ✅
+- Complete apply mode pipeline functional
+- All business logic implemented and tested
+- Ready for CLI integration
+
+**The Complete Apply Mode Pipeline:**
+```gleam
+scan_project_files(".")           // ✅ Find all AoC files
+|> Result.unwrap([])
+|> find_legacy_files()            // ✅ Filter to legacy only
+|> apply_renames()                // ✅ Perform renames, track results
+|> format_apply_report()          // ✅ Format human-readable output
+```
+
 ## Next Steps
 1. ✅ Complete directory scanning (scan_files, scan_project_files)
 2. ✅ File rename operations with conflict detection
-3. ✅ Find legacy files (already implemented!)
-4. ⏳ `apply_renames()` - Batch rename operation
-5. ⏳ `format_apply_report()` - Format results
-6. ⏳ Add warning system to run.gleam
-7. ⏳ Glint CLI integration for update command
+3. ✅ Find legacy files
+4. ✅ `apply_renames()` - Batch rename operation
+5. ✅ `format_apply_report()` - Format results
+6. ⏳ Add warning system to run.gleam when legacy files detected
+7. ⏳ Glint CLI integration for update command with --apply flag
 8. ⏳ Update README.md documentation (lines 42, 45, 46, new section for update command)
-9. Run tests: `gleam test` ✅ (56 passing)
-10. Format code: `gleam format`
-11. Build: `gleam build`
+9. ⏳ End-to-end testing of complete workflow
+10. ⏳ Create PR
+11. Run tests: `gleam test` ✅ (60 passing)
+12. Format code: `gleam format`
+13. Build: `gleam build`
