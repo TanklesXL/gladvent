@@ -1,6 +1,7 @@
 import decode
 import filepath
 import gladvent/internal/cmd.{Ending, Endless}
+import gladvent/internal/cmd/update
 import gladvent/internal/input
 import gladvent/internal/parse.{type Day}
 import gladvent/internal/runners
@@ -12,6 +13,7 @@ import gleam/erlang
 import gleam/erlang/atom
 import gleam/erlang/charlist.{type Charlist}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{type Option}
 import gleam/package_interface
@@ -71,7 +73,10 @@ fn handle_file_path(year: Int, day: Day, input_kind: input.Kind) -> String {
   let new = input.get_file_path(year, day, input_kind)
   let old = input.get_legacy_file_path(year, day, input_kind)
   case simplifile.is_file(new), simplifile.is_file(old) {
-    Ok(False), Ok(True) -> old
+    Ok(False), Ok(True) -> {
+      io.println(update.legacy_warning_message())
+      old
+    }
     _, _ -> new
   }
 }

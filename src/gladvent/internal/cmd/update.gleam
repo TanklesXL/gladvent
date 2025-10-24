@@ -205,3 +205,7 @@ fn format_error_reason(error: FileError) -> String {
     _ -> "unknown error"
   }
 }
+
+pub fn legacy_warning_message() -> String {
+  "*** Legacy files detected. Run 'gleam run update' for more information. ***"
+}
