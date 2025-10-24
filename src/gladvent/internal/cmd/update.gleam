@@ -190,6 +190,7 @@ pub fn format_apply_report(results: List(RenameResult)) -> String {
     <> int.to_string(list.length(successes))
     <> "\nSkipped: "
     <> int.to_string(list.length(failures))
+    <> " (manual intervention required)"
 
   success_section <> failure_section <> summary
 }

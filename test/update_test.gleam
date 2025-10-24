@@ -635,7 +635,7 @@ Failed to rename:
   input/2024/2.txt -> input/2024/02.txt (file already exists)
 
 Changed: 2
-Skipped: 1"
+Skipped: 1 (manual intervention required)"
 
   update.format_apply_report(results)
   |> should.equal(expected)
