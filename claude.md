@@ -565,17 +565,61 @@ scan_project_files(".")           // ✅ Find all AoC files
 |> format_apply_report()          // ✅ Format human-readable output
 ```
 
+### Session 6: Warning System Implementation
+
+**What We Accomplished:**
+1. ✅ **Synced up** - Pulled 3 commits, rescanned docs to get current state
+2. ✅ **Warning System Complete** - Implemented legacy file warning
+   - Created `test/update_run_test.gleam` for deprecation-related tests (isolated for easy removal)
+   - Added `legacy_warning_message()` to `update.gleam` - pure function returning formatted warning
+   - Modified `handle_file_path()` in `run.gleam` to emit warning when legacy files detected
+   - Warning message: `"*** Legacy files detected. Run 'gleam run update' for more information. ***"`
+   - 61 tests passing
+3. ✅ **Test strategy discussion** - Decided on pure function testing approach
+   - Test `legacy_warning_message()` for correct formatting (pure, easy to test)
+   - Trust `io.println()` works (stdlib)
+   - No need for stdout capture or integration tests for simple side effect
+4. ✅ **Committed and pushed** - Warning system changes (~19 lines)
+
+**Key Decisions:**
+- **Test isolation:** Created `update_run_test.gleam` to keep all deprecation-related tests together for easy removal in 2 releases
+- **Testing approach:** Test pure `legacy_warning_message()` function, no need to test `io.println()` side effect
+- **Inline side effect:** Used block syntax `{ io.println(...); old }` instead of separate emission function - cleaner and simpler
+- **Warning frequency:** Emits every time a legacy file is used (constant reminder until upgrade)
+
+**CLI Integration Planning:**
+- Discussed Glint wiring approach for `update` command
+- Considered integration test scenarios (dry-run vs apply mode)
+- **Proposed approach:** Extract testable `do_update(apply: Bool, base_path: String)` function with Glint command as thin wrapper
+  - All business logic already tested (scan, filter, rename, report)
+  - Just need to wire flags and coordinate the pipeline
+  - Integration test would verify: flag parsing → correct pipeline → correct output
+
+**Current State:**
+- 61 tests passing ✅
+- All business logic complete (scanning, renaming, reporting, warning)
+- Warning system functional and committed
+- Ready for Glint CLI integration
+
+**Next Session:**
+- Implement Glint CLI integration (update command with --apply flag)
+- Test strategy: Extract testable `do_update()` function, thin Glint wrapper
+- Then: README updates, end-to-end test, PR
+
 ## Next Steps
 1. ✅ Complete directory scanning (scan_files, scan_project_files)
 2. ✅ File rename operations with conflict detection
 3. ✅ Find legacy files
 4. ✅ `apply_renames()` - Batch rename operation
 5. ✅ `format_apply_report()` - Format results
-6. ⏳ Add warning system to run.gleam when legacy files detected
+6. ✅ Add warning system to run.gleam when legacy files detected
 7. ⏳ Glint CLI integration for update command with --apply flag
+   - Extract testable `do_update()` function
+   - Wire up Glint command with `--apply` flag
+   - Test: dry-run mode, apply mode, empty state
 8. ⏳ Update README.md documentation (lines 42, 45, 46, new section for update command)
 9. ⏳ End-to-end testing of complete workflow
 10. ⏳ Create PR
-11. Run tests: `gleam test` ✅ (60 passing)
+11. Run tests: `gleam test` ✅ (61 passing)
 12. Format code: `gleam format`
 13. Build: `gleam build`
