@@ -1,3 +1,4 @@
+import exception
 import filepath
 import gladvent/internal/cmd.{Ending, Endless}
 import gladvent/internal/input
@@ -73,15 +74,6 @@ fn string_trim(s: String, dir: Direction, sub: String) -> String {
 @external(erlang, "string", "trim")
 fn do_trim(a: String, b: Direction, c: Charlist) -> String
 
-@external(erlang, "runners_ffi", "rescue")
-fn rescue(a: fn() -> a) -> gleam.Result(a, Crash)
-
-type Crash {
-  Exited(Dynamic)
-  Thrown(Dynamic)
-  Errored(Dynamic)
-}
-
 /// Converts any Gleam data into `Dynamic` data.
 ///
 @external(erlang, "runners_ffi", "identity")
@@ -117,17 +109,17 @@ fn do(
     False -> {
       use input <- result.try(
         fn() { parse(input) }
-        |> rescue
+        |> exception.rescue
         |> result.map_error(crash_to_string)
         |> result.map_error(FailedToParseInput),
       )
       let pt_1 =
         fn() { solve(pt_1, input) }
-        |> rescue
+        |> exception.rescue
         |> result.map_error(crash_to_solve_err)
       let pt_2 =
         fn() { solve(pt_2, input) }
-        |> rescue
+        |> exception.rescue
         |> result.map_error(crash_to_solve_err)
       Ok(#(pt_1, pt_2))
     }
@@ -139,9 +131,10 @@ fn solve(solver: fn(a) -> Dynamic, input: a) -> Solution {
   Solution(value, execution_time)
 }
 
-fn crash_to_dyn(err: Crash) -> dynamic.Dynamic {
+fn unwrap_exception(err: exception.Exception) -> dynamic.Dynamic {
   case err {
-    Errored(dyn) | Exited(dyn) | Thrown(dyn) -> dyn
+    exception.Errored(dyn) | exception.Exited(dyn) | exception.Thrown(dyn) ->
+      dyn
   }
 }
 
@@ -185,8 +178,8 @@ fn gleam_err_to_string(g: GleamErr) -> String {
   )
 }
 
-fn crash_to_string(err: Crash) -> String {
-  crash_to_dyn(err)
+fn crash_to_string(err: exception.Exception) -> String {
+  unwrap_exception(err)
   |> decode_gleam_err()
   |> result.map(gleam_err_to_string)
   |> result.lazy_unwrap(fn() {
@@ -194,7 +187,7 @@ fn crash_to_string(err: Crash) -> String {
   })
 }
 
-fn crash_to_solve_err(err: Crash) -> SolveErr {
+fn crash_to_solve_err(err: exception.Exception) -> SolveErr {
   err
   |> crash_to_string
   |> RunFailed
