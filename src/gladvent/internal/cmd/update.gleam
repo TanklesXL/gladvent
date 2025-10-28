@@ -3,8 +3,12 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
+import glint
+import snag
 
 import simplifile.{type FileError}
+
+const max_advent_day = 25
 
 pub type RenameResult {
   Success(from: String, to: String)
@@ -24,7 +28,6 @@ pub fn update_path(path: String) -> Option(String) {
 fn update_input_path(year: String, input_name: String) -> Option(String) {
   {
     use day <- result.try(list.first(string.split(input_name, ".")))
-
     case string.length(day) == 1 {
       True -> Ok(string.join(["input", year, "0" <> input_name], "/"))
       False -> Error(Nil)
@@ -37,7 +40,6 @@ fn update_src_path(aoc_year: String, gleam_file_name: String) -> Option(String) 
   {
     let day_with_ext = string.drop_start(gleam_file_name, up_to: 4)
     use day <- result.try(list.first(string.split(day_with_ext, ".")))
-
     case string.length(day) == 1 {
       True ->
         Ok(string.join(["src", aoc_year, "day_0" <> day <> ".gleam"], "/"))
@@ -70,7 +72,7 @@ pub fn format_dry_run_report(paths: List(#(String, String))) -> String {
         "\n"
         <> int.to_string(list.length(paths))
         <> " files will be renamed\n"
-        <> "Run 'gleam run update --apply' to perform the rename operation",
+        <> "Run 'gleam run update apply' to perform the rename operation",
       )
     }
   }
@@ -94,14 +96,14 @@ pub fn should_include_file(file: String) -> Bool {
 
 fn is_valid_day(day: String) -> Bool {
   case int.parse(day) {
-    Ok(d) -> d >= 1 && d < 26
+    Ok(d) -> d >= 1 && d <= max_advent_day
     _ -> False
   }
 }
 
 pub fn should_include_path(path: String) -> Bool {
-  let graphemes = string.split(path, "/")
-  case list.last(graphemes) {
+  let segments = string.split(path, "/")
+  case list.last(segments) {
     Ok(filename) -> should_include_file(filename)
     _ -> False
   }
@@ -157,6 +159,26 @@ pub fn apply_renames(renames: List(#(String, String))) -> List(RenameResult) {
   })
 }
 
+fn strip_base_path_from_result(
+  result: RenameResult,
+  base_path: String,
+) -> RenameResult {
+  let offset = string.length(base_path) + 1
+  case result {
+    Success(from, to) ->
+      Success(
+        from: string.drop_start(from, offset),
+        to: string.drop_start(to, offset),
+      )
+    Failure(from, to, reason) ->
+      Failure(
+        from: string.drop_start(from, offset),
+        to: string.drop_start(to, offset),
+        reason: reason,
+      )
+  }
+}
+
 pub fn format_apply_report(results: List(RenameResult)) -> String {
   let #(successes, failures) =
     list.partition(results, fn(result) {
@@ -167,30 +189,48 @@ pub fn format_apply_report(results: List(RenameResult)) -> String {
     })
 
   // Format successes
-  let success_section =
-    list.fold(successes, "Successfully renamed:\n", fn(acc, success) {
-      acc <> "  " <> success.from <> " -> " <> success.to <> "\n"
-    })
+  let success_section = case list.is_empty(successes) {
+    True -> ""
+    False -> {
+      let header = "Successfully renamed:\n"
+      list.fold(successes, header, fn(acc, success) {
+        acc <> "  " <> success.from <> " -> " <> success.to <> "\n"
+      })
+    }
+  }
 
   // Format failures
-  let failure_section =
-    list.fold(failures, "\nFailed to rename:\n", fn(acc, failure) {
-      case failure {
-        Failure(from, to, reason) -> {
-          let reason_text = format_error_reason(reason)
-          acc <> "  " <> from <> " -> " <> to <> " (" <> reason_text <> ")\n"
-        }
-        Success(_, _) -> acc
+  let failure_section = case list.is_empty(failures) {
+    True -> ""
+    False -> {
+      let prefix = case list.is_empty(successes) {
+        True -> ""
+        False -> "\n"
       }
-    })
+      let header = prefix <> "Failed to rename:\n"
+      list.fold(failures, header, fn(acc, failure) {
+        case failure {
+          Failure(from, to, reason) -> {
+            let reason_text = format_error_reason(reason)
+            acc <> "  " <> from <> " -> " <> to <> " (" <> reason_text <> ")\n"
+          }
+          Success(_, _) -> acc
+        }
+      })
+    }
+  }
 
   // Build summary
+  let summary_suffix = case list.is_empty(failures) {
+    True -> ""
+    False -> " (manual intervention required)"
+  }
   let summary =
     "\nChanged: "
     <> int.to_string(list.length(successes))
     <> "\nSkipped: "
     <> int.to_string(list.length(failures))
-    <> " (manual intervention required)"
+    <> summary_suffix
 
   success_section <> failure_section <> summary
 }
@@ -208,4 +248,52 @@ fn format_error_reason(error: FileError) -> String {
 
 pub fn legacy_warning_message() -> String {
   "*** Legacy files detected. Run 'gleam run update' for more information. ***"
+}
+
+pub fn do_dry_run(base_path: String) -> Result(String, snag.Snag) {
+  scan_project_files(base_path)
+  |> result.map_error(fn(e) {
+    snag.new("Failed to scan project files: " <> string.inspect(e))
+  })
+  |> result.map(fn(files) {
+    files
+    |> find_legacy_files()
+    |> format_dry_run_report()
+  })
+}
+
+pub fn do_apply(base_path: String) -> Result(String, snag.Snag) {
+  scan_project_files(base_path)
+  |> result.map_error(fn(e) {
+    snag.new("Failed to scan project files: " <> string.inspect(e))
+  })
+  |> result.map(fn(files) {
+    files
+    |> find_legacy_files()
+    |> list.map(fn(rename) {
+      let #(old, new) = rename
+      #(base_path <> "/" <> old, base_path <> "/" <> new)
+    })
+    |> apply_renames()
+    |> list.map(strip_base_path_from_result(_, base_path))
+    |> format_apply_report()
+  })
+}
+
+pub fn update_dry_run_command() -> glint.Command(
+  Result(List(String), snag.Snag),
+) {
+  use <- glint.command_help("Run dry run report of legacy file update")
+  use _, _, _ <- glint.command()
+
+  do_dry_run(".")
+  |> result.map(list.wrap)
+}
+
+pub fn update_apply_command() -> glint.Command(Result(List(String), snag.Snag)) {
+  use <- glint.command_help("Apply legacy file updates")
+  use _, _, _ <- glint.command()
+
+  do_apply(".")
+  |> result.map(list.wrap)
 }

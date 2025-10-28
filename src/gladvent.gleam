@@ -2,6 +2,7 @@ import argv
 import gladvent/internal/cmd
 import gladvent/internal/cmd/new
 import gladvent/internal/cmd/run
+import gladvent/internal/cmd/update
 import gleam/io
 import gleam/string
 import glint
@@ -29,6 +30,8 @@ pub fn run() {
     |> glint.group_flag(at: ["run"], of: run.allow_crash_flag())
     |> glint.add(at: ["run"], do: run.run_command())
     |> glint.add(at: ["run", "all"], do: run.run_all_command())
+    |> glint.add(at: ["update"], do: update.update_dry_run_command())
+    |> glint.add(at: ["update", "apply"], do: update.update_apply_command())
 
   use out <- glint.run_and_handle(commands, argv.load().arguments)
   case out {

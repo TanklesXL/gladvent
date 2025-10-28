@@ -1,5 +1,4 @@
-// import gladvent/internal/cmd/update.{type RenameResult, Failure, Success} as update
-import gladvent/internal/cmd/update.{Failure, Success}
+import gladvent/internal/cmd/update.{Failure, Success} as update
 import gleam/list
 import gleam/option.{None, Some}
 import gleeunit/should
@@ -113,7 +112,7 @@ pub fn format_dry_run_report_with_files_test() {
   src/aoc_2024/day_3.gleam -> src/aoc_2024/day_03.gleam
 
 3 files will be renamed
-Run 'gleam run update --apply' to perform the rename operation"
+Run 'gleam run update apply' to perform the rename operation"
 
   update.format_dry_run_report(legacy_files)
   |> should.equal(expected)
@@ -639,4 +638,189 @@ Skipped: 1 (manual intervention required)"
 
   update.format_apply_report(results)
   |> should.equal(expected)
+}
+
+// ===== do_dry_run tests =====
+
+pub fn do_dry_run_with_no_legacy_files_test() {
+  let base_path = "test/temp/do_dry_run_no_legacy"
+
+  // Create modern structure only
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/src/aoc_2024")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/src/aoc_2024/day_01.gleam", "")
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/input/2024")
+  let assert Ok(_) = simplifile.write(base_path <> "/input/2024/01.txt", "")
+
+  let result = update.do_dry_run(base_path)
+
+  let assert Ok(report) = result
+  report
+  |> should.equal(
+    "No files need updating - all files are already using zero-padded names.",
+  )
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(base_path)
+}
+
+pub fn do_dry_run_with_legacy_files_test() {
+  let base_path = "test/temp/do_dry_run_with_legacy"
+
+  // Create legacy structure
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/src/aoc_2024")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/src/aoc_2024/day_1.gleam", "")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/src/aoc_2024/day_2.gleam", "")
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/input/2024")
+  let assert Ok(_) = simplifile.write(base_path <> "/input/2024/1.txt", "")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/input/2024/2.example.txt", "")
+
+  let result = update.do_dry_run(base_path)
+
+  let assert Ok(report) = result
+  report
+  |> should.equal(
+    "Files to be renamed:
+  src/aoc_2024/day_1.gleam -> src/aoc_2024/day_01.gleam
+  src/aoc_2024/day_2.gleam -> src/aoc_2024/day_02.gleam
+  input/2024/1.txt -> input/2024/01.txt
+  input/2024/2.example.txt -> input/2024/02.example.txt
+
+4 files will be renamed
+Run 'gleam run update apply' to perform the rename operation",
+  )
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(base_path)
+}
+
+pub fn do_dry_run_with_missing_src_directory_test() {
+  let base_path = "test/temp/do_dry_run_missing_src"
+
+  // Create only input directory, no src/
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/input/2024")
+  let assert Ok(_) = simplifile.write(base_path <> "/input/2024/1.txt", "")
+
+  let result = update.do_dry_run(base_path)
+
+  // Should return error because src/ is required
+  result
+  |> should.be_error()
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(base_path)
+}
+
+// ===== do_apply tests =====
+
+pub fn do_apply_with_successful_renames_test() {
+  let base_path = "test/temp/do_apply_success"
+
+  // Create legacy structure
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/src/aoc_2024")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/src/aoc_2024/day_1.gleam", "content")
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/input/2024")
+  let assert Ok(_) = simplifile.write(base_path <> "/input/2024/1.txt", "input")
+
+  let result = update.do_apply(base_path)
+
+  let assert Ok(report) = result
+  report
+  |> should.equal(
+    "Successfully renamed:
+  src/aoc_2024/day_1.gleam -> src/aoc_2024/day_01.gleam
+  input/2024/1.txt -> input/2024/01.txt
+
+Changed: 2
+Skipped: 0",
+  )
+
+  // Verify files were actually renamed
+  simplifile.is_file(base_path <> "/src/aoc_2024/day_01.gleam")
+  |> should.equal(Ok(True))
+  simplifile.is_file(base_path <> "/input/2024/01.txt")
+  |> should.equal(Ok(True))
+
+  // Verify old files are gone
+  simplifile.is_file(base_path <> "/src/aoc_2024/day_1.gleam")
+  |> should.equal(Ok(False))
+  simplifile.is_file(base_path <> "/input/2024/1.txt")
+  |> should.equal(Ok(False))
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(base_path)
+}
+
+pub fn do_apply_with_conflicts_test() {
+  let base_path = "test/temp/do_apply_conflicts"
+
+  // Create legacy structure with conflicts
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/src/aoc_2024")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/src/aoc_2024/day_1.gleam", "old")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/src/aoc_2024/day_01.gleam", "new")
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/input/2024")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/input/2024/2.txt", "input old")
+  let assert Ok(_) =
+    simplifile.write(base_path <> "/input/2024/02.txt", "input new")
+
+  let result = update.do_apply(base_path)
+
+  let assert Ok(report) = result
+  report
+  |> should.equal(
+    "Failed to rename:
+  src/aoc_2024/day_1.gleam -> src/aoc_2024/day_01.gleam (file already exists)
+  input/2024/2.txt -> input/2024/02.txt (file already exists)
+
+Changed: 0
+Skipped: 2 (manual intervention required)",
+  )
+
+  // Verify old files still exist (weren't overwritten)
+  simplifile.is_file(base_path <> "/src/aoc_2024/day_1.gleam")
+  |> should.equal(Ok(True))
+  simplifile.is_file(base_path <> "/input/2024/2.txt")
+  |> should.equal(Ok(True))
+
+  // Verify new files weren't touched
+  simplifile.read(base_path <> "/src/aoc_2024/day_01.gleam")
+  |> should.equal(Ok("new"))
+  simplifile.read(base_path <> "/input/2024/02.txt")
+  |> should.equal(Ok("input new"))
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(base_path)
+}
+
+pub fn do_apply_with_missing_src_directory_test() {
+  let base_path = "test/temp/do_apply_missing_src"
+
+  // Create only input directory, no src/
+  let assert Ok(_) = simplifile.create_directory_all(base_path <> "/input/2024")
+  let assert Ok(_) = simplifile.write(base_path <> "/input/2024/1.txt", "")
+
+  let result = update.do_apply(base_path)
+
+  // Should return error because src/ is required
+  result
+  |> should.be_error()
+
+  // Cleanup
+  let assert Ok(_) = simplifile.delete(base_path)
+}
+
+// ===== Legacy warning message test =====
+
+pub fn legacy_warning_message_test() {
+  update.legacy_warning_message()
+  |> should.equal(
+    "*** Legacy files detected. Run 'gleam run update' for more information. ***",
+  )
 }
