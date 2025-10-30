@@ -24,3 +24,5 @@ src/days
 src/aoc_*
 /input
 package-interface.json
+
+claude.md
