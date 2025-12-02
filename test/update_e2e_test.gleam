@@ -184,7 +184,7 @@ pub fn full_legacy_project_update_e2e_test() {
     )
 
   // Step 1: Run dry-run to see what would be updated
-  let dry_run_result = update.do_dry_run(base_path)
+  let dry_run_result = update.do_update(base_path, True)
   let assert Ok(dry_run_report) = dry_run_result
 
   // Verify dry-run found all legacy files (7 files: 3 for day 1, 2 for day 5, 2 for day 9)
@@ -215,7 +215,7 @@ pub fn full_legacy_project_update_e2e_test() {
   |> should.be_false()
 
   // Step 2: Apply the updates
-  let apply_result = update.do_apply(base_path)
+  let apply_result = update.do_update(base_path, False)
   let assert Ok(apply_report) = apply_result
 
   // Verify all 7 files were renamed successfully

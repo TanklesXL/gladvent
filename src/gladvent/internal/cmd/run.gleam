@@ -74,7 +74,7 @@ fn handle_file_path(year: Int, day: Day, input_kind: input.Kind) -> String {
   let old = input.get_legacy_file_path(year, day, input_kind)
   case simplifile.is_file(new), simplifile.is_file(old) {
     Ok(False), Ok(True) -> {
-      io.println(update.legacy_warning_message())
+      io.println(update.legacy_warning_message(at: old))
       old
     }
     _, _ -> new

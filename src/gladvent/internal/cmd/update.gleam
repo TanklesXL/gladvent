@@ -1,3 +1,4 @@
+import filepath
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -16,16 +17,16 @@ pub type RenameResult {
 }
 
 pub fn update_path(path: String) -> Option(String) {
-  let split = string.split(path, "/")
-  case split {
-    ["input", year, input_name] -> update_input_path(year, input_name)
+  case filepath.split(path) {
+    ["input", year, input_name] ->
+      update_input_path(year, input_name) |> option.from_result
     ["src", aoc_year, gleam_file_name] ->
-      update_src_path(aoc_year, gleam_file_name)
+      update_src_path(aoc_year, gleam_file_name) |> option.from_result
     _ -> None
   }
 }
 
-fn update_input_path(year: String, input_name: String) -> Option(String) {
+fn update_input_path(year: String, input_name: String) -> Result(String, Nil) {
   {
     use day <- result.try(list.first(string.split(input_name, ".")))
     case string.length(day) == 1 {
@@ -33,10 +34,12 @@ fn update_input_path(year: String, input_name: String) -> Option(String) {
       False -> Error(Nil)
     }
   }
-  |> option.from_result
 }
 
-fn update_src_path(aoc_year: String, gleam_file_name: String) -> Option(String) {
+fn update_src_path(
+  aoc_year: String,
+  gleam_file_name: String,
+) -> Result(String, Nil) {
   {
     let day_with_ext = string.drop_start(gleam_file_name, up_to: 4)
     use day <- result.try(list.first(string.split(day_with_ext, ".")))
@@ -46,7 +49,6 @@ fn update_src_path(aoc_year: String, gleam_file_name: String) -> Option(String) 
       False -> Error(Nil)
     }
   }
-  |> option.from_result
 }
 
 pub fn find_legacy_files(paths: List(String)) -> List(#(String, String)) {
@@ -60,10 +62,10 @@ pub fn find_legacy_files(paths: List(String)) -> List(#(String, String)) {
 }
 
 pub fn format_dry_run_report(paths: List(#(String, String))) -> String {
-  case list.is_empty(paths) {
-    True ->
+  case paths {
+    [] ->
       "No files need updating - all files are already using zero-padded names."
-    False -> {
+    _ -> {
       let report = "Files to be renamed:\n"
       list.fold(paths, report, fn(acc, path) {
         acc <> "  " <> path.0 <> " -> " <> path.1 <> "\n"
@@ -79,18 +81,22 @@ pub fn format_dry_run_report(paths: List(#(String, String))) -> String {
 }
 
 pub fn should_include_file(file: String) -> Bool {
-  !string.starts_with(file, ".")
-  && {
-    case string.split(file, ".") {
-      [day, "txt"] -> is_valid_day(day)
-      [day, "example", "txt"] -> is_valid_day(day)
-      [prefix, "gleam"] ->
-        case string.split(prefix, "_") {
-          ["day", day] -> is_valid_day(day)
-          _ -> False
-        }
-      _ -> False
-    }
+  case file {
+    "." <> _ -> False
+    _ -> matches_aoc_file_pattern(file)
+  }
+}
+
+fn matches_aoc_file_pattern(file: String) -> Bool {
+  case string.split(file, ".") {
+    [day, "txt"] -> is_valid_day(day)
+    [day, "example", "txt"] -> is_valid_day(day)
+    [prefix, "gleam"] ->
+      case string.split(prefix, "_") {
+        ["day", day] -> is_valid_day(day)
+        _ -> False
+      }
+    _ -> False
   }
 }
 
@@ -102,7 +108,7 @@ fn is_valid_day(day: String) -> Bool {
 }
 
 pub fn should_include_path(path: String) -> Bool {
-  let segments = string.split(path, "/")
+  let segments = filepath.split(path)
   case list.last(segments) {
     Ok(filename) -> should_include_file(filename)
     _ -> False
@@ -112,13 +118,18 @@ pub fn should_include_path(path: String) -> Bool {
 pub fn scan_files(path: String) -> Result(List(String), FileError) {
   case simplifile.get_files(path) {
     Ok(files) -> {
-      list.filter(files, fn(file) { should_include_path(file) })
-      |> list.map(fn(file) {
-        string.split(file, "/")
-        |> list.reverse
-        |> list.take(up_to: 3)
-        |> list.reverse
-        |> string.join("/")
+      list.filter_map(files, fn(file) {
+        case should_include_path(file) {
+          True ->
+            Ok(
+              string.split(file, "/")
+              |> list.reverse
+              |> list.take(up_to: 3)
+              |> list.reverse
+              |> string.join("/"),
+            )
+          False -> Error(Nil)
+        }
       })
       |> list.sort(string.compare)
       |> Ok
@@ -132,8 +143,8 @@ pub fn scan_files(path: String) -> Result(List(String), FileError) {
 }
 
 pub fn scan_project_files(path: String) -> Result(List(String), FileError) {
-  let src = scan_files(path <> "/src/")
-  let input = scan_files(path <> "/input/")
+  let src = scan_files(filepath.join(path, "/src/"))
+  let input = scan_files(filepath.join(path, "/input/"))
   case src, input {
     Ok(s), Ok(i) -> Ok(list.append(s, i))
     Error(e), _ -> Error(e)
@@ -211,7 +222,7 @@ pub fn format_apply_report(results: List(RenameResult)) -> String {
       list.fold(failures, header, fn(acc, failure) {
         case failure {
           Failure(from, to, reason) -> {
-            let reason_text = format_error_reason(reason)
+            let reason_text = simplifile.describe_error(reason)
             acc <> "  " <> from <> " -> " <> to <> " (" <> reason_text <> ")\n"
           }
           Success(_, _) -> acc
@@ -235,48 +246,31 @@ pub fn format_apply_report(results: List(RenameResult)) -> String {
   success_section <> failure_section <> summary
 }
 
-fn format_error_reason(error: FileError) -> String {
-  case error {
-    simplifile.Eexist -> "file already exists"
-    simplifile.Eacces -> "permission denied"
-    simplifile.Enoent -> "file not found"
-    simplifile.Enotdir -> "not a directory"
-    simplifile.Eisdir -> "is a directory"
-    _ -> "unknown error"
-  }
+pub fn legacy_warning_message(at path: String) -> String {
+  "*** Legacy files detected at: "
+  <> path
+  <> ".\nRun 'gleam run update' for more information. ***"
 }
 
-pub fn legacy_warning_message() -> String {
-  "*** Legacy files detected. Run 'gleam run update' for more information. ***"
-}
-
-pub fn do_dry_run(base_path: String) -> Result(String, snag.Snag) {
+pub fn do_update(base_path: String, dry_run: Bool) -> Result(String, snag.Snag) {
   scan_project_files(base_path)
   |> result.map_error(fn(e) {
     snag.new("Failed to scan project files: " <> string.inspect(e))
   })
   |> result.map(fn(files) {
-    files
-    |> find_legacy_files()
-    |> format_dry_run_report()
-  })
-}
-
-pub fn do_apply(base_path: String) -> Result(String, snag.Snag) {
-  scan_project_files(base_path)
-  |> result.map_error(fn(e) {
-    snag.new("Failed to scan project files: " <> string.inspect(e))
-  })
-  |> result.map(fn(files) {
-    files
-    |> find_legacy_files()
-    |> list.map(fn(rename) {
-      let #(old, new) = rename
-      #(base_path <> "/" <> old, base_path <> "/" <> new)
-    })
-    |> apply_renames()
-    |> list.map(strip_base_path_from_result(_, base_path))
-    |> format_apply_report()
+    let legacy_files = find_legacy_files(files)
+    case dry_run {
+      True -> format_dry_run_report(legacy_files)
+      False ->
+        legacy_files
+        |> list.map(fn(rename) {
+          let #(old, new) = rename
+          #(base_path <> "/" <> old, base_path <> "/" <> new)
+        })
+        |> apply_renames()
+        |> list.map(strip_base_path_from_result(_, base_path))
+        |> format_apply_report()
+    }
   })
 }
 
@@ -286,7 +280,7 @@ pub fn update_dry_run_command() -> glint.Command(
   use <- glint.command_help("Run dry run report of legacy file update")
   use _, _, _ <- glint.command()
 
-  do_dry_run(".")
+  do_update(".", True)
   |> result.map(list.wrap)
 }
 
@@ -294,6 +288,6 @@ pub fn update_apply_command() -> glint.Command(Result(List(String), snag.Snag)) 
   use <- glint.command_help("Apply legacy file updates")
   use _, _, _ <- glint.command()
 
-  do_apply(".")
+  do_update(".", False)
   |> result.map(list.wrap)
 }
