@@ -34,6 +34,8 @@ For convenience it defaults to the current year. Therefore, passing `--year=YEAR
 - To see help for the `run` command: `gleam run run --help`
 - To see help for the `run` command: `gleam run run all --help`
 - To see help for the `new` command: `gleam run new --help`
+- To see help for the `update` command: `gleam run update --help`
+- To see help for the `apply` subcommand: `gleam run update apply --help`
 
 ## General Workflow
 
@@ -42,13 +44,13 @@ Where X is the day you'd like to add:
 _Note:_ this method requires all day solutions be in `src/aoc_<year>/` with filenames `day_X.gleam`, each solution module containing `fn pt_1(String) -> Int` and a `fn pt_2(String) -> Int`
 
 1. run `gleam run new X`
-2. add your input to `input/<YEAR>/X.txt`
-3. add your code to `src/aoc_<YEAR>/day_X.gleam`
+2. add your input to `input/<YEAR>/XX.txt`
+3. add your code to `src/aoc_<YEAR>/day_XX.gleam`
 4. run `gleam run run X`
 
 ### Available commands
 
-This project provides your application with 2 command groups, `new` and `run`:
+This project provides your application with 3 command groups, `new`, `run` and `update`:
 
 #### New
 
@@ -66,12 +68,20 @@ The `run` command expects input files to be in the `input/<year>` directory, and
 - `run all`: run all registered days
   - format: `gleam run run all`
 
+#### Update
+
+- `update`: preview which legacy files would be renamed. Shows a dry-run report of files that need zero-padding for proper sorting.
+  - format: `gleam run update`
+
+- `update apply`: perform the file rename of reported items to modernize legacy filenames
+  - format: `gleam run update apply`
+
 _Note:_
 
 - any triggered `assert`, `panic` or `todo` will be captured and printed, for example:
 
 ```
-Part 1: error: todo - unimplemented in module aoc_2024/day_1 in function pt_1 at line 2
+Part 1: error: todo - unimplemented in module aoc_2024/day_01 in function pt_1 at line 2
 ```
 
 
