@@ -4,7 +4,7 @@ import gleam/list
 import gleeunit/should
 
 pub fn day_success_test() {
-  use x <- list.each(list.range(1, 25))
+  use x <- list.each(int.range(from: 25, to: 0, with: [], run: list.prepend))
 
   x
   |> int.to_string()
