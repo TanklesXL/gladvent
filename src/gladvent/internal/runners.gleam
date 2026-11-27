@@ -227,12 +227,13 @@ fn parse_function(module: String) -> fn(String) -> Dynamic {
 @external(erlang, "runners_ffi", "parse_function")
 fn do_parse_function(module: atom.Atom) -> fn(String) -> Dynamic
 
-const string = package_interface.Named(
-  name: "String",
-  module: "gleam",
-  package: "",
-  parameters: [],
-)
+const string =
+  package_interface.Named(
+    name: "String",
+    module: "gleam",
+    package: "",
+    parameters: [],
+  )
 
 fn type_to_string(t: package_interface.Type) -> String {
   case t {

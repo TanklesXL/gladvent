@@ -202,7 +202,8 @@ fn do(ctx: Context) -> String {
   |> string.join("\n\n")
 }
 
-const gleam_starter = "pub fn pt_1(input: String) {
+const gleam_starter =
+  "pub fn pt_1(input: String) {
   todo as \"part 1 not implemented\"
 }
 
@@ -211,7 +212,8 @@ pub fn pt_2(input: String) {
 }
 "
 
-const parse_starter = "pub fn parse(input: String) -> String {
+const parse_starter =
+  "pub fn parse(input: String) -> String {
   todo as \"parse not implemented\"
 }
 "
