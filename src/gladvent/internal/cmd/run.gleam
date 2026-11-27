@@ -212,7 +212,7 @@ fn solve_res_to_string(
   expectation: option.Option(Expectation),
   timed: Bool,
 ) -> String {
-  result.unwrap_both({
+  let result = {
     use solution <- result.map(res |> result.map_error(solve_err_to_string))
     option.lazy_unwrap(
       {
@@ -257,7 +257,12 @@ fn solve_res_to_string(
         string.inspect(solution.value) <> exec_time_suffix(solution, timed)
       },
     )
-  })
+  }
+
+  case result {
+    Ok(a) -> a
+    Error(a) -> a
+  }
 }
 
 fn exec_time_suffix(solution: Solution, timed: Bool) -> String {
